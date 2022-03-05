@@ -1,0 +1,468 @@
+clc
+clear
+close all
+addpath("PRLexp/inputs/")
+addpath("PRLexp/SubjectData/")
+addpath("files")
+%% load result files
+attns = load('./files/RPL2Analysis_Attention.mat') ;
+
+feat = load('./files/RPL2Analysisv3_5_FeatureBased') ;
+obj = load('./files/RPL2Analysisv3_5_FeatureObjectBased') ;
+conj  = load('./files/RPL2Analysisv3_5_ConjunctionBased') ;
+
+attn_modes = {"diff", "sum", "max"};
+attn_modes_choice = ["diff", "sum", "max"];
+attn_modes_learn = [" X diff", " X sum", " X max"];
+
+[attn_mode_choice, attn_mode_learn] = meshgrid(attn_modes_choice, attn_modes_learn);
+xlabels = strcat(attn_mode_choice(:), attn_mode_learn(:));
+
+%% load results with attn
+for i1=1:3
+    for i2=1:3
+        for cnt_sbj=1:68
+            x(i1, i2, cnt_sbj) = attns.mlparRL2conj_decay_attn{i1, i2, cnt_sbj}(100);
+        end
+    end
+end
+
+% figure;
+% mx = mean(x,3);
+% sx = std(x,1,3);
+% bar(1:9, mx(:));
+% ylim([220, 235]);
+% xticklabels(xlabels)
+% hold on;
+% er = errorbar(mx(:),sx(:)/sqrt(432));
+% er.Color = [0 0 0];
+% er.LineStyle = 'none';
+% title('Feature+Conjunction')
+
+for i1=1:3
+    for i2=1:3
+        for cnt_sbj=1:68
+            y(i1, i2, cnt_sbj) = attns.mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}(100);
+        end
+    end
+end
+
+
+% figure;
+% my = mean(y,3);
+% sy = std(y,1,3);
+% bar(1:9, my(:));
+% ylim([220, 235]);
+% xticklabels(xlabels)
+% hold on;
+% er = errorbar(my(:),sy(:)/sqrt(432));
+% er.Color = [0 0 0];
+% er.LineStyle = 'none';
+% title('Feature+Object')
+
+for i1=1:3
+    for i2=1:3
+        for cnt_sbj=1:68
+            z(i1, i2, cnt_sbj) = attns.mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(100);
+        end
+    end
+end
+
+% figure;
+% mz = mean(z,3);
+% sz = std(z,1,3);
+% bar(1:9, mz(:));
+% ylim([220, 240]);
+% xticklabels(xlabels)
+% hold on;
+% er = errorbar(mz(:),sz(:)/sqrt(432));
+% er.Color = [0 0 0];
+% er.LineStyle = 'none';
+% title('Feature')
+
+
+%% load results without attn and compare
+
+% TODO: do best model on both sides
+
+for i1=1:3
+    for cnt_sbj=1:21
+        x0(i1, cnt_sbj) = conj.mlparRL2conj_decay{i1, cnt_sbj}(100);
+    end
+end
+disp(strcat("p-val for differnce between conj model w/ and w/o attn: ", string(ranksum(x(:), x0(:)))))
+
+figure;
+histogram(x(:), 'Normalization', 'probability', 'BinEdges', 80:10:280);
+hold on;
+histogram(x0(:), 'Normalization', 'probability', 'BinEdges', 80:10:280);
+legend('w/ attn', 'w/o attn', 'Location', 'northwest');
+title('Feature+Conj Goodness-of-fit')
+
+for i1=1:3
+    for cnt_sbj=1:21
+        y0(i1, cnt_sbj) = obj.mlparRL2ftobj_decay{i1, cnt_sbj}(100);
+    end
+end
+disp(strcat("p-val for differnce between ft+obj model w/ and w/o attn: ", string(ranksum(y(:), y0(:)))))
+
+figure;
+histogram(y(:), 'Normalization', 'probability', 'BinEdges', 80:10:280);
+hold on;
+histogram(y0(:), 'Normalization', 'probability', 'BinEdges', 80:10:280);
+legend('w/ attn', 'w/o attn', 'Location', 'northwest');
+title('Feature+Obj Goodness-of-fit')
+
+for cnt_sbj=1:21
+    z0(cnt_sbj) = feat.mlparRL2_decay{cnt_sbj}(100);
+end
+disp(strcat("p-val for differnce between ft model w/ and w/o attn: ", string(ranksum(z(:), z0(:)))))
+
+figure;
+histogram(z(:), 'Normalization', 'probability', 'BinEdges', 80:10:280);
+hold on;
+histogram(z0(:), 'Normalization', 'probability', 'BinEdges', 80:10:280);
+legend('w/ attn', 'w/o attn', 'Location', 'northwest');
+title('Feature Goodness-of-fit')
+%% compare different types of attn
+for i1=1:3
+    for i2=1:3
+        for j1=1:3
+            for j2=1:3
+                [p,h,stats] = signrank(permute(x(i1,i2,:), [3,1,2]), permute(x(j1,j2,:), [3,1,2]), 'tail','left');
+                attn_no_attn_ps(1, (i1-1)*3+i2,(j1-1)*3+j2) = p;
+                attn_no_attn_diffs(1, (i1-1)*3+i2,(j1-1)*3+j2) = mean(x(i1,i2,:))-mean(x(j1,j2,:));
+                [p,h,stats] = signrank(permute(y(i1,i2,:), [3,1,2]), permute(y(j1,j2,:), [3,1,2]), 'tail','left');
+                attn_no_attn_ps(2, (i1-1)*3+i2,(j1-1)*3+j2) = p;
+                attn_no_attn_diffs(2, (i1-1)*3+i2,(j1-1)*3+j2) = mean(y(i1,i2,:))-mean(y(j1,j2,:));
+                [p,h,stats] = signrank(permute(z(i1,i2,:), [3,1,2]), permute(z(j1,j2,:), [3,1,2]), 'tail','left');
+                attn_no_attn_ps(3, (i1-1)*3+i2,(j1-1)*3+j2) = p;
+                attn_no_attn_diffs(3, (i1-1)*3+i2,(j1-1)*3+j2) = mean(z(i1,i2,:))-mean(z(j1,j2,:));
+            end
+        end
+    end
+end
+
+disp(strcat("Number of significantly different pairs: ", string(sum(attn_no_attn_ps(:)<0.05))))
+
+attn_no_attn_stars = sig2ast(attn_no_attn_ps);
+[txs, tys] = meshgrid(1:9, 1:9);
+
+plot_titles = {"Feature+Conj Model p-vals", "Feature+Obj Model p-vals", "Feature Model p-vals"};
+
+for i=1:3
+    figure;
+    imagesc(reshape(attn_no_attn_diffs(i,:,:),9,9));
+    text(txs(:), tys(:), attn_no_attn_stars(i,:), 'Color', [211,211,211]/255);
+    colorbar();
+    colormap bluewhitered;
+    xticklabels(xlabels);
+    yticklabels(xlabels);
+    title(plot_titles{i});
+    pbaspect([1 1 1])
+end
+
+%% load ML params
+for i1=1:3
+    for i2=1:3
+        for cnt_sbj=1:68
+            xpar(i1, i2, cnt_sbj, :) = attns.mlparRL2conj_decay_attn{i1, i2, cnt_sbj}(1:12);
+        end
+    end
+end
+
+for i1=1:3
+    for i2=1:3
+        for cnt_sbj=1:68
+            ypar(i1, i2, cnt_sbj, :) = attns.mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}(1:10);
+        end
+    end
+end
+
+for i1=1:3
+    for i2=1:3
+        for cnt_sbj=1:68
+            zpar(i1, i2, cnt_sbj, :) = attns.mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(1:7);
+        end
+    end
+end
+
+%% Simulate model with best param
+
+
+subjects = {...
+    'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', ...
+    'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', ...
+    'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', ...
+    'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', ...
+    'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', ...
+    'BM', 'BN', 'BO', 'BP', 'BQ', 'BR', 'CC', 'DD', ...
+    'EE', 'FF', 'GG', 'HH', 'II', 'JJ', 'KK', 'LL', ...
+    'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT', ...
+    'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
+
+
+for cnt_sbj=1:68
+    disp(['Subject: ', num2str(cnt_sbj)])
+    inputname   = ['./PRLexp/inputs/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
+    resultsname = ['./PRLexp/SubjectData/PRL_', lower(subjects{cnt_sbj}) , '.mat'] ;
+
+    inputs_struct = load(inputname);
+    results_struct = load(resultsname);
+
+    expr = results_struct.expr;
+    input = inputs_struct.input;
+    results = results_struct.results;
+
+    expr.shapeMap = repmat([1 2 3 ;
+        1 2 3 ;
+        1 2 3 ], 1,1,3) ;
+
+    expr.colorMap = repmat([1 1 1 ;
+        2 2 2 ;
+        3 3 3], 1,1,3) ;
+
+    expr.patternMap(:,:,1) = ones(3,3) ;
+    expr.patternMap(:,:,2) = 2*ones(3,3) ;
+    expr.patternMap(:,:,3) = 3*ones(3,3) ;
+
+    for i1=1:3
+        for i2=1:3
+            disp(['Attention For Choice: ', attn_modes{i1},', Learning: ', attn_modes{i2}])
+            sessdata = struct();
+            sesdata.flagUnr               = 1 ;
+            sesdata.sig                   = 0.2 ;
+            sesdata.input                 = input ;
+            sesdata.expr                  = expr ;
+            sesdata.results               = results ;
+
+            % F
+            sesdata.flag_couple = 0 ;
+            sesdata.flag_updatesim = 0 ;
+            sesdata.flagSepAttn = 1;
+            sesdata.attn_mode_choice = attn_modes{i1};
+            sesdata.attn_mode_learn = attn_modes{i2};
+            sesdata.NparamBasic = 3 ;
+            if sesdata.flagUnr==1
+                sesdata.Nalpha = 2 ;
+            else
+                sesdata.Nalpha = 1 ;
+            end
+            sesdata.Nbeta = 2;
+
+            [lls, vs, attns] = fMLchoiceLL_RL2ftdecayattn(zpar(i1, i2, cnt_sbj,:), sesdata);
+            LL_ft(i1, i2, cnt_sbj, :)= lls;
+            Vs_ft(i1, i2, cnt_sbj, :, :) = vs;
+            As_ft(i1, i2, cnt_sbj, :, :, :) = attns;
+
+
+            % F+O
+            sesdata.flag_couple = 0 ;
+            sesdata.NparamBasic = 4 ;
+            sesdata.flatSepAttn = 1;
+            if sesdata.flagUnr==1
+                sesdata.Nalpha = 4 ;
+            else
+                sesdata.Nalpha = 2 ;
+            end
+            sesdata.Nbeta = 2;
+            sesdata.attn_mode_choice = attn_modes{i1};
+            sesdata.attn_mode_learn = attn_modes{i2};
+
+            [lls, vs, attns] = fMLchoiceLL_RL2ftobjdecayattn(ypar(i1, i2, cnt_sbj,:), sesdata);
+            LL_ftobj(i1, i2, cnt_sbj, :)= lls;
+            Vs_ftobj(i1, i2, cnt_sbj, :, :) = vs;
+            As_ftobj(i1, i2, cnt_sbj, :, :, :) = attns;
+
+
+            % F+C
+            sesdata.flag_couple = 0 ;
+            NparamBasic = 4 ;
+            sesdata.flatSepAttn = 1;
+            if sesdata.flagUnr==1
+                sesdata.Nalpha = 4 ;
+            else
+                sesdata.Nalpha = 2 ;
+            end
+            sesdata.Nbeta = 4;
+            sesdata.attn_mode_choice = attn_modes{i1};
+            sesdata.attn_mode_learn = attn_modes{i2};
+
+            [lls, vs, attns] = fMLchoiceLL_RL2conjdecayattn(xpar(i1, i2, cnt_sbj,:), sesdata);
+            LL_ftconj(i1, i2, cnt_sbj, :)= lls;
+            Vs_ftconj(i1, i2, cnt_sbj, :, :) = vs;
+            As_ftconj(i1, i2, cnt_sbj, :, :, :) = attns;
+        end
+    end
+end
+
+%% Plot Attention
+
+cmap = lines(256);
+wSize = 20;
+
+figure;
+subplot(121)
+pm1 = plot(movmean(squeeze(mean(As_ft(1,1,:,1,:,:),3))', 20));
+title('Feature Attention Weight For Choice');
+xlim([0 433])
+subplot(122)
+pm2 = plot(movmean(squeeze(mean(As_ft(1,1,:,2,:,:),3))', 20));
+title('Feature Attention Weight For Learning');
+xlim([0 433])
+for i=1:3
+    xxs = [1:432, 432:-1:1];
+    yys = [movmean(squeeze(mean(As_ft(1,1,:,1,i,:),3))', 20)+movmean(squeeze(std(As_ft(1,1,:,1,i,:),1,3))', 20)/sqrt(68), ...
+           fliplr(movmean(squeeze(mean(As_ft(1,1,:,1,i,:),3))', 20)-movmean(squeeze(std(As_ft(1,1,:,1,i,:),1,3))', 20)/sqrt(68))];
+    subplot(121)
+    p1=patch(xxs, yys, cmap(i,:));hold on;
+    p1.FaceAlpha = 0.2;
+    p1.EdgeAlpha = 0.;
+    subplot(122)
+    yys = [movmean(squeeze(mean(As_ft(1,1,:,2,i,:),3))', 20)+movmean(squeeze(std(As_ft(1,1,:,2,i,:),1,3))', 20)/sqrt(68), ...
+           fliplr(movmean(squeeze(mean(As_ft(1,1,:,2,i,:),3))', 20)-movmean(squeeze(std(As_ft(1,1,:,2,i,:),1,3))', 20)/sqrt(68))];
+    p2=patch(xxs, yys, cmap(i,:));hold on;
+    p2.FaceAlpha = 0.2;
+    p2.EdgeAlpha = 0.;
+end
+legend(pm1, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+legend(pm2, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+
+figure;
+subplot(121)
+pm1 = plot(movmean(squeeze(mean(As_ftobj(1,1,:,1,:,:),3))', 20));
+title('Feature Attention Weight For Choice');
+xlim([0 433])
+subplot(122)
+pm2 = plot(movmean(squeeze(mean(As_ftobj(1,1,:,2,:,:),3))', 20));
+title('Feature Attention Weight For Learning');
+xlim([0 433])
+for i=1:3
+    xxs = [1:432, 432:-1:1];
+    yys = [movmean(squeeze(mean(As_ftobj(1,1,:,1,i,:),3))', 20)+movmean(squeeze(std(As_ftobj(1,1,:,1,i,:),1,3))', 20)/sqrt(68), ...
+           fliplr(movmean(squeeze(mean(As_ftobj(1,1,:,1,i,:),3))', 20)-movmean(squeeze(std(As_ftobj(1,1,:,1,i,:),1,3))', 20)/sqrt(68))];
+    subplot(121)
+    p1=patch(xxs, yys, cmap(i,:));hold on;
+    p1.FaceAlpha = 0.2;
+    p1.EdgeAlpha = 0.;
+    subplot(122)
+    yys = [movmean(squeeze(mean(As_ftobj(1,1,:,2,i,:),3))', 20)+movmean(squeeze(std(As_ftobj(1,1,:,2,i,:),1,3))', 20)/sqrt(68), ...
+           fliplr(movmean(squeeze(mean(As_ftobj(1,1,:,2,i,:),3))', 20)-movmean(squeeze(std(As_ftobj(1,1,:,2,i,:),1,3))', 20)/sqrt(68))];
+    p2=patch(xxs, yys, cmap(i,:));hold on;
+    p2.FaceAlpha = 0.2;
+    p2.EdgeAlpha = 0.;
+end
+legend(pm1, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+legend(pm2, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+
+figure;
+subplot(121)
+pm1 = plot(movmean(squeeze(mean(As_ftconj(1,1,:,1,:,:),3))', 20));
+title('Feature+Conjunction Attention Weight For Choice');
+xlim([0 433])
+subplot(122)
+pm2 = plot(movmean(squeeze(mean(As_ftconj(1,1,:,2,:,:),3))', 20));
+title('Feature+Conjunction Attention Weight For Learning');
+for i=1:6
+    xxs = [1:432, 432:-1:1];
+    subplot(121)
+    yys = [movmean(squeeze(mean(As_ftconj(1,1,:,1,i,:),3))', 20)+movmean(squeeze(std(As_ftconj(1,1,:,1,i,:),1,3))', 20)/sqrt(68), ...
+           fliplr(movmean(squeeze(mean(As_ftconj(1,1,:,1,i,:),3))', 20)-movmean(squeeze(std(As_ftconj(1,1,:,1,i,:),1,3))', 20)/sqrt(68))];
+    subplot(121)
+    p1=patch(xxs, yys, cmap(i,:));hold on;
+    p1.FaceAlpha = 0.2;
+    p1.EdgeAlpha = 0.;
+    subplot(122)
+    yys = [movmean(squeeze(mean(As_ftconj(1,1,:,2,i,:),3))', 20)+movmean(squeeze(std(As_ftconj(1,1,:,2,i,:),1,3))', 20)/sqrt(68), ...
+           fliplr(movmean(squeeze(mean(As_ftconj(1,1,:,2,i,:),3))', 20)-movmean(squeeze(std(As_ftconj(1,1,:,2,i,:),1,3))', 20)/sqrt(68))];
+    p2=patch(xxs, yys, cmap(i,:));hold on;
+    p2.FaceAlpha = 0.2;
+    p2.EdgeAlpha = 0.;
+end
+legend(pm1, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'shapeXcolor'}, 'Location', 'southwest');
+legend(pm2, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'shapeXcolor'}, 'Location', 'southwest');
+title('Feature and Conjunction Attention Weight')
+
+%% Get Performance
+ntrialPerf       = [33:432] ;
+for cnt_sbj=1:68
+    disp(['Subject: ', num2str(cnt_sbj)])
+    inputname   = ['./PRLexp/inputs/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
+    resultsname = ['./PRLexp/SubjectData/PRL_', lower(subjects{cnt_sbj}) , '.mat'] ;
+%     load(inputname)
+    results_struct = load(resultsname);
+    rew{cnt_sbj}                  = results_struct.results.reward ;
+    [~, idxMax]                   = max(expr.prob{1}(input.inputTarget)) ;
+    choiceRew{cnt_sbj}            = results_struct.results.choice' == idxMax ;
+    perfMean(cnt_sbj)             = nanmean(choiceRew{cnt_sbj}(ntrialPerf)) ;
+end
+
+%% Get entropic measures
+ce1 = squeeze(cross_entropy(squeeze(As_ft(1,1,:,1,:,:)), repmat([0 1 0], 68, 1, 432)));
+ce2 = squeeze(cross_entropy(squeeze(As_ft(1,1,:,2,:,:)), repmat([0 1 0], 68, 1, 432)));
+ent1 = squeeze(entropy(squeeze(As_ft(1,1,:,1,:,:))));
+ent2 = squeeze(entropy(squeeze(As_ft(1,1,:,2,:,:))));
+
+figure
+subplot(121)
+plot(mean(ce1, 1));
+hold on;
+plot(mean(ce2, 1));
+title('Cross Entropy')
+legend({"Choice", 'Learning'})
+subplot(122)
+plot(mean(ent1, 1));
+hold on;
+plot(mean(ent2, 1));
+title('Entropy')
+legend({"Choice", 'Learning'})
+sgtitle('Feature Model')
+
+
+ce1 = squeeze(cross_entropy(squeeze(As_ftobj(1,1,:,1,:,:)), repmat([0 1 0], 68, 1, 432)));
+ce2 = squeeze(cross_entropy(squeeze(As_ftobj(1,1,:,2,:,:)), repmat([0 1 0], 68, 1, 432)));
+ent1 = squeeze(entropy(squeeze(As_ftobj(1,1,:,1,:,:))));
+ent2 = squeeze(entropy(squeeze(As_ftobj(1,1,:,2,:,:))));
+
+figure
+subplot(121)
+plot(mean(ce1, 1));
+hold on;
+plot(mean(ce2, 1));
+title('Cross Entropy')
+legend({"Choice", 'Learning'})
+subplot(122)
+plot(mean(ent1, 1));
+hold on;
+plot(mean(ent2, 1));
+title('Entropy')
+legend({"Choice", 'Learning'})
+sgtitle('Feature+Obj Model')
+
+ce1ft = squeeze(cross_entropy(squeeze(As_ftconj(1,1,:,1,1:3,:)), repmat([0 1 0], 68, 1, 432)));
+ce1conj = squeeze(cross_entropy(squeeze(As_ftconj(1,1,:,1,4:6,:)), repmat([1 0 0], 68, 1, 432)));
+ce2ft = squeeze(cross_entropy(squeeze(As_ftconj(1,1,:,2,1:3,:)), repmat([0 1 0], 68, 1, 432)));
+ce2conj = squeeze(cross_entropy(squeeze(As_ftconj(1,1,:,2,4:6,:)), repmat([1 0 0], 68, 1, 432)));
+ent1ft = squeeze(entropy(squeeze(As_ftconj(1,1,:,1,1:3,:))));
+ent1conj = squeeze(entropy(squeeze(As_ftconj(1,1,:,1,4:6,:))));
+ent2ft = squeeze(entropy(squeeze(As_ftconj(1,1,:,2,1:3,:))));
+ent2conj = squeeze(entropy(squeeze(As_ftconj(1,1,:,2,4:6,:))));
+
+figure
+subplot(121)
+plot(mean(ce1ft, 1));
+hold on;
+plot(mean(ce1conj, 1));
+plot(mean(ce2ft, 1));
+plot(mean(ce2conj, 1));
+title('Cross Entropy')
+legend({"Choice, Feature", "Choice, Conj", 'Learning, Feature', "Learning, Conj"})
+subplot(122)
+plot(mean(ent1ft, 1));
+hold on;
+plot(mean(ent1conj, 1));
+plot(mean(ent2ft, 1));
+plot(mean(ent2conj, 1));
+title('Entropy')
+legend({"Choice, Feature", "Choice, Conj", 'Learning, Feature', "Learning, Conj"})
+sgtitle('Feature+Conj Model')
