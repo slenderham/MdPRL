@@ -14,7 +14,7 @@ NparamBasic = 3 ;
 BiasL   = xpar(1) ;
 mag     = xpar(2) ;
 
-xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
+% xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
 decay = xpar(3) ;
 alpha_rew = xpar([NparamBasic+1]) ;
 if sesdata.flagUnr==1

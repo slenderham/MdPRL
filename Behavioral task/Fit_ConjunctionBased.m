@@ -6,12 +6,16 @@ rng('shuffle')
 randstate = clock ;
 
 %%
-
 subjects = {...
-    'AA', 'AB', 'AC', 'AE', 'AF', 'AG', ...
-    'AH', 'AI', 'AJ', 'AL', 'AM', 'AN', ...
-    'AO', 'AQ', 'AR', 'AS', 'AT', 'AV', ...
-    'AW', 'AX', 'AY'} ;
+    'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', ...
+    'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', ...
+    'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', ...
+    'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', ...
+    'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', ...
+    'BM', 'BN', 'BO', 'BP', 'BQ', 'BR', 'CC', 'DD', ...
+    'EE', 'FF', 'GG', 'HH', 'II', 'JJ', 'KK', 'LL', ...
+    'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT', ...
+    'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
 
 nrep        = 2 ; 
 randstate   = clock ;
@@ -58,46 +62,46 @@ for cnt_sbj = 1:length(subjects)
             disp(['Subject: ', num2str(cnt_sbj),', Repeat: ', num2str(cnt_rep)])
 
             %% RL2 conjunction coupled
-            sesdata.flag_updatesim = 0 ;
-            sesdata.flag_couple = 1 ;
-            NparamBasic = 3 ;
-            if sesdata.flagUnr==1
-                sesdata.Nalpha = 4 ;
-            else
-                sesdata.Nalpha = 2 ;
-            end
-            ipar= 0.1*[rand(1,NparamBasic+sesdata.Nalpha)]  ;
-            [xpar fval exitflag output] = fminsearch(@fMLchoicefit_RL2conj, ipar, op, sesdata) ;
-            if fval <= fvalminRL2_couple
-                xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
-                fvalminRL2_couple = fval ;
-                mlparRL2conj_couple{cntD, cnt_sbj}(1:NparamBasic+sesdata.Nalpha)= (xpar(1:NparamBasic+sesdata.Nalpha)) ;
-                mlparRL2conj_couple{cntD, cnt_sbj}(100) = fval ;
-                mlparRL2conj_couple{cntD, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
-                mlparRL2conj_couple{cntD, cnt_sbj}(102) = output.iterations;
-                mlparRL2conj_couple{cntD, cnt_sbj}(103) = exitflag ;
-            end
+%             sesdata.flag_updatesim = 0 ;
+%             sesdata.flag_couple = 1 ;
+%             NparamBasic = 3 ;
+%             if sesdata.flagUnr==1
+%                 sesdata.Nalpha = 4 ;
+%             else
+%                 sesdata.Nalpha = 2 ;
+%             end
+%             ipar= 0.1*[rand(1,NparamBasic+sesdata.Nalpha)]  ;
+%             [xpar fval exitflag output] = fminsearch(@fMLchoicefit_RL2conj, ipar, op, sesdata) ;
+%             if fval <= fvalminRL2_couple
+%                 xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
+%                 fvalminRL2_couple = fval ;
+%                 mlparRL2conj_couple{cntD, cnt_sbj}(1:NparamBasic+sesdata.Nalpha)= (xpar(1:NparamBasic+sesdata.Nalpha)) ;
+%                 mlparRL2conj_couple{cntD, cnt_sbj}(100) = fval ;
+%                 mlparRL2conj_couple{cntD, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
+%                 mlparRL2conj_couple{cntD, cnt_sbj}(102) = output.iterations;
+%                 mlparRL2conj_couple{cntD, cnt_sbj}(103) = exitflag ;
+%             end
 
             %% RL2 conjunction uncoupled
-            sesdata.flag_updatesim = 0 ;
-            sesdata.flag_couple = 0 ;
-            NparamBasic = 3 ;
-            if sesdata.flagUnr==1
-                sesdata.Nalpha = 4 ;
-            else
-                sesdata.Nalpha = 2 ;
-            end
-            ipar= 0.1*[rand(1,NparamBasic+sesdata.Nalpha)]  ;
-            [xpar fval exitflag output] = fminsearch(@fMLchoicefit_RL2conj, ipar, op, sesdata) ;
-            if fval <= fvalminRL2_uncouple
-                xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
-                fvalminRL2_uncouple = fval ;
-                mlparRL2conj_uncouple{cntD, cnt_sbj}(1:NparamBasic+sesdata.Nalpha)= (xpar(1:NparamBasic+sesdata.Nalpha)) ;
-                mlparRL2conj_uncouple{cntD, cnt_sbj}(100) = fval ;
-                mlparRL2conj_uncouple{cntD, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
-                mlparRL2conj_uncouple{cntD, cnt_sbj}(102) = output.iterations;
-                mlparRL2conj_uncouple{cntD, cnt_sbj}(103) = exitflag ;
-            end
+%             sesdata.flag_updatesim = 0 ;
+%             sesdata.flag_couple = 0 ;
+%             NparamBasic = 3 ;
+%             if sesdata.flagUnr==1
+%                 sesdata.Nalpha = 4 ;
+%             else
+%                 sesdata.Nalpha = 2 ;
+%             end
+%             ipar= 0.1*[rand(1,NparamBasic+sesdata.Nalpha)]  ;
+%             [xpar fval exitflag output] = fminsearch(@fMLchoicefit_RL2conj, ipar, op, sesdata) ;
+%             if fval <= fvalminRL2_uncouple
+%                 xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic+1:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
+%                 fvalminRL2_uncouple = fval ;
+%                 mlparRL2conj_uncouple{cntD, cnt_sbj}(1:NparamBasic+sesdata.Nalpha)= (xpar(1:NparamBasic+sesdata.Nalpha)) ;
+%                 mlparRL2conj_uncouple{cntD, cnt_sbj}(100) = fval ;
+%                 mlparRL2conj_uncouple{cntD, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
+%                 mlparRL2conj_uncouple{cntD, cnt_sbj}(102) = output.iterations;
+%                 mlparRL2conj_uncouple{cntD, cnt_sbj}(103) = exitflag ;
+%             end
 
             %% RL2 conjunction decay
             sesdata.flag_couple = 0 ;
@@ -107,10 +111,12 @@ for cnt_sbj = 1:length(subjects)
             else
                 sesdata.Nalpha = 2 ;
             end
-            ipar= 0.1*[rand(1,NparamBasic+sesdata.Nalpha)]  ;
-            [xpar fval exitflag output] = fminsearch(@fMLchoicefit_RL2conjdecay, ipar, op, sesdata) ;
+            ipar= rand(1,NparamBasic+sesdata.Nalpha);
+            ll = @(x)fMLchoicefit_RL2conjdecay(x, sesdata);
+            lbs = [-20, 0,  0,  0, 0, 0, 0, 0, 0];
+            ubs = [ 20, 20, 20, 1, 1, 1, 1, 1, 1];
+            [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
             if fval <= fvalminRL2_decay
-                xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
                 fvalminRL2_decay = fval ;
                 mlparRL2conj_decay{cntD, cnt_sbj}(1:NparamBasic+sesdata.Nalpha)= (xpar(1:NparamBasic+sesdata.Nalpha)) ;
                 mlparRL2conj_decay{cntD, cnt_sbj}(100) = fval ;

@@ -21,7 +21,7 @@ subjects = {...
 
 % subjects = {'AA'};
 
-attn_modes = {'diff', 'sum', 'max'}; %'constant' TODO: constant
+attn_modes = {'constant', 'diff', 'sum', 'max'}; %'constant' TODO: constant
 len_i_1 = length(attn_modes);
 len_i_2 = length(attn_modes);
 
@@ -62,9 +62,10 @@ parfor cnt_sbj = 1:length(subjects)
     for cnt_rep  = 1:nrep
 %         disp(['----------------------------------------------'])
         disp(['Subject: ', num2str(cnt_sbj),', Repeat: ', num2str(cnt_rep)])
+
         for i1 = 1:len_i_1
             for i2 = 1:len_i_2
-%                 disp(['Attention For Choice: ', attn_modes{i1},', Learning: ', attn_modes{i2}])
+                disp(['Attention For Choice: ', attn_modes{i1},', Learning: ', attn_modes{i2}])
                 sesdata = struct();
                 sesdata.sig     = 1 ;
                 sesdata.input   = input ;
@@ -93,11 +94,11 @@ parfor cnt_sbj = 1:length(subjects)
                 [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
                 if fval <= fvalminRL2_ft_attn(i1, i2)
                     fvalminRL2_ft_attn(i1, i2) = fval ;
-                    mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
-                    mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(100) = fval ;
-                    mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
-                    mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(102) = output.iterations;
-                    mlparRL2_ft_decay_attn{i1, i2, cnt_sbj}(103) = exitflag ;
+                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
+                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}(100) = fval ;
+                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
+                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}(102) = output.iterations;
+                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}(103) = exitflag ;
                 end
 
                 %% RL2 Feature+Obj decay
