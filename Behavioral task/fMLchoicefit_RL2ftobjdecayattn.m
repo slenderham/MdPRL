@@ -10,7 +10,6 @@ function loglikehood = fMLchoicefit_RL2ftobjdecayattn(xpar, sesdata)
 
 loglikehood = 0 ;
 NparamBasic = 4 ;
-xpar(2:3)= abs(xpar(2:3)) ;
 
 BiasL = xpar(1) ;
 magF  = xpar(2) ;
@@ -81,9 +80,9 @@ for cnt_trial=1:ntrials
                         sesdata.attn_mode_choice, beta_attn_choice);
 
     pChoiceR = 1./(1+exp(-magF*(attn_w_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
-                             + attn_w_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
-                             + attn_w_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
-                         -magC*(vo(inputObj(2))-vo(inputObj(1)))...
+                              + attn_w_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
+                              + attn_w_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
+                         -magC*(vo(inputObj(2,cnt_trial))-vo(inputObj(1,cnt_trial)))...
                          +BiasL)) ;
     
     pChoiceL = 1-pChoiceR ;
@@ -271,6 +270,6 @@ function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v(idxes1), v(idxes2)));
     else
-        attn = ones(size(idxes1));
+        attn = ones(size(idxes1))./size(idxes1, 2);
     end
 end

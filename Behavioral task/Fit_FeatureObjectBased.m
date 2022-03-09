@@ -18,20 +18,23 @@ subjects = {...
     'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT', ...
     'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
 
-nrep        = 2 ; 
+nrep        = 5 ; 
 randstate   = clock ;
 
-op          = optimset;
-sesdata.flagUnr = 1 ;
+op          = optimset('Display', 'off');
 
 %%
+poolobj = parpool('local', 16);
+parfor cnt_sbj = 1:length(subjects)
+    inputname   = ['./PRLexp/inputs/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
+    resultsname = ['./PRLexp/SubjectData/PRL_', lower(subjects{cnt_sbj}) , '.mat'] ;
 
-for cnt_sbj = 1:length(subjects)
-    inputname   = ['./PRLexp/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
-    resultsname = ['./PRLexp/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
-    
-    load(inputname)
-    load(resultsname)
+    inputs_struct = load(inputname);
+    results_struct = load(resultsname);
+
+    expr = results_struct.expr;
+    input = inputs_struct.input;
+    results = results_struct.results;
 
     expr.shapeMap = repmat([1 2 3 ;
                     1 2 3 ;
@@ -46,12 +49,13 @@ for cnt_sbj = 1:length(subjects)
     expr.patternMap(:,:,3) = 3*ones(3,3) ;
     
     %%
-    
+    sesdata = struct();
     sesdata.sig     = 0.2 ;
     sesdata.input   = input ;
     sesdata.expr    = expr ;
     sesdata.results = results ;
     sesdata.NtrialsShort = expr.NtrialsShort ;
+    sesdata.flagUnr = 1 ;
 
     for cntD = 1:3
         fvalminRL2_couple       = length(sesdata.results.reward) ;
@@ -60,7 +64,7 @@ for cnt_sbj = 1:length(subjects)
         sesdata.cntD            = cntD ;
         
         for cnt_rep  = 1:nrep
-            disp(['----------------------------------------------'])
+%             disp(['----------------------------------------------'])
             disp(['Subject: ', num2str(cnt_sbj),', Repeat: ', num2str(cnt_rep)])
 
             %% RL2 coupled
@@ -106,6 +110,7 @@ for cnt_sbj = 1:length(subjects)
 %             end
 
             %% RL2 decay
+            sesdata.flag_updatesim = 0 ;
             sesdata.flag_couple = 0 ;
             NparamBasic = 4 ;
             if sesdata.flagUnr==1
@@ -115,8 +120,8 @@ for cnt_sbj = 1:length(subjects)
             end
             ipar= rand(1,NparamBasic+sesdata.Nalpha);
             ll = @(x)fMLchoicefit_RL2ftobjdecay(x, sesdata);
-            lbs = [-20, 0,  0,  0, 0, 0, 0, 0];
-            ubs = [ 20, 20, 20, 1, 1, 1, 1, 1];
+            lbs = [-500,   0,   0, 0, 0, 0, 0, 0];
+            ubs = [ 500, 500, 500, 1, 1, 1, 1, 1];
             [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
             if fval <= fvalminRL2_decay
 %                 xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;

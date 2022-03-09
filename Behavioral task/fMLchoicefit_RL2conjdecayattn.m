@@ -15,9 +15,8 @@ NparamBasic = 4 ;
 BiasL = xpar(1) ;
 magF  = xpar(2) ;
 magC  = xpar(3) ;
-
-% xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
 decay = xpar(4) ;
+
 alpha_rewColor      = xpar([NparamBasic+1]) ;
 alpha_rewShape      = xpar([NparamBasic+1]) ;
 alpha_rewPattern    = xpar([NparamBasic+1]) ;
@@ -58,8 +57,8 @@ flag_updatesim  = sesdata.flag_updatesim ;
 ntrials         = length(choicetrials) ;
 inputRewards    = sesdata.input.inputReward ;
 
-vf              = (0.5*ones(9,1)) ;
-vc              = (0.5*ones(27,1)) ;
+vf              = (0.5*ones(9,1)) ; % 1-3 shape, 4-6 color, 7-9 pattern
+vc              = (0.5*ones(27,1)) ; % 1-9 pXs, 10-18 pXc, 19-27 sXc
 
 for cnt_trial=1:ntrials
 
@@ -76,10 +75,10 @@ for cnt_trial=1:ntrials
     idx_pattern(1)  = patternMap(inputTarget(1, cnt_trial))+6 ;
     idx_patternshape(1) = (idx_pattern(1)-7)*3 + idx_shape(1) ; % 1-9
     idx_patternshape(2) = (idx_pattern(2)-7)*3 + idx_shape(2) ; 
-    idx_patterncolor(1) = (idx_pattern(1)-7)*3 + (idx_color(1)-3)+9 ; % 10-18
-    idx_patterncolor(2) = (idx_pattern(2)-7)*3 + (idx_color(2)-3)+9 ;
-    idx_shapecolor(1) = (idx_shape(1)-1)*3 + (idx_color(1)-3)+18 ;
-    idx_shapecolor(2) = (idx_shape(2)-1)*3 + (idx_color(2)-3)+18 ; % 19-27
+    idx_patterncolor(1) = (idx_pattern(1)-7)*3 + (idx_color(1)-4)+10 ; % 10-18
+    idx_patterncolor(2) = (idx_pattern(2)-7)*3 + (idx_color(2)-4)+10 ;
+    idx_shapecolor(1) = (idx_shape(1)-1)*3 + (idx_color(1)-4)+19 ;
+    idx_shapecolor(2) = (idx_shape(2)-1)*3 + (idx_color(2)-4)+19 ; % 19-27
 
     attn_w_feat_choice = attention_weights(vf, ...
         [idx_shape(1), idx_color(1), idx_pattern(1)], ...
@@ -322,6 +321,6 @@ elseif strcmp(mode, 'sum')
 elseif strcmp(mode, 'max')
     attn = softmax(beta*max(v(idxes1), v(idxes2)));
 else
-    attn = ones(size(idxes1))/ones(size(idxes1));
+    attn = ones(size(idxes1))./size(idxes1, 2);
 end
 end

@@ -63,26 +63,27 @@ for cnt_trial=1:ntrials
     idx_color(1)    = colorMap(inputTarget(1, cnt_trial)) ;
     idx_pattern(1)  = patternMap(inputTarget(1, cnt_trial)) ;
 
+    vp = nan*zeros(3, 3, 3);
     if cntD==1
         inputConj(1, cnt_trial) = (idx_pattern(1)-1)*3 + idx_shape(1) ;
         inputConj(2, cnt_trial) = (idx_pattern(2)-1)*3 + idx_shape(2) ;
-        vp(1,:,:)       = magF*vf(1) + magC*vc ;
-        vp(2,:,:)       = magF*vf(2) + magC*vc ;
-        vp(3,:,:)       = magF*vf(3) + magC*vc ;
+        vp(1,:,:)       = magF*vf(1) + magC*reshape(vc, 3, 3);
+        vp(2,:,:)       = magF*vf(2) + magC*reshape(vc, 3, 3);
+        vp(3,:,:)       = magF*vf(3) + magC*reshape(vc, 3, 3);
         pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
     elseif cntD==2
         inputConj(1, cnt_trial) = (idx_pattern(1)-1)*3 + idx_color(1) ;
         inputConj(2, cnt_trial) = (idx_pattern(2)-1)*3 + idx_color(2) ;
-        vp(:,1,:)       = magF*vf(1) + magC*vc ;
-        vp(:,2,:)       = magF*vf(2) + magC*vc ;
-        vp(:,3,:)       = magF*vf(3) + magC*vc ;
+        vp(:,1,:)       = magF*vf(1) + magC*reshape(vc, 3, 3);
+        vp(:,2,:)       = magF*vf(2) + magC*reshape(vc, 3, 3);
+        vp(:,3,:)       = magF*vf(3) + magC*reshape(vc, 3, 3);
         pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
     elseif cntD==3
         inputConj(1, cnt_trial) = (idx_shape(1)-1)*3 + idx_color(1) ;
         inputConj(2, cnt_trial) = (idx_shape(2)-1)*3 + idx_color(2) ;
-        vp(:,:,1)       = magF*vf(1) + magC*vc ;
-        vp(:,:,2)       = magF*vf(2) + magC*vc ;
-        vp(:,:,3)       = magF*vf(3) + magC*vc ;
+        vp(:,:,1)       = magF*vf(1) + magC*reshape(vc, 3, 3);
+        vp(:,:,2)       = magF*vf(2) + magC*reshape(vc, 3, 3);
+        vp(:,:,3)       = magF*vf(3) + magC*reshape(vc, 3, 3);
         pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
     end
     

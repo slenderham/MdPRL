@@ -195,12 +195,12 @@ for cnt_trial=1:ntrials
         idxW = idx_color(3-choice) ;
         vf   = decayV(vf, 3+find(3+[1:3]~=idx_color(choice)), decay) ;
         [idxW, idxC] = idxcoupleF(idxW, idxC, correct, 0, flag_updatesim) ;
-        vf           = update(vf, idxC, idxW, alpha_rewColor*attn_w_feat_learn(1)) ;
+        vf           = update(vf, idxC, idxW, alpha_rewColor*attn_w_feat_learn(2)) ;
         idxC = idx_shape(choice) ;
         idxW = idx_shape(3-choice) ;
         vf   = decayV(vf, find([1:3]~=idx_shape(choice)), decay) ;
         [idxW, idxC] = idxcoupleF(idxW, idxC, correct, 0, flag_updatesim) ;
-        vf           = update(vf, idxC, idxW, alpha_rewShape*attn_w_feat_learn(2)) ;
+        vf           = update(vf, idxC, idxW, alpha_rewShape*attn_w_feat_learn(1)) ;
         idxC = idx_pattern(choice) ;
         idxW = idx_pattern(3-choice) ;
         vf   = decayV(vf, 6+find(6+[1:3]~=idx_pattern(choice)), decay) ;
@@ -211,12 +211,12 @@ for cnt_trial=1:ntrials
         idxC = idx_color(3-choice) ;
         vf   = decayV(vf, 3+find(3+[1:3]~=idx_color(choice)), decay) ;
         [idxW, idxC] = idxcoupleF(idxW, idxC, correct, 0, flag_updatesim) ;
-        vf           = update(vf, idxC, idxW, alpha_unrColor*attn_w_feat_learn(1)) ;
+        vf           = update(vf, idxC, idxW, alpha_unrColor*attn_w_feat_learn(2)) ;
         idxW = idx_shape(choice) ;
         idxC = idx_shape(3-choice) ;
         vf   = decayV(vf, find([1:3]~=idx_shape(choice)), decay) ;
         [idxW, idxC] = idxcoupleF(idxW, idxC, correct, 0, flag_updatesim) ;
-        vf           = update(vf, idxC, idxW, alpha_unrShape*attn_w_feat_learn(2)) ;
+        vf           = update(vf, idxC, idxW, alpha_unrShape*attn_w_feat_learn(1)) ;
         idxW = idx_pattern(choice) ;
         idxC = idx_pattern(3-choice) ;
         vf   = decayV(vf, 6+find(6+[1:3]~=idx_pattern(choice)), decay) ;
@@ -228,11 +228,11 @@ for cnt_trial=1:ntrials
             idxC = idx_color(choiceunCh) ;
             idxW = idx_color(3-choiceunCh) ;
             [idxW, idxC] = idxcoupleF(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            vf = update(vf, idxC, idxW, alpha_rewColor*attn_w_feat_learn(1)) ;
+            vf = update(vf, idxC, idxW, alpha_rewColor*attn_w_feat_learn(2)) ;
             idxC = idx_shape(choiceunCh) ;
             idxW = idx_shape(3-choiceunCh) ;
             [idxW, idxC] = idxcoupleF(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            vf = update(vf, idxC, idxW, alpha_rewShape*attn_w_feat_learn(2)) ;
+            vf = update(vf, idxC, idxW, alpha_rewShape*attn_w_feat_learn(1)) ;
             idxC = idx_pattern(choiceunCh) ;
             idxW = idx_pattern(3-choiceunCh) ;
             [idxW, idxC] = idxcoupleF(idxW, idxC, correctunCh, 0, flag_updatesim) ;
@@ -241,11 +241,11 @@ for cnt_trial=1:ntrials
             idxW = idx_color(choiceunCh) ;
             idxC = idx_color(3-choiceunCh) ;
             [idxW, idxC] = idxcoupleF(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            vf = update(vf, idxC, idxW, alpha_unrColor*attn_w_feat_learn(1)) ;
+            vf = update(vf, idxC, idxW, alpha_unrColor*attn_w_feat_learn(2)) ;
             idxW = idx_shape(choiceunCh) ;
             idxC = idx_shape(3-choiceunCh) ;
             [idxW, idxC] = idxcoupleF(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            vf = update(vf, idxC, idxW, alpha_unrShape*attn_w_feat_learn(2)) ;
+            vf = update(vf, idxC, idxW, alpha_unrShape*attn_w_feat_learn(1)) ;
             idxW = idx_pattern(choiceunCh) ;
             idxC = idx_pattern(3-choiceunCh) ;
             [idxW, idxC] = idxcoupleF(idxW, idxC, correctunCh, 0, flag_updatesim) ;
@@ -325,6 +325,6 @@ elseif strcmp(mode, 'sum')
 elseif strcmp(mode, 'max')
     attn = softmax(beta*max(v(idxes1), v(idxes2)));
 else
-    attn = ones(size(idxes1))/ones(size(idxes1));
+    attn = ones(size(idxes1))./size(idxes1, 2);
 end
 end

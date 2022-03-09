@@ -65,20 +65,24 @@ for cnt_trial=1:ntrials
 
     inputObj(1, cnt_trial) = inputTarget(1, cnt_trial) ;
     inputObj(2, cnt_trial) = inputTarget(2, cnt_trial) ;
+    vp = zeros(3, 3, 3)*nan;
     if cntD==1
-        vp(1,:,:)       = magF*vf(1) + magC*vo ;
-        vp(2,:,:)       = magF*vf(2) + magC*vo ;
-        vp(3,:,:)       = magF*vf(3) + magC*vo ;
+        vp(1,:,:)       = magF*vf(1);
+        vp(2,:,:)       = magF*vf(2);
+        vp(3,:,:)       = magF*vf(3);
+        vp = vp(:)+magC*vo(:);
         pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
     elseif cntD==2
-        vp(:,1,:)       = magF*vf(1) + magC*vo ;
-        vp(:,2,:)       = magF*vf(2) + magC*vo ;
-        vp(:,3,:)       = magF*vf(3) + magC*vo ;
+        vp(:,1,:)       = magF*vf(1);
+        vp(:,2,:)       = magF*vf(2);
+        vp(:,3,:)       = magF*vf(3);
+        vp = vp(:)+magC*vo(:);
         pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
     elseif cntD==3
-        vp(:,:,1)       = magF*vf(1) + magC*vo ;
-        vp(:,:,2)       = magF*vf(2) + magC*vo ;
-        vp(:,:,3)       = magF*vf(3) + magC*vo ;
+        vp(:,:,1)       = magF*vf(1);
+        vp(:,:,2)       = magF*vf(2);
+        vp(:,:,3)       = magF*vf(3);
+        vp = vp(:)+magC*vo(:);
         pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
     end
     
@@ -95,14 +99,14 @@ for cnt_trial=1:ntrials
     if correct
         idxC = inputObj(choice, cnt_trial) ;
         idxW = inputObj(3-choice, cnt_trial) ;
-        vo = decayV(vo, find([1:9]~=inputObj(choice, cnt_trial)), decay) ;
+        vo = decayV(vo, find([1:27]~=inputObj(choice, cnt_trial)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0) ;
         vo = update(vo, idxC, idxW, alpha_rew) ;
     else
         idxC = inputObj(3-choice, cnt_trial) ;
         idxW = inputObj(choice, cnt_trial) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0) ;
-        vo = decayV(vo, find([1:9]~=inputObj(choice, cnt_trial)), decay) ;
+        vo = decayV(vo, find([1:27]~=inputObj(choice, cnt_trial)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0) ;
         vo = update(vo, idxC, idxW, alpha_unr) ;
     end

@@ -5,6 +5,8 @@ close all
 
 %%
 
+addpath("./files")
+
 load('./files/RPL2Analysisv3_5_FeatureBased') ;
 obj              = load('./files/RPL2Analysisv3_5_ObjectBased') ;
 conj             = load('./files/RPL2Analysisv3_5_ConjunctionBased') ;
@@ -13,28 +15,29 @@ test             = str2func('signrank') ;
 cntDfit          = 1 ;
 Nrep             = 10 ;
 
-ntrialPerf       = [33:432] ;
+ntrialPerf       = 33:432;
 perfTH           = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
-idxSubject       = [1:length(subjects)] ;
+idxSubject       = 1:length(subjects);
 
-probeTrialsAll   = expr.trialProbe ;
 wSize            = 20 ; 
 
 %%
 
-RL2conj_couple      = cat(1,conj.mlparRL2conj_couple{cntDfit,idxSubject}) ;
-RL2conj_uncouple    = cat(1,conj.mlparRL2conj_uncouple{cntDfit,idxSubject}) ;
+% RL2conj_couple      = cat(1,conj.mlparRL2conj_couple{cntDfit,idxSubject}) ;
+% RL2conj_uncouple    = cat(1,conj.mlparRL2conj_uncouple{cntDfit,idxSubject}) ;
 RL2conj_decay       = cat(1,conj.mlparRL2conj_decay{cntDfit,idxSubject}) ;
 
-RL2ft_couple        = cat(1,mlparRL2_couple{idxSubject}) ;
-RL2ft_uncouple      = cat(1,mlparRL2_uncouple{idxSubject}) ;
+% RL2ft_couple        = cat(1,mlparRL2_couple{idxSubject}) ;
+% RL2ft_uncouple      = cat(1,mlparRL2_uncouple{idxSubject}) ;
 RL2ft_decay         = cat(1,mlparRL2_decay{idxSubject}) ;
 
-RL2obj_couple       = cat(1,obj.mlparRL2obj_couple{idxSubject}) ;
-RL2obj_uncouple     = cat(1,obj.mlparRL2obj_uncouple{idxSubject}) ;
+% RL2obj_couple       = cat(1,obj.mlparRL2obj_couple{idxSubject}) ;
+% RL2obj_uncouple     = cat(1,obj.mlparRL2obj_uncouple{idxSubject}) ;
 RL2obj_decay        = cat(1,obj.mlparRL2obj_decay{idxSubject}) ;
 
 %%
+
+probeTrialsAll = load(['./PRLexp/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
 
 for cnt_probe = 1:length(probeTrialsAll)
     pEstAll{cnt_probe}   = nan*ones(length(subjects),27) ;
@@ -187,6 +190,7 @@ end
 idxperf             = (perfMean>perfTH) ;
 idxperf(46)         = 0 ;
 idxperf(54)         = 0 ;
+idxperf(29) = 0;
 idxperf             = find(idxperf) ;
 
 %%
@@ -198,21 +202,24 @@ for cnt_sbj = 1:length(subjects)
         X            = XAll{cnt_probe}(idxS,end) ;
         Y1           = XAll{cnt_probe}(idxS,1) ;
         Y1           = [Y1 ones(size(Y1,1),1)] ;
-        Y2           = XAll{cnt_probe}(idxS,[1 2]) ;
+        Y2           = XAll{cnt_probe}(idxS,[1 2 3]) ;
         Y2           = [Y2 ones(size(Y2,1),1)] ;
         Y3           = XAll{cnt_probe}(idxS,3) ;
         Y3           = [Y3 ones(size(Y3,1),1)] ;
 
         b1(:,cnt_probe,cnt_sbj)     = regress(X,Y1) ;
+%         b1(1,cnt_probe,cnt_sbj) = b1(1,cnt_probe,cnt_sbj)*std(Y1(:, 1))/std(X);
         b2(:,cnt_probe,cnt_sbj)     = regress(X,Y2) ;
+%         b2(1:2,cnt_probe,cnt_sbj) = b2(1:2,cnt_probe,cnt_sbj).*std(Y2(:, 1:2), 1, 1)'./std(X);
         b3(:,cnt_probe,cnt_sbj)     = regress(X,Y3) ;
+%         b3(1,cnt_probe,cnt_sbj) = b3(1,cnt_probe,cnt_sbj)*std(Y3(:, 1))/std(X);
         yCalc1       = Y1*b1(:,cnt_probe,cnt_sbj) ;
         yCalc2       = Y2*b2(:,cnt_probe,cnt_sbj) ;
         yCalc3       = Y3*b3(:,cnt_probe,cnt_sbj) ;
         y            = X ;
-        RsqS(1, cnt_probe,cnt_sbj)   = 1 - nansum((y - yCalc1).^2)/nansum((y - nanmean(y)).^2) ;
-        RsqS(2, cnt_probe,cnt_sbj)   = 1 - nansum((y - yCalc2).^2)/nansum((y - nanmean(y)).^2) ;
-        RsqS(3, cnt_probe,cnt_sbj)   = 1 - nansum((y - yCalc3).^2)/nansum((y - nanmean(y)).^2) ;
+        RsqS(1, cnt_probe,cnt_sbj)   = 1 - nansum((y - yCalc1).^2)/nansum((y - nanmean(y)).^2+1e-8) ;
+        RsqS(2, cnt_probe,cnt_sbj)   = 1 - nansum((y - yCalc2).^2)/nansum((y - nanmean(y)).^2+1e-8) ;
+        RsqS(3, cnt_probe,cnt_sbj)   = 1 - nansum((y - yCalc3).^2)/nansum((y - nanmean(y)).^2+1e-8) ;
         
     end
     fvaltmp1    = 1 ;
@@ -261,7 +268,7 @@ clrmat = colormap('lines(3)') ;
 clrmat = clrmat(:,[1 3 2]) ;
 
 clear X1 X2 X3 X4
-dcshift  =0.6 ;
+dcshift  = 0.4 ;
 LL1                 = cat(2, LLAll_RL2(idxperf,:)') ;
 LL1                 = nanmean(reshape(LL1, [], 1, length(idxperf)),2) ;
 LL1                 = reshape(LL1,[], length(idxperf)) ;
@@ -360,7 +367,7 @@ alpha(hpatch,0.3);
 
 plot(1:432, dcshift*ones(1,432), '--k')
 set(gca,'FontName','Helvetica','FontSize',25,'FontWeight','normal','LineWidth',2,'XTick',[1 100:100:450],...
-        'ytick',[dcshift-0.2:0.2:dcshift 0.8:0.2:1.4], 'yticklabel',[-0.2:0.2:0 0.8:0.2:1.4])
+        'ytick',[dcshift-0.2:0.2:dcshift 0.6:0.2:1.4], 'yticklabel',[-0.2:0.2:0 0.6:0.2:1.4])
 set(gca,'TickDir','out')
 ylabel('goodness-of-fit')
 xlabel('trial (within a session)')
@@ -457,7 +464,7 @@ for cnt_p = 1:3
         % fit an exponential to data
         x0                                     = [10*rand(1), 10^4*rand(1)];
         lb                                     = [0, 0]; 
-        ub                                     = [01, 10^4];
+        ub                                     = [10, 10^4];
         [parEtmp, resnorm]                     = lsqcurvefit(@Ffitexp, x0,probeTrialsAll,mean(RsqS(cnt_p,:,idxperf),3),lb,ub);
 
         fvaltmp    = 1 ;
@@ -520,8 +527,15 @@ set(gcf,'position',[10,10,3*FigW,3*FigH],'PaperSize',[FigW FigH],'PaperPosition'
 
 figure(7)
 hold on
+
 errorbar(probeTrialsAll,nanmedian(b2(1,:,idxperf),3), nanstd(b2(1,:,idxperf),[],3)./sqrt(length(idxperf)), 's', 'color', clrmat(:,1),'LineWidth',2, 'markersize', 8)
 errorbar(probeTrialsAll,nanmedian(b2(2,:,idxperf),3), nanstd(b2(2,:,idxperf),[],3)./sqrt(length(idxperf)), 's', 'color', [1 0 1],'LineWidth',2, 'markersize', 8)
+
+
+% errorbar(probeTrialsAll,nanmedian(b1(1,:,idxperf),3), nanstd(b1(1,:,idxperf),[],3)./sqrt(length(idxperf)), 's', 'color', 'red','LineWidth',2, 'markersize', 8)
+% errorbar(probeTrialsAll,nanmedian(b2(1,:,idxperf),3), nanstd(b2(1,:,idxperf),[],3)./sqrt(length(idxperf)), 's', 'color', 'blue','LineWidth',2, 'markersize', 8)
+% errorbar(probeTrialsAll,nanmedian(b2(2,:,idxperf),3), nanstd(b2(2,:,idxperf),[],3)./sqrt(length(idxperf)), 's', 'color', 'green','LineWidth',2, 'markersize', 8)
+% errorbar(probeTrialsAll,nanmedian(b3(1,:,idxperf),3), nanstd(b3(1,:,idxperf),[],3)./sqrt(length(idxperf)), 's', 'color', 'yellow' ,'LineWidth',2, 'markersize', 8)
 
 Xfit                                    = 1:450 ;
 

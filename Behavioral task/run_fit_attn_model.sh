@@ -11,4 +11,13 @@
 module purge
 module load matlab/r2021b
 
+#matlab -nodisplay -nosplash -r Fit_FeatureBased
+#echo "Feature Based done"
+#matlab -nodisplay -nosplash -r Fit_ObjectBased
+#echo "Object Based done"
+#matlab -nodisplay -nosplash -r Fit_FeatureObjectBased
+#echo "Feature Object Based done"
+#matlab -nodisplay -nosplash -r Fit_ConjunctionBased
+#echo "Conj Based done"
 matlab -nodisplay -nosplash -r Fit_Attention
+echo "Attn done"

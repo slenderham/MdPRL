@@ -11,13 +11,11 @@ function loglikehood = fMLchoicefit_RL2ftdecayattn(xpar, sesdata)
 loglikehood = 0 ;
 NparamBasic = 3 ;
 
-% xpar(2) = abs(xpar(2)) ;
 
 BiasL    = xpar(1) ;
 mag = xpar(2) ;
-
-% xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
 decay = xpar(3) ;
+
 alpha_rewColor      = xpar([NparamBasic+1]) ;
 alpha_rewShape      = xpar([NparamBasic+1]) ; 
 alpha_rewPattern    = xpar([NparamBasic+1]) ; 
@@ -27,7 +25,6 @@ alpha_unrShape      = xpar([NparamBasic+2]) ;
 alpha_unrPattern    = xpar([NparamBasic+2]) ;
 
 NparamWithLR = NparamBasic+2;
-
 
 beta_attn_choice = xpar([NparamWithLR+1]);
 if sesdata.flagSepAttn==1
@@ -86,17 +83,17 @@ for cnt_trial=1:ntrials
                     sesdata.attn_mode_learn, beta_attn_learn);
 
     if correct
-        idxC = idx_color(choice) ;
-        idxW = idx_color(3-choice) ;
-        v = decayV(v, 3+find(3+[1:3]~=idx_color(choice)), decay) ;
-        [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_rewColor*attn_w_learn(2)) ;
-
         idxC = idx_shape(choice) ;
         idxW = idx_shape(3-choice) ;
         v = decayV(v, find([1:3]~=idx_shape(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
         v = update(v, idxC, idxW, alpha_rewShape*attn_w_learn(1)) ;
+
+        idxC = idx_color(choice) ;
+        idxW = idx_color(3-choice) ;
+        v = decayV(v, 3+find(3+[1:3]~=idx_color(choice)), decay) ;
+        [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
+        v = update(v, idxC, idxW, alpha_rewColor*attn_w_learn(2)) ;
         
         idxC = idx_pattern(choice) ;
         idxW = idx_pattern(3-choice) ;
@@ -104,17 +101,17 @@ for cnt_trial=1:ntrials
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
         v = update(v, idxC, idxW, alpha_rewPattern*attn_w_learn(3)) ;
     else
-        idxW = idx_color(choice) ;
-        idxC = idx_color(3-choice) ;
-        v = decayV(v, 3+find([4:6]~=idx_color(choice)), decay) ;
-        [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_unrColor*attn_w_learn(2)) ;
-
         idxW = idx_shape(choice) ;
         idxC = idx_shape(3-choice) ;
         v = decayV(v, find([1:3]~=idx_shape(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
         v = update(v, idxC, idxW, alpha_unrShape*attn_w_learn(1)) ;
+        
+        idxW = idx_color(choice) ;
+        idxC = idx_color(3-choice) ;
+        v = decayV(v, 3+find([4:6]~=idx_color(choice)), decay) ;
+        [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
+        v = update(v, idxC, idxW, alpha_unrColor*attn_w_learn(2)) ;
         
         idxW = idx_pattern(choice) ;
         idxC = idx_pattern(3-choice) ;
@@ -212,6 +209,6 @@ function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v(idxes1), v(idxes2)));
     else
-        attn = ones(size(idxes1));
+        attn = ones(size(idxes1))./size(idxes1, 2);
     end
 end
