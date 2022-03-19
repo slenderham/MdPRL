@@ -11,8 +11,7 @@ function loglikehood = fMLchoicefit_RL2ftdecayattn(xpar, sesdata)
 loglikehood = 0 ;
 NparamBasic = 3 ;
 
-
-BiasL    = xpar(1) ;
+BiasL = xpar(1) ;
 mag = xpar(2) ;
 decay = xpar(3) ;
 
@@ -208,7 +207,9 @@ function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
         attn = softmax(beta*(v(idxes1)+v(idxes2)));
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v(idxes1), v(idxes2)));
-    else
+    elseif strcmp(mode, 'const')
         attn = ones(size(idxes1))./size(idxes1, 2);
+    else
+        error('attn mode not recognized');
     end
 end

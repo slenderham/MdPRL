@@ -21,14 +21,14 @@ subjects = {...
 
 % subjects = {'AA'};
 
-attn_modes = {'constant', 'diff', 'sum', 'max'};
+attn_modes = {'const', 'diff', 'sum', 'max'};
 len_i_1 = length(attn_modes);
 len_i_2 = length(attn_modes);
 
 nrep        = 5 ;
 
 op          = optimset('Display', 'off');
-poolobj = parpool('local', 16);
+poolobj = parpool('local', 12);
 %%
 parfor cnt_sbj = 1:length(subjects)
     inputname   = ['./PRLexp/inputs/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
@@ -53,9 +53,10 @@ parfor cnt_sbj = 1:length(subjects)
     expr.patternMap(:,:,2) = 2*ones(3,3) ;
     expr.patternMap(:,:,3) = 3*ones(3,3) ;
 
-    fvalminRL2_ft_attn = ones(4)*10000;
-    fvalminRL2_ftobj_attn = ones(4)*10000;
-    fvalminRL2_ftconj_attn = ones(4)*10000;
+    fvalminRL2_ft_attn = ones(len_i_1, len_i_2)*10000;
+    fvalminRL2_ftobj_attn = ones(len_i_1, len_i_2)*10000;
+    fvalminRL2_ftconj_attn = ones(len_i_1, len_i_2)*10000;
+    fvalminRL2_ftconj_attn_constr = ones(len_i_1, len_i_2)*10000;
 
     for cnt_rep  = 1:nrep
 %         disp(['----------------------------------------------'])
@@ -87,8 +88,8 @@ parfor cnt_sbj = 1:length(subjects)
                 sesdata.Nbeta = 2;
                 ipar= rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 ll = @(x)fMLchoicefit_RL2ftdecayattn(x, sesdata);
-                lbs = [-500,   0, 0, 0, 0,   0,   0];
-                ubs = [ 500, 500, 1, 1, 1, 500, 500];
+                lbs = [-50,  0, 0, 0, 0,  0,  0];
+                ubs = [ 50, 50, 1, 1, 1, 50, 50];
                 [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
                 if fval <= fvalminRL2_ft_attn(i1, i2)
                     fvalminRL2_ft_attn(i1, i2) = fval ;
@@ -102,7 +103,7 @@ parfor cnt_sbj = 1:length(subjects)
                 %% RL2 Feature+Obj decay
                 sesdata.flag_couple = 0 ;
                 NparamBasic = 4 ;
-                sesdata.flatSepAttn = 0;
+                sesdata.flatSepAttn = 1;
                 if sesdata.flagUnr==1
                     sesdata.Nalpha = 4 ;
                 else
@@ -113,8 +114,8 @@ parfor cnt_sbj = 1:length(subjects)
                 sesdata.attn_mode_learn = attn_modes{i2};
                 ipar= rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 ll = @(x)fMLchoicefit_RL2ftobjdecayattn(x, sesdata);
-                lbs = [-500,   0,   0, 0, 0, 0, 0, 0,   0,   0];
-                ubs = [ 500, 500, 500, 1, 1, 1, 1, 1, 500, 500];
+                lbs = [-50,  0,  0, 0, 0, 0, 0, 0,  0,  0];
+                ubs = [ 50, 50, 50, 1, 1, 1, 1, 1, 50, 50];
                 [xpar, fval, exitflag, output] = fmincon(ll, ipar, [],[],[],[], lbs, ubs, [], op) ;
                 if fval <= fvalminRL2_ftobj_attn(i1, i2)
                     fvalminRL2_ftobj_attn(i1, i2) = fval ;
@@ -128,7 +129,7 @@ parfor cnt_sbj = 1:length(subjects)
                 %% RL2 conjunction decay
                 sesdata.flag_couple = 0 ;
                 NparamBasic = 4 ;
-                sesdata.flatSepAttn = 0;
+                sesdata.flatSepAttn = 1;
                 if sesdata.flagUnr==1
                     sesdata.Nalpha = 4 ;
                 else
@@ -139,8 +140,8 @@ parfor cnt_sbj = 1:length(subjects)
                 sesdata.attn_mode_learn = attn_modes{i2};
                 ipar= rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 ll = @(x)fMLchoicefit_RL2conjdecayattn(x, sesdata);
-                lbs = [-500,   0,   0, 0, 0, 0, 0, 0,   0,   0,   0,   0];
-                ubs = [ 500, 500, 500, 1, 1, 1, 1, 1, 500, 500, 500, 500];
+                lbs = [-50,  0,  0, 0, 0, 0, 0, 0,  0,  0,  0,  0];
+                ubs = [ 50, 50, 50, 1, 1, 1, 1, 1, 50, 50, 50, 50];
                 [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
                 if fval <= fvalminRL2_ftconj_attn(i1, i2)
                     fvalminRL2_ftconj_attn(i1, i2) = fval ;
@@ -150,7 +151,32 @@ parfor cnt_sbj = 1:length(subjects)
                     mlparRL2conj_decay_attn{i1, i2, cnt_sbj}(102) = output.iterations;
                     mlparRL2conj_decay_attn{i1, i2, cnt_sbj}(103) = exitflag ;
                 end
-                %%
+
+                %% RL2 conjunction decay constrained attn
+                sesdata.flag_couple = 0 ;
+                NparamBasic = 4 ;
+                sesdata.flatSepAttn = 1;
+                if sesdata.flagUnr==1
+                    sesdata.Nalpha = 4 ;
+                else
+                    sesdata.Nalpha = 2 ;
+                end
+                sesdata.Nbeta = 4;
+                sesdata.attn_mode_choice = attn_modes{i1};
+                sesdata.attn_mode_learn = attn_modes{i2};
+                ipar= rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
+                ll = @(x)fMLchoicefit_RL2conjdecayattn_constrained(x, sesdata);
+                lbs = [-50,  0,  0, 0, 0, 0, 0, 0,  0,  0,  0,  0];
+                ubs = [ 50, 50, 50, 1, 1, 1, 1, 1, 50, 50, 50, 50];
+                [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
+                if fval <= fvalminRL2_ftconj_attn_constr(i1, i2)
+                    fvalminRL2_ftconj_attn_constr(i1, i2) = fval ;
+                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
+                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}(100) = fval ;
+                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
+                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}(102) = output.iterations;
+                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}(103) = exitflag ;
+                end
             end
         end
     end

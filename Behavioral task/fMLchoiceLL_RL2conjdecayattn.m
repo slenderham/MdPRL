@@ -76,10 +76,13 @@ for cnt_trial=1:ntrials
     idx_pattern(1)  = patternMap(inputTarget(1, cnt_trial))+6 ;
     idx_patternshape(1) = (idx_pattern(1)-7)*3 + idx_shape(1) ; % 1-9
     idx_patternshape(2) = (idx_pattern(2)-7)*3 + idx_shape(2) ; 
-    idx_patterncolor(1) = (idx_pattern(1)-7)*3 + idx_color(1)-3+9 ; % 10-18
-    idx_patterncolor(2) = (idx_pattern(2)-7)*3 + idx_color(2)-3+9 ;
-    idx_shapecolor(1) = (idx_shape(1)-1)*3 + idx_color(1)+18-3 ;
-    idx_shapecolor(2) = (idx_shape(2)-1)*3 + idx_color(2)+18-3 ; % 19-27
+    assert(1<=idx_patternshape(1) & idx_patternshape(1)<=9 & 1<=idx_patternshape(2) & idx_patternshape(2)<=9);
+    idx_patterncolor(1) = (idx_pattern(1)-7)*3 + (idx_color(1)-4)+10 ; % 10-18
+    idx_patterncolor(2) = (idx_pattern(2)-7)*3 + (idx_color(2)-4)+10 ;
+    assert(10<=idx_patterncolor(1) & idx_patterncolor(1)<=18 & 10<=idx_patterncolor(2) & idx_patterncolor(2)<=18);
+    idx_shapecolor(1) = (idx_shape(1)-1)*3 + (idx_color(1)-4)+19 ;
+    idx_shapecolor(2) = (idx_shape(2)-1)*3 + (idx_color(2)-4)+19 ; % 19-27
+    assert(19<=idx_shapecolor(1) & idx_shapecolor(1)<=27 & 19<=idx_shapecolor(2) & idx_shapecolor(2)<=27);
 
     attn_w_feat_choice = attention_weights(vf, ...
         [idx_shape(1), idx_color(1), idx_pattern(1)], ...
@@ -318,13 +321,15 @@ end
 end
 
 function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
-if strcmp(mode, 'diff')
-    attn = softmax(beta*abs(v(idxes1)-v(idxes2)));
-elseif strcmp(mode, 'sum')
-    attn = softmax(beta*(v(idxes1)+v(idxes2)));
-elseif strcmp(mode, 'max')
-    attn = softmax(beta*max(v(idxes1), v(idxes2)));
-else
-    attn = ones(size(idxes1))./size(idxes1, 2);
-end
+    if strcmp(mode, 'diff')
+        attn = softmax(beta*abs(v(idxes1)-v(idxes2)));
+    elseif strcmp(mode, 'sum')
+        attn = softmax(beta*(v(idxes1)+v(idxes2)));
+    elseif strcmp(mode, 'max')
+        attn = softmax(beta*max(v(idxes1), v(idxes2)));
+    elseif strcmp(mode, 'const')
+        attn = ones(size(idxes1))./size(idxes1, 2);
+    else
+        error('attn mode not recognized');
+    end
 end

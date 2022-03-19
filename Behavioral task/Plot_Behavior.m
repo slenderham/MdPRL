@@ -1,6 +1,5 @@
 
-clc
-clear 
+clc 
 close all
 
 %%

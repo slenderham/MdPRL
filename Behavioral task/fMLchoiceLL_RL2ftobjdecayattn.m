@@ -262,7 +262,6 @@ function [idxW, idxC] = idxcoupleF(idxW, idxC, rl2_correct, flag_couple, flag_up
     end
 end
 
-
 function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
     if strcmp(mode, 'diff')
         attn = softmax(beta*abs(v(idxes1)-v(idxes2)));
@@ -270,7 +269,9 @@ function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
         attn = softmax(beta*(v(idxes1)+v(idxes2)));
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v(idxes1), v(idxes2)));
+    elseif strcmp(mode, 'const')
+        attn = ones(size(idxes1))./size(idxes1, 2);
     else
-        attn = ones(size(idxes1));
+        error('attn mode not recognized');
     end
 end

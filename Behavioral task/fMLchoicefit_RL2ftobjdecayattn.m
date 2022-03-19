@@ -80,8 +80,8 @@ for cnt_trial=1:ntrials
                         sesdata.attn_mode_choice, beta_attn_choice);
 
     pChoiceR = 1./(1+exp(-magF*(attn_w_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
-                              + attn_w_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
-                              + attn_w_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
+                               +attn_w_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
+                               +attn_w_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
                          -magC*(vo(inputObj(2,cnt_trial))-vo(inputObj(1,cnt_trial)))...
                          +BiasL)) ;
     
@@ -269,7 +269,9 @@ function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
         attn = softmax(beta*(v(idxes1)+v(idxes2)));
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v(idxes1), v(idxes2)));
-    else
+    elseif strcmp(mode, 'const')
         attn = ones(size(idxes1))./size(idxes1, 2);
+    else
+        error('attn mode not recognized');
     end
 end
