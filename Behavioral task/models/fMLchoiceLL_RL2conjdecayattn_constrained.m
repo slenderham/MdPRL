@@ -34,15 +34,29 @@ else
     alpha_unr           = alpha_rew ;
 end
 
-beta_attn_choice_feat = xpar([NparamWithLR+1]);
-beta_attn_choice_conj = xpar([NparamWithLR+2]);
-if sesdata.flagSepAttn==1
-    beta_attn_learn_feat = xpar([NparamWithLR+3]);
-    beta_attn_learn_conj = xpar([NparamWithLR+4]);
+if strcmp(sesdata.attn_mode_choice, "const")
+    beta_attn_choice_feat = 1;
+    beta_attn_choice_conj = 1;
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn_feat = 1;
+        beta_attn_learn_conj = 1;
+    else
+        beta_attn_learn_feat = xpar(NparamWithLR+1);
+        beta_attn_learn_conj = xpar(NparamWithLR+2);
+    end
 else
-    beta_attn_learn_feat = beta_attn_choice_feat;
-    beta_attn_learn_conj = beta_attn_choice_conj;
+    beta_attn_choice_feat = xpar(NparamWithLR+1);
+    beta_attn_choice_conj = xpar(NparamWithLR+2);
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn_feat = 1;
+        beta_attn_learn_conj = 1;
+    else
+        beta_attn_learn_feat = xpar(NparamWithLR+3);
+        beta_attn_learn_conj = xpar(NparamWithLR+4);
+    end
 end
+
+
 
 shapeMap        = sesdata.expr.shapeMap ;
 colorMap        = sesdata.expr.colorMap ;
@@ -266,7 +280,7 @@ end
 end
 
 % function v = decayV(v, unCh, decay)
-%     v(unCh) = v(unCh)*(1-decay) ;
+%     v(unCh) = v(unCh)*(1-decay) ;
 % end
 function v = decayV(v, unCh, decay)
 v(unCh) = v(unCh) - (v(unCh)-0.5)*(decay) ;

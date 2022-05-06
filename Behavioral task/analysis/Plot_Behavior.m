@@ -4,11 +4,13 @@ close all
 
 %%
 
-addpath("./files")
+addpath("../files")
+addpath("../models")
+addpath("../utils")
 
-load('./files/RPL2Analysisv3_5_FeatureBased') ;
-obj              = load('./files/RPL2Analysisv3_5_ObjectBased') ;
-conj             = load('./files/RPL2Analysisv3_5_ConjunctionBased') ;
+load('../files/RPL2Analysisv3_5_FeatureBased') ;
+obj              = load('../files/RPL2Analysisv3_5_ObjectBased') ;
+conj             = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
 
 test             = str2func('signrank') ;
 cntDfit          = 1 ;
@@ -36,7 +38,7 @@ RL2obj_decay        = cat(1,obj.mlparRL2obj_decay{idxSubject}) ;
 
 %%
 
-probeTrialsAll = load(['./PRLexp/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
+probeTrialsAll = load(['../PRLexp/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
 
 for cnt_probe = 1:length(probeTrialsAll)
     pEstAll{cnt_probe}   = nan*ones(length(subjects),27) ;
@@ -45,8 +47,8 @@ end
 
 clear sesdata
 for cnt_sbj = 1:length(subjects)
-    inputname   = ['./PRLexp/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
-    resultsname = ['./PRLexp/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
+    inputname   = ['../PRLexp/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
     
     load(inputname)
     load(resultsname)
@@ -189,7 +191,7 @@ end
 idxperf             = (perfMean>perfTH) ;
 idxperf(46)         = 0 ;
 idxperf(54)         = 0 ;
-idxperf(29) = 0;
+idxperf(29)         = 0;
 idxperf             = find(idxperf) ;
 
 %%
@@ -201,9 +203,9 @@ for cnt_sbj = 1:length(subjects)
         X            = XAll{cnt_probe}(idxS,end) ;
         Y1           = XAll{cnt_probe}(idxS,1) ;
         Y1           = [Y1 ones(size(Y1,1),1)] ;
-        Y2           = XAll{cnt_probe}(idxS,[1 2 3]) ;
+        Y2           = XAll{cnt_probe}(idxS,[1 2]) ;
         Y2           = [Y2 ones(size(Y2,1),1)] ;
-        Y3           = XAll{cnt_probe}(idxS,3) ;
+        Y3           = XAll{cnt_probe}(idxS, 3) ;
         Y3           = [Y3 ones(size(Y3,1),1)] ;
 
         b1(:,cnt_probe,cnt_sbj)     = regress(X,Y1) ;

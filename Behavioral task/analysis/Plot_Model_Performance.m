@@ -1,8 +1,8 @@
 clc
 clear
 close all
-addpath("../PRLexp/inputs/")
-addpath("../PRLexp/SubjectData/")
+addpath("../PRLexp/inputs_all/")
+addpath("../PRLexp/SubjectData_all/")
 addpath("../files")
 addpath("../models")
 addpath("../utils")
@@ -12,16 +12,30 @@ attns = load('../files/RPL2Analysis_Attention.mat') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
 % conj  = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
 
-subjects = {...
-    'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', ...
-    'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', ...
-    'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', ...
-    'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', ...
-    'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', ...
-    'BM', 'BN', 'BO', 'BP', 'BQ', 'BR', 'CC', 'DD', ...
-    'EE', 'FF', 'GG', 'HH', 'II', 'JJ', 'KK', 'LL', ...
-    'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT', ...
-    'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
+subjects1 = [...
+    "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
+    "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
+    "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
+    "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", ...
+    "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", ...
+    "BM", "BN", "BO", "BP", "BQ", "BR", "CC", "DD", ...
+    "EE", "FF", "GG", "HH", "II", "JJ", "KK", "LL", ...
+    "MM", "NN", "OO", "PP", "QQ", "RR", "SS", "TT", ...
+    "UU", "VV", "WW", "XX", "YY", "ZZ"];
+subjects1 = lower(subjects1);
+subjects1_inputs = "inputs/input_"+subjects1;
+subjects1_prl = "SubjectData/PRL_"+subjects1;
+
+subjects2 = [...
+    "AA", "AB", "AC", "AD", "AE", "AG", ...
+    "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
+    "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
+    "AW", "AX", "AY"] ;
+subjects2_inputs = "inputs2/input_"+subjects2;
+subjects2_prl = "SubjectData2/PRL_"+subjects2;
+
+subjects_inputs = [subjects1_inputs subjects2_inputs];
+subjects_prl = [subjects1_prl subjects2_prl];
 
 attn_modes = ["const", "diff", "sum", "max"];
 attn_modes_choice = ["const", "diff", "sum", "max"];
@@ -33,15 +47,15 @@ xlabels = reshape(reshape(xlabels, [4 4])', [16, 1]);
 disp(xlabels);
 
 ntrials = 432;
-ntrialPerf       = 33:432;
+ntrialPerf       = 27:432;
 perfTH           = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
 
 cmap = lines(256);
 
-for cnt_sbj = 1:length(subjects)
+for cnt_sbj = 1:length(subjects_inputs)
     disp(cnt_sbj)
-    inputname   = ['../PRLexp/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
-    resultsname = ['../PRLexp/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
+    inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
     
     load(inputname)
     load(resultsname)
@@ -51,7 +65,7 @@ for cnt_sbj = 1:length(subjects)
     choiceRew{cnt_sbj}            = results.choice' == idxMax ;
     perfMean(cnt_sbj)             = nanmean(choiceRew{cnt_sbj}(ntrialPerf)) ;
 end
-idxperf = find(perfMean>perfTH);
+idxperf = find(perfMean>=perfTH);
 % idxperf = 1:length(subjects);
 
 %% load results with attn
@@ -59,7 +73,26 @@ idxperf = find(perfMean>perfTH);
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            w(i1, i2, cnt_sbj) = attns.mlparRL2conj_decay_attn_constr{i1, i2, idxperf(cnt_sbj)}(100);
+            v(i1, i2, cnt_sbj) = attns.mlparRL2conj_decay_attn_onlyfattn{i1, i2, idxperf(cnt_sbj)}.fval;
+        end
+    end
+end
+vAIC = nan*v;
+vAIC(1,1,:) = 2.*v(1,1,:)+2*8;
+vAIC(1,2:end,:) = 2.*v(1,2:end,:)+2*9;
+vAIC(2:end,1,:) = 2.*v(2:end,1,:)+2*9;
+vAIC(2:end,2:end,:) = 2.*v(2:end,2:end,:)+2*10;
+vBIC = nan*v;
+vBIC(1,1,:) = 2.*v(1,1,:)+8*log(ntrials);
+vBIC(1,2:end,:) = 2.*v(1,2:end,:)+9*log(ntrials);
+vBIC(2:end,1,:) = 2.*v(2:end,1,:)+9*log(ntrials);
+vBIC(2:end,2:end,:) = 2.*v(2:end,2:end,:)+10*log(ntrials);
+
+
+for i1=1:4
+    for i2=1:4
+        for cnt_sbj=1:length(idxperf)
+            w(i1, i2, cnt_sbj) = attns.mlparRL2conj_decay_attn_constr{i1, i2, idxperf(cnt_sbj)}.fval;
         end
     end
 end
@@ -106,7 +139,7 @@ wBIC(2:end,2:end,:) = 2.*w(2:end,2:end,:)+12*log(ntrials);
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            x(i1, i2, cnt_sbj) = attns.mlparRL2conj_decay_attn{i1, i2, idxperf(cnt_sbj)}(100);
+            x(i1, i2, cnt_sbj) = attns.mlparRL2conj_decay_attn{i1, i2, idxperf(cnt_sbj)}.fval;
         end
     end
 end
@@ -151,7 +184,7 @@ xBIC(2:end,2:end,:) = 2.*x(2:end,2:end,:)+12*log(ntrials);
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            y(i1, i2, cnt_sbj) = attns.mlparRL2ftobj_decay_attn{i1, i2, idxperf(cnt_sbj)}(100);
+            y(i1, i2, cnt_sbj) = attns.mlparRL2ftobj_decay_attn{i1, i2, idxperf(cnt_sbj)}.fval;
         end
     end
 end
@@ -198,7 +231,7 @@ yBIC(2:end,2:end,:) = 2.*y(2:end,2:end,:)+10*log(ntrials);
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            z(i1, i2, cnt_sbj) = attns.mlparRL2ft_decay_attn{i1, i2, idxperf(cnt_sbj)}(100);
+            z(i1, i2, cnt_sbj) = attns.mlparRL2ft_decay_attn{i1, i2, idxperf(cnt_sbj)}.fval;
         end
     end
 end
@@ -358,6 +391,14 @@ end
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
+            vpar(i1, i2, cnt_sbj, :) = attns.mlparRL2conj_decay_attn_onlyfattn{i1, i2, idxperf(cnt_sbj)}(1:12);
+        end
+    end
+end
+
+for i1=1:4
+    for i2=1:4
+        for cnt_sbj=1:length(idxperf)
             ypar(i1, i2, cnt_sbj, :) = attns.mlparRL2ftobj_decay_attn{i1, i2, idxperf(cnt_sbj)}(1:10);
         end
     end
@@ -386,10 +427,10 @@ subjects = {...
     'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
 
 
-for cnt_sbj=1:length(idxperf)
+for cnt_sbj = 1:length(subjects_inputs)
     disp(['Subject: ', num2str(idxperf(cnt_sbj))])
-    inputname   = ['../PRLexp/inputs/input_', lower(subjects{idxperf(cnt_sbj)}) , '.mat'] ;
-    resultsname = ['../PRLexp/SubjectData/PRL_', lower(subjects{idxperf(cnt_sbj)}) , '.mat'] ;
+    inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
 
     inputs_struct = load(inputname);
     results_struct = load(resultsname);
@@ -457,6 +498,23 @@ for cnt_sbj=1:length(idxperf)
             Vs_ftobj(i1, i2, cnt_sbj, :, :) = vs;
             As_ftobj(i1, i2, cnt_sbj, :, :, :) = sim_attns;
 
+            % F+C only feat attn
+            sesdata.flag_couple = 0 ;
+            sesdata.NparamBasic = 4 ;
+            sesdata.flatSepAttn = 1;
+            if sesdata.flagUnr==1
+                sesdata.Nalpha = 4 ;
+            else
+                sesdata.Nalpha = 2 ;
+            end
+            sesdata.Nbeta = 2;
+            sesdata.attn_mode_choice = attn_modes(i1);
+            sesdata.attn_mode_learn = attn_modes(i2);
+
+            [lls, vs, sim_attns] = fMLchoiceLL_RL2conjdecayattn_onlyfattn(vpar(i1, i2, cnt_sbj,:), sesdata);
+            LL_ftconj_onlyfattn(i1, i2, cnt_sbj, :)= lls;
+            Vs_ftconj_onlyfattn(i1, i2, cnt_sbj, :, :) = vs;
+            As_ftconj_onlyfattn(i1, i2, cnt_sbj, :, :, :) = sim_attns;            
 
             % F+C
             sesdata.flag_couple = 0 ;
@@ -497,6 +555,37 @@ for cnt_sbj=1:length(idxperf)
     end 
 end
 
+AIC_ft = nan*LL_ft;
+AIC_ft(1,1,:,:) = LL_ft(1,1,:,:) + 5/ntrials;
+AIC_ft(1,2:end,:,:) = LL_ft(1,2:end,:,:) + 6/ntrials;
+AIC_ft(2:end,1,:,:) = LL_ft(2:end,1,:,:) + 6/ntrials;
+AIC_ft(2:end,2:end,:,:) = LL_ft(2:end,2:end,:,:) + 7/ntrials;
+
+AIC_ftobj = nan*LL_ftobj;
+AIC_ftobj(1,1,:,:) = LL_ftobj(1,1,:,:) + 8/ntrials;
+AIC_ftobj(1,2:end,:,:) = LL_ftobj(1,2:end,:,:) + 9/ntrials;
+AIC_ftobj(2:end,1,:,:) = LL_ftobj(2:end,1,:,:) + 9/ntrials;
+AIC_ftobj(2:end,2:end,:,:) = LL_ftobj(2:end,2:end,:,:) + 10/ntrials;
+
+AIC_ftconj_onlyfattn = nan*LL_ftconj_onlyfattn;
+AIC_ftconj_onlyfattn(1,1,:,:) = LL_ftconj_onlyfattn(1,1,:,:) + 8/ntrials;
+AIC_ftconj_onlyfattn(1,2:end,:,:) = LL_ftconj_onlyfattn(1,2:end,:,:) + 9/ntrials;
+AIC_ftconj_onlyfattn(2:end,1,:,:) = LL_ftconj_onlyfattn(2:end,1,:,:) + 9/ntrials;
+AIC_ftconj_onlyfattn(2:end,2:end,:,:) = LL_ftconj_onlyfattn(2:end,2:end,:,:) + 10/ntrials;
+
+AIC_ftconj = nan*LL_ftconj;
+AIC_ftconj(1,1,:,:) = LL_ftconj(1,1,:,:) + 8/ntrials;
+AIC_ftconj(1,2:end,:,:) = LL_ftconj(1,2:end,:,:) + 10/ntrials;
+AIC_ftconj(2:end,1,:,:) = LL_ftconj(2:end,1,:,:) + 10/ntrials;
+AIC_ftconj(2:end,2:end,:,:) = LL_ftconj(2:end,2:end,:,:) + 12/ntrials;
+
+AIC_ftconj_constr = nan*LL_ftconj_constr;
+AIC_ftconj_constr(1,1,:,:) = LL_ftconj_constr(1,1,:,:) + 8/ntrials;
+AIC_ftconj_constr(1,2:end,:,:) = LL_ftconj_constr(1,2:end,:,:) + 10/ntrials;
+AIC_ftconj_constr(2:end,1,:,:) = LL_ftconj_constr(2:end,1,:,:) + 10/ntrials;
+AIC_ftconj_constr(2:end,2:end,:,:) = LL_ftconj_constr(2:end,2:end,:,:) + 12/ntrials;
+
+
 %% Plot Attention
 
 wSize = 1;
@@ -531,97 +620,97 @@ end
 legend(pm1, {'shape+colorXpattern', 'color+shapeXpattern', 'pattern+colorXshape'}, 'Location', 'southwest');
 legend(pm2, {'shape+colorXpattern', 'color+shapeXpattern', 'pattern+colorXshape'}, 'Location', 'southwest');
 
-attn_mode_plot_1 = 1;
-attn_mode_plot_2 = 3;
-
-figure;
-subplot(121)
-pm1 = plot(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:),3))', wSize));
-title('F Attention Weight For Choice');
-xlim([0 433])
-subplot(122)
-pm2 = plot(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,:,:),3))', wSize));
-title('F Attention Weight For Learning');
-xlim([0 433])
-for i=1:3
-    xxs = [1:ntrials, ntrials:-1:1];
-    yys = [movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)+movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
-           fliplr(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)-movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
-    subplot(121)
-    p1=patch(xxs, yys, cmap(i,:));hold on;
-    p1.FaceAlpha = 0.2;
-    p1.EdgeAlpha = 0.;
-    subplot(122)
-    yys = [movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)+movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
-           fliplr(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)-movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
-    p2=patch(xxs, yys, cmap(i,:));hold on;
-    p2.FaceAlpha = 0.2;
-    p2.EdgeAlpha = 0.;
-end
-legend(pm1, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
-legend(pm2, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
-
-
-attn_mode_plot_1 = 2;
-attn_mode_plot_2 = 3;
-
-figure;
-subplot(121)
-pm1 = plot(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:),3))', wSize));
-title('F+O Attention Weight For Choice');
-xlim([0 433])
-subplot(122)
-pm2 = plot(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,:,:),3))', wSize));
-title('F+O Attention Weight For Learning');
-xlim([0 433])
-for i=1:3
-    xxs = [1:ntrials, ntrials:-1:1];
-    yys = [movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)+movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
-           fliplr(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)-movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
-    subplot(121)
-    p1=patch(xxs, yys, cmap(i,:));hold on;
-    p1.FaceAlpha = 0.2;
-    p1.EdgeAlpha = 0.;
-    subplot(122)
-    yys = [movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)+movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
-           fliplr(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)-movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
-    p2=patch(xxs, yys, cmap(i,:));hold on;
-    p2.FaceAlpha = 0.2;
-    p2.EdgeAlpha = 0.;
-end
-legend(pm1, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
-legend(pm2, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
-
-
-attn_mode_plot_1 = 3;
-attn_mode_plot_2 = 3;
-
-figure;
-subplot(121)
-pm1 = plot(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:),3))', wSize));
-title('F+C Separate Attention Weight For Choice');
-xlim([0 433])
-subplot(122)
-pm2 = plot(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,:,:),3))', wSize));
-title('F+C Separate Attention Weight For Learning');
-for i=1:6
-    xxs = [1:ntrials, ntrials:-1:1];
-    subplot(121)
-    yys = [movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)+movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
-           fliplr(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)-movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
-    subplot(121)
-    p1=patch(xxs, yys, cmap(i,:));hold on;
-    p1.FaceAlpha = 0.2;
-    p1.EdgeAlpha = 0.;
-    subplot(122)
-    yys = [movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)+movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
-           fliplr(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)-movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
-    p2=patch(xxs, yys, cmap(i,:));hold on;
-    p2.FaceAlpha = 0.2;
-    p2.EdgeAlpha = 0.;
-end
-legend(pm1, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'shapeXcolor'}, 'Location', 'southwest');
-legend(pm2, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'shapeXcolor'}, 'Location', 'southwest');
+% attn_mode_plot_1 = 1;
+% attn_mode_plot_2 = 3;
+% 
+% figure;
+% subplot(121)
+% pm1 = plot(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:),3))', wSize));
+% title('F Attention Weight For Choice');
+% xlim([0 433])
+% subplot(122)
+% pm2 = plot(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,:,:),3))', wSize));
+% title('F Attention Weight For Learning');
+% xlim([0 433])
+% for i=1:3
+%     xxs = [1:ntrials, ntrials:-1:1];
+%     yys = [movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)+movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
+%            fliplr(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)-movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
+%     subplot(121)
+%     p1=patch(xxs, yys, cmap(i,:));hold on;
+%     p1.FaceAlpha = 0.2;
+%     p1.EdgeAlpha = 0.;
+%     subplot(122)
+%     yys = [movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)+movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
+%            fliplr(movmean(squeeze(mean(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)-movmean(squeeze(std(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
+%     p2=patch(xxs, yys, cmap(i,:));hold on;
+%     p2.FaceAlpha = 0.2;
+%     p2.EdgeAlpha = 0.;
+% end
+% legend(pm1, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+% legend(pm2, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+% 
+% 
+% attn_mode_plot_1 = 2;
+% attn_mode_plot_2 = 3;
+% 
+% figure;
+% subplot(121)
+% pm1 = plot(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:),3))', wSize));
+% title('F+O Attention Weight For Choice');
+% xlim([0 433])
+% subplot(122)
+% pm2 = plot(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,:,:),3))', wSize));
+% title('F+O Attention Weight For Learning');
+% xlim([0 433])
+% for i=1:3
+%     xxs = [1:ntrials, ntrials:-1:1];
+%     yys = [movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)+movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
+%            fliplr(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)-movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
+%     subplot(121)
+%     p1=patch(xxs, yys, cmap(i,:));hold on;
+%     p1.FaceAlpha = 0.2;
+%     p1.EdgeAlpha = 0.;
+%     subplot(122)
+%     yys = [movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)+movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
+%            fliplr(movmean(squeeze(mean(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)-movmean(squeeze(std(As_ftobj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
+%     p2=patch(xxs, yys, cmap(i,:));hold on;
+%     p2.FaceAlpha = 0.2;
+%     p2.EdgeAlpha = 0.;
+% end
+% legend(pm1, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+% legend(pm2, {'shape', 'color', 'pattern'}, 'Location', 'southwest');
+% 
+% 
+% attn_mode_plot_1 = 3;
+% attn_mode_plot_2 = 3;
+% 
+% figure;
+% subplot(121)
+% pm1 = plot(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:),3))', wSize));
+% title('F+C Separate Attention Weight For Choice');
+% xlim([0 433])
+% subplot(122)
+% pm2 = plot(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,:,:),3))', wSize));
+% title('F+C Separate Attention Weight For Learning');
+% for i=1:6
+%     xxs = [1:ntrials, ntrials:-1:1];
+%     subplot(121)
+%     yys = [movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)+movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
+%            fliplr(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),3))', wSize)-movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,1,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
+%     subplot(121)
+%     p1=patch(xxs, yys, cmap(i,:));hold on;
+%     p1.FaceAlpha = 0.2;
+%     p1.EdgeAlpha = 0.;
+%     subplot(122)
+%     yys = [movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)+movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)), ...
+%            fliplr(movmean(squeeze(mean(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),3))', wSize)-movmean(squeeze(std(As_ftconj(attn_mode_plot_1,attn_mode_plot_2,:,2,i,:),1,3))', wSize)/sqrt(length(idxperf)))];
+%     p2=patch(xxs, yys, cmap(i,:));hold on;
+%     p2.FaceAlpha = 0.2;
+%     p2.EdgeAlpha = 0.;
+% end
+% legend(pm1, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'shapeXcolor'}, 'Location', 'southwest');
+% legend(pm2, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'shapeXcolor'}, 'Location', 'southwest');
 
 %% Get entropic measures
 % ce1 = squeeze(cross_entropy(squeeze(As_ft(attn_mode_plot_1,attn_mode_plot_2,:,1,:,:)), repmat([0 1 0], length(idxperf), 1, ntrials)));
@@ -695,76 +784,161 @@ legend(pm2, {'shape', 'color', 'pattern', 'patternXshape', 'patternXcolor', 'sha
 
 %% make results table
 
-num_digs_round = 1;
+% num_digs_round = 1;
 
-restbl_w = table(xlabels(I0), strcat(string(round(mw(I0), num_digs_round)), char(177), string(round(sw(I0)/sqrt(ntrials),num_digs_round))), ...
-               strcat(string(round(mwAIC(I0),num_digs_round)), char(177), string(round(swAIC(I0)/sqrt(ntrials),num_digs_round))), ...
-               strcat(string(round(mwBIC(I0),num_digs_round)), char(177), string(round(swBIC(I0)/sqrt(ntrials),num_digs_round))), ...
-               'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
-restbl_x = table(xlabels(I1), strcat(string(round(mx(I1), num_digs_round)), char(177), string(round(sx(I1)/sqrt(ntrials), num_digs_round))), ...
-               strcat(string(round(mxAIC(I1), num_digs_round)), char(177), string(round(sxAIC(I1)/sqrt(ntrials), num_digs_round))), ...
-               strcat(string(round(mxBIC(I1), num_digs_round)), char(177), string(round(sxBIC(I1)/sqrt(ntrials), num_digs_round))), ...
-               'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
-restbl_y = table(xlabels(I2), strcat(string(round(my(I2), num_digs_round)), char(177), string(round(sy(I2)/sqrt(ntrials), num_digs_round))), ...
-               strcat(string(round(myAIC(I2), num_digs_round)), char(177), string(round(syAIC(I2)/sqrt(ntrials), num_digs_round))), ...
-               strcat(string(round(myBIC(I2), num_digs_round)), char(177), string(round(syBIC(I2)/sqrt(ntrials), num_digs_round))), ...
-               'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
-restbl_z = table(xlabels(I3), strcat(string(round(mz(I3), num_digs_round)), char(177), string(round(sz(I3)/sqrt(ntrials), num_digs_round))), ...
-               strcat(string(round(mzAIC(I3), num_digs_round)), char(177), string(round(szAIC(I3)/sqrt(ntrials), num_digs_round))), ...
-               strcat(string(round(mzBIC(I3), num_digs_round)), char(177), string(round(szBIC(I3)/sqrt(ntrials), num_digs_round))), ...
-               'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
+% restbl_w = table(xlabels(I0), strcat(string(round(mw(I0), num_digs_round)), char(177), string(round(sw(I0)/sqrt(ntrials),num_digs_round))), ...
+%                strcat(string(round(mwAIC(I0),num_digs_round)), char(177), string(round(swAIC(I0)/sqrt(ntrials),num_digs_round))), ...
+%                strcat(string(round(mwBIC(I0),num_digs_round)), char(177), string(round(swBIC(I0)/sqrt(ntrials),num_digs_round))), ...
+%                'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
+% restbl_x = table(xlabels(I1), strcat(string(round(mx(I1), num_digs_round)), char(177), string(round(sx(I1)/sqrt(ntrials), num_digs_round))), ...
+%                strcat(string(round(mxAIC(I1), num_digs_round)), char(177), string(round(sxAIC(I1)/sqrt(ntrials), num_digs_round))), ...
+%                strcat(string(round(mxBIC(I1), num_digs_round)), char(177), string(round(sxBIC(I1)/sqrt(ntrials), num_digs_round))), ...
+%                'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
+% restbl_y = table(xlabels(I2), strcat(string(round(my(I2), num_digs_round)), char(177), string(round(sy(I2)/sqrt(ntrials), num_digs_round))), ...
+%                strcat(string(round(myAIC(I2), num_digs_round)), char(177), string(round(syAIC(I2)/sqrt(ntrials), num_digs_round))), ...
+%                strcat(string(round(myBIC(I2), num_digs_round)), char(177), string(round(syBIC(I2)/sqrt(ntrials), num_digs_round))), ...
+%                'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
+% restbl_z = table(xlabels(I3), strcat(string(round(mz(I3), num_digs_round)), char(177), string(round(sz(I3)/sqrt(ntrials), num_digs_round))), ...
+%                strcat(string(round(mzAIC(I3), num_digs_round)), char(177), string(round(szAIC(I3)/sqrt(ntrials), num_digs_round))), ...
+%                strcat(string(round(mzBIC(I3), num_digs_round)), char(177), string(round(szBIC(I3)/sqrt(ntrials), num_digs_round))), ...
+%                'VariableNames', {'Attn Type', '-LL', 'AIC', 'BIC'});
 
 %% bayesian model selection
 
-total_inds = reshape(1:64, [4 4 4]);
+total_inds = reshape(1:80, [4 4 5]);
 model_names = {["F+C_{tied}", "F+C_{untied}", "F+O", "F"], attn_modes, attn_modes};
 model_partitions = ["Input type", "Attn at Learning", "Attn at Choice"];
 
-for i=1:3
-    families = reshape(permute(total_inds, circshift([1 2 3], i)), 4, 16);
-    families = mat2cell(families, [1 1 1 1]);
-    [alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, 41])' ...
-                                      reshape(-xAIC/2, [16, 41])' ...
-                                      reshape(-yAIC/2, [16, 41])' ...
-                                      reshape(-zAIC/2, [16, 41])'], ...
-                                      families);
-    disp(bor)
-    figure;
-    sgtitle(strcat("Model partition by ", model_partitions(i)))
-    subplot(121)
-    imagesc(g)
-    xlabel('Subject')
-    yticks(1:4)
-    yticklabels(model_names{i})
-    title('Posterior belief of model');
-    subplot(122)
-    bar(pxp);
-    ylabel('Protected Exceedance probabilities')
-    xticklabels(model_names{i})
-end
-
-
-families = reshape(total_inds, [16 4]);
-families = mat2cell(families, repmat([1], 1, 16));
-[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, 41])' ...
-                                  reshape(-xAIC/2, [16, 41])' ...
-                                  reshape(-yAIC/2, [16, 41])' ...
-                                  reshape(-zAIC/2, [16, 41])'], ...
+families = reshape(permute(total_inds, [3 1 2]), [5, 16]);
+families = mat2cell(families, [1 1 1 1 1]);
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
                                   families);
 disp(bor)
 figure;
-sgtitle("Model partition by Attn at Choice and Learning")
+sgtitle(strcat("Model partition by ", "Input Type"))
+subplot(121)
+imagesc(g)
+xlabel('Subject')
+yticks(1:5)
+yticklabels(model_names{1})
+% title('Posterior belief of model');
+subplot(122)
+bar(pxp);
+ylabel('pxp')
+xticklabels(model_names{1})
+
+
+families = reshape(permute(total_inds, [1 2 3]), [4, 20]);
+families = mat2cell(families, [1 1 1 1]);
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+                                  families);
+disp(bor)
+figure;
+sgtitle(strcat("Model partition by ", "Attn at choice"))
+subplot(121)
+imagesc(g)
+xlabel('Subject')
+yticks(1:5)
+yticklabels(model_names{2})
+% title('Posterior belief of model');
+subplot(122)
+bar(pxp);
+ylabel('pxp')
+xticklabels(model_names{2})
+
+
+families = reshape(permute(total_inds, [2 3 1]), [4, 20]);
+families = mat2cell(families, [1 1 1 1]);
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+                                  families);
+disp(bor)
+figure;
+sgtitle(strcat("Model partition by ", "Attn at learning"))
+subplot(121)
+imagesc(g)
+xlabel('Subject')
+yticks(1:5)
+yticklabels(model_names{3})
+% title('Posterior belief of model');
+subplot(122)
+bar(pxp);
+ylabel('pxp')
+xticklabels(model_names{3})
+
+
+
+families = reshape(total_inds, [16 5]);
+families = mat2cell(families, repmat([1], 1, 16));
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+                                  families);
+disp(bor)
+figure;
+% sgtitle("Model partition by Attn at Choice and Learning")
 subplot(121)
 imagesc(g)
 xlabel('Subject')
 yticks(1:16)
 yticklabels(xlabels)
-title('Posterior belief of model');
+% title('Posterior belief of model');
 subplot(122)
 bar(pxp);
-ylabel('Protected Exceedance probabilities')
+ylabel('pxp')
 xticks(1:16)
 xticklabels(xlabels)
 
 % Plot model performance
 % Plot all model alpha and stack
+
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+                                  mat2cell((1:80)', repmat([1], 1, 80)));
+figure;
+bar(reshape(alpha/sum(alpha, 'all'), [16, 5]), 'stacked')
+xticks(1:16)
+xticklabels(xlabels)
+legend(["F+C_{tied}", "F+C_{untied}", "F+C_{feat attn}", "F+O", "F"])
+% title('Posterior Model Probability')
+
+%% Plot Model Evidence
+
+wSize = 20;
+clrmat = colormap('lines(5)') ;
+% clrmat = clrmat(:,[1 3 2]) ;
+
+smth_AIC_ft = movmean(2*AIC_ft, wSize, 4, 'Endpoints', 'discard');
+smth_AIC_ftobj = movmean(2*AIC_ftobj, wSize, 4, 'Endpoints', 'discard');
+smth_AIC_ftconj_onlyfattn = movmean(2*AIC_ftconj_onlyfattn, wSize, 4, 'Endpoints', 'discard');
+smth_AIC_ftconj = movmean(2*AIC_ftconj, wSize, 4, 'Endpoints', 'discard');
+smth_AIC_ftconj_constr = movmean(2*AIC_ftconj_constr, wSize, 4, 'Endpoints', 'discard');
+
+
+
+figure;
+l(1) = plot_shaded_errorbar(squeeze(mean(smth_AIC_ft, [1 2 3])), squeeze(std(smth_AIC_ft, [], [1 2 3]))/sqrt(16*length(idxperf)), wSize, clrmat(1,:));hold on
+l(2) = plot_shaded_errorbar(squeeze(mean(smth_AIC_ftobj, [1 2 3])), squeeze(std(smth_AIC_ftobj, [], [1 2 3]))/sqrt(16*length(idxperf)), wSize, clrmat(2,:));hold on
+l(3) = plot_shaded_errorbar(squeeze(mean(smth_AIC_ftconj_onlyfattn, [1 2 3])), squeeze(std(smth_AIC_ftconj_onlyfattn, [], [1 2 3]))/sqrt(16*length(idxperf)), wSize, clrmat(3,:));hold on
+l(4) = plot_shaded_errorbar(squeeze(mean(smth_AIC_ftconj, [1 2 3])), squeeze(std(smth_AIC_ftconj, [], [1 2 3]))/sqrt(16*length(idxperf)), wSize, clrmat(4,:));hold on
+l(5) = plot_shaded_errorbar(squeeze(mean(smth_AIC_ftconj_constr, [1 2 3])), squeeze(std(smth_AIC_ftconj_constr, [], [1 2 3]))/sqrt(16*length(idxperf)), wSize, clrmat(5,:));hold on
+legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
+
+xlabel('Trial')
+ylabel('Trial-wise AIC')

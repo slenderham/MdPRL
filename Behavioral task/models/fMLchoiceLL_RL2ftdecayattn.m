@@ -28,11 +28,20 @@ alpha_unrPattern    = xpar([NparamBasic+2]) ;
 
 NparamWithLR = NparamBasic+2;
 
-beta_attn_choice = xpar([NparamWithLR+1]);
-if sesdata.flagSepAttn==1
-    beta_attn_learn = xpar([NparamWithLR+2]);
+if strcmp(sesdata.attn_mode_choice, "const")
+    beta_attn_choice = 1;
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn = 1;
+    else
+        beta_attn_learn = xpar([NparamWithLR+1]);
+    end
 else
-    beta_attn_learn = beta_attn_choice;
+    beta_attn_choice = xpar([NparamWithLR+1]);
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn = 1;
+    else
+        beta_attn_learn = xpar([NparamWithLR+2]);
+    end
 end
 
 shapeMap        = sesdata.expr.shapeMap ;
