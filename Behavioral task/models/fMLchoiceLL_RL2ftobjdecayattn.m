@@ -12,21 +12,20 @@ loglikehood = 0 ;
 NparamBasic = 4 ;
 
 BiasL = xpar(1) ;
-magF  = xpar(2) ;
-magC  = xpar(3) ;
-
-% xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
+mag  = xpar(2) ;
+omega  = xpar(3) ;
 decay = xpar(4) ;
-alpha_rewColor      = xpar([NparamBasic+1]) ;
-alpha_rewShape      = xpar([NparamBasic+1]) ;
-alpha_rewPattern    = xpar([NparamBasic+1]) ; 
-alpha_rew           = xpar([NparamBasic+2]) ;
+
+alpha_rewColor      = xpar(NparamBasic+1) ;
+alpha_rewShape      = xpar(NparamBasic+1) ;
+alpha_rewPattern    = xpar(NparamBasic+1) ; 
+alpha_rew           = xpar(NparamBasic+2) ;
 NparamWithLR = NparamBasic+2;
 if sesdata.flagUnr==1
-    alpha_unrColor      = xpar([NparamBasic+3]) ;
-    alpha_unrShape      = xpar([NparamBasic+3]) ;
-    alpha_unrPattern    = xpar([NparamBasic+3]) ;
-    alpha_unr           = xpar([NparamBasic+4]) ;
+    alpha_unrColor      = xpar(NparamBasic+3) ;
+    alpha_unrShape      = xpar(NparamBasic+3) ;
+    alpha_unrPattern    = xpar(NparamBasic+3) ;
+    alpha_unr           = xpar(NparamBasic+4) ;
     NparamWithLR = NparamBasic+4;
 else
     alpha_unrColor      = alpha_rewColor ;
@@ -89,10 +88,10 @@ for cnt_trial=1:ntrials
                         [idx_shape(2), idx_color(2), idx_pattern(2)], ...
                         sesdata.attn_mode_choice, beta_attn_choice);
 
-    pChoiceR = 1./(1+exp(-magF*(attn_w_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
-                              + attn_w_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
-                              + attn_w_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
-                         -magC*(vo(inputObj(2, cnt_trial))-vo(inputObj(1, cnt_trial)))...
+    pChoiceR = 1./(1+exp(-mag*omega*(attn_w_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
+                                   + attn_w_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
+                                   + attn_w_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1)))) ...
+                         -mag*(1-omega)*(vo(inputObj(2, cnt_trial))-vo(inputObj(1, cnt_trial)))...
                          +BiasL)) ;
     
     pChoiceL = 1-pChoiceR ;

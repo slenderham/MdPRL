@@ -6,6 +6,7 @@ randstate = clock ;
 addpath("../PRLexp/inputs_sim/")
 addpath("../utils")
 addpath("../files/")
+addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 addpath("../models/")
 addpath("../../PRLexpv3_5v2/")
 
@@ -61,11 +62,11 @@ xlabels = reshape(reshape(xlabels, [4 4])', [16, 1]);
 
 sim_dim = 4;
 ll_temp=0;
-for i1=1:4
-    for i2=1:4
-        for sim_i1=1:4
-            for sim_i2=1:4
-                parfor cnt_samp=1:10
+for i1=3:4
+    for i2=3:4
+        for sim_i1=3:4
+            for sim_i2=3:4
+                for cnt_samp=1:10
                     disp(strcat('Sample: ', num2str(cnt_samp), ...
                         ', Attn Choice: ', attn_modes{sim_i1}, ...
                         ', Attn Learn: ', attn_modes{sim_i2}));
@@ -126,7 +127,7 @@ for i1=1:4
 
                     ll = @(x) sum(fMLchoiceLL_RL2conjdecayattn_constrained(x, sesdata));
                     xpar = mlparRL2conj_decay_attn_constr{i1, i2, cnt_samp, sim_i1, sim_i2, 4}(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                    hess_temp{i1, i2, cnt_samp, sim_i1, sim_i2} = NumHessian(ll, xpar);
+                    hess_temp{i1, i2, cnt_samp, sim_i1, sim_i2} = hessian(ll, xpar);
                     priors = sum(log_priors(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta));
                     LApprox_temp(i1, i2, cnt_samp, sim_i1, sim_i2) = ...
                         -laplace_approximation(-ll_temp(i1, i2, cnt_samp, sim_i1, sim_i2), priors, ...

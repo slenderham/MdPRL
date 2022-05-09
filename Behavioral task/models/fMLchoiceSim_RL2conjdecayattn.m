@@ -9,11 +9,11 @@ function [C, R, V, A] = fMLchoiceSim_RL2conjdecayattn(xpar, sesdata)
 % fitted parametres
 
 NparamBasic = 4 ;
-% xpar(2:3)= abs(xpar(2:3)) ;
 
 BiasL = xpar(1) ;
-magF  = xpar(2) ;
-magC  = xpar(3) ;
+mag  = xpar(2) ;
+omega  = xpar(3) ;
+decay = xpar(4) ;
 
 % xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
 decay = xpar(4) ;
@@ -35,14 +35,20 @@ else
     alpha_unr           = alpha_rew ;
 end
 
-beta_attn_choice_feat = xpar([NparamWithLR+1]);
-beta_attn_choice_conj = xpar([NparamWithLR+2]);
-if sesdata.flagSepAttn==1
-    beta_attn_learn_feat = xpar([NparamWithLR+3]);
-    beta_attn_learn_conj = xpar([NparamWithLR+4]);
+if strcmp(sesdata.attn_mode_choice, "const")
+    beta_attn_choice = 0;
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn = 0;
+    else
+        beta_attn_learn = xpar(NparamWithLR+1);
+    end
 else
-    beta_attn_learn_feat = beta_attn_choice_feat;
-    beta_attn_learn_conj = beta_attn_choice_conj;
+    beta_attn_choice = xpar(NparamWithLR+1);
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn = 0;
+    else
+        beta_attn_learn = xpar(NparamWithLR+2);
+    end
 end
 
 
@@ -79,20 +85,20 @@ for cnt_trial=1:ntrials
     attn_w_feat_choice = attention_weights(vf, ...
         [idx_shape(1), idx_color(1), idx_pattern(1)], ...
         [idx_shape(2), idx_color(2), idx_pattern(2)], ...
-        sesdata.attn_mode_choice, beta_attn_choice_feat);
+        sesdata.attn_mode_choice, beta_attn_choice*omega);
 
     attn_w_conj_choice = attention_weights(vc, ...
         [idx_patternshape(1), idx_patterncolor(1), idx_shapecolor(1)], ...
         [idx_patternshape(2), idx_patterncolor(2), idx_shapecolor(2)], ...
-        sesdata.attn_mode_choice, beta_attn_choice_conj);
+        sesdata.attn_mode_choice, beta_attn_choice*(1-omega));
 
-    pChoiceR = 1./(1+exp(-magF*(attn_w_feat_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
-                               +attn_w_feat_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
-                               +attn_w_feat_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
-                         -magC*(attn_w_conj_choice(1)*(vc(idx_patternshape(2))-vc(idx_patternshape(1))) ...
-                               +attn_w_conj_choice(2)*(vc(idx_patterncolor(2))-vc(idx_patterncolor(1))) ...
-                               +attn_w_conj_choice(3)*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1)))) ...
-                         +BiasL)) ;
+    pChoiceR = 1./(1+exp(-mag*omega*(attn_w_feat_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
+                                    +attn_w_feat_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
+                                    +attn_w_feat_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
+                         -mag*(1-omega)*(attn_w_conj_choice(1)*(vc(idx_patternshape(2))-vc(idx_patternshape(1))) ...
+                                        +attn_w_conj_choice(2)*(vc(idx_patterncolor(2))-vc(idx_patterncolor(1))) ...
+                                        +attn_w_conj_choice(3)*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1)))) ...
+                         +BiasL));
 
     pChoiceL = 1-pChoiceR ;
 
@@ -107,12 +113,12 @@ for cnt_trial=1:ntrials
     attn_w_feat_learn = attention_weights(vf, ...
         [idx_shape(1), idx_color(1), idx_pattern(1)], ...
         [idx_shape(2), idx_color(2), idx_pattern(2)], ...
-        sesdata.attn_mode_learn, beta_attn_learn_feat);
+        sesdata.attn_mode_learn, beta_attn_learn*omega);
 
     attn_w_conj_learn = attention_weights(vc, ...
         [idx_patternshape(1), idx_patterncolor(1), idx_shapecolor(1)], ...
         [idx_patternshape(2), idx_patterncolor(2), idx_shapecolor(2)], ...
-        sesdata.attn_mode_learn, beta_attn_learn_conj);
+        sesdata.attn_mode_learn, beta_attn_learn*(1-omega));
 
     % conjunction
     if correct

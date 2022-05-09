@@ -10,28 +10,34 @@ function [C, R, V, A] = fMLchoiceSim_RL2ftdecayattn(xpar, sesdata)
 
 NparamBasic = 3 ;
 
-% xpar(2) = abs(xpar(2)) ;
-
 BiasL = xpar(1) ;
 mag = xpar(2) ;
-
-% xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
 decay = xpar(3) ;
-alpha_rewColor      = xpar([NparamBasic+1]) ;
-alpha_rewShape      = xpar([NparamBasic+1]) ;
-alpha_rewPattern    = xpar([NparamBasic+1]) ;
 
-alpha_unrColor      = xpar([NparamBasic+2]) ;
-alpha_unrShape      = xpar([NparamBasic+2]) ;
-alpha_unrPattern    = xpar([NparamBasic+2]) ;
+alpha_rewColor      = xpar(NparamBasic+1) ;
+alpha_rewShape      = xpar(NparamBasic+1) ;
+alpha_rewPattern    = xpar(NparamBasic+1) ;
+
+alpha_unrColor      = xpar(NparamBasic+2) ;
+alpha_unrShape      = xpar(NparamBasic+2) ;
+alpha_unrPattern    = xpar(NparamBasic+2) ;
 
 NparamWithLR = NparamBasic+2;
 
-beta_attn_choice = xpar([NparamWithLR+1]);
-if sesdata.flagSepAttn==1
-    beta_attn_learn = xpar([NparamWithLR+2]);
+if strcmp(sesdata.attn_mode_choice, "const")
+    beta_attn_choice = 1;
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn = 1;
+    else
+        beta_attn_learn = xpar(NparamWithLR+1);
+    end
 else
-    beta_attn_learn = beta_attn_choice;
+    beta_attn_choice = xpar(NparamWithLR+1);
+    if strcmp(sesdata.attn_mode_learn, "const")
+        beta_attn_learn = 1;
+    else
+        beta_attn_learn = xpar(NparamWithLR+2);
+    end
 end
 
 shapeMap        = sesdata.expr.shapeMap ;

@@ -374,7 +374,7 @@ zBIC(2:end,2:end,:) = 2.*z(2:end,2:end,:)+7*log(ntrials);
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            wpar(i1, i2, cnt_sbj, :) = attns.mlparRL2conj_decay_attn_constr{i1, i2, idxperf(cnt_sbj)}(1:12);
+            wpar{i1, i2}(cnt_sbj, :) = attns.mlparRL2conj_decay_attn_constr{i1, i2, idxperf(cnt_sbj)}.params;
         end
     end
 end
@@ -383,7 +383,7 @@ end
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            xpar(i1, i2, cnt_sbj, :) = attns.mlparRL2conj_decay_attn{i1, i2, idxperf(cnt_sbj)}(1:12);
+            xpar{i1, i2}(cnt_sbj, :) = attns.mlparRL2conj_decay_attn{i1, i2, idxperf(cnt_sbj)}.params;
         end
     end
 end
@@ -391,7 +391,7 @@ end
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            vpar(i1, i2, cnt_sbj, :) = attns.mlparRL2conj_decay_attn_onlyfattn{i1, i2, idxperf(cnt_sbj)}(1:12);
+            vpar{i1, i2}(cnt_sbj, :) = attns.mlparRL2conj_decay_attn_onlyfattn{i1, i2, idxperf(cnt_sbj)}.params;
         end
     end
 end
@@ -399,7 +399,7 @@ end
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            ypar(i1, i2, cnt_sbj, :) = attns.mlparRL2ftobj_decay_attn{i1, i2, idxperf(cnt_sbj)}(1:10);
+            ypar{i1, i2}(cnt_sbj, :) = attns.mlparRL2ftobj_decay_attn{i1, i2, idxperf(cnt_sbj)}.params;
         end
     end
 end
@@ -407,7 +407,7 @@ end
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
-            zpar(i1, i2, cnt_sbj, :) = attns.mlparRL2ft_decay_attn{i1, i2, idxperf(cnt_sbj)}(1:7);
+            zpar{i1, i2}(cnt_sbj, :) = attns.mlparRL2ft_decay_attn{i1, i2, idxperf(cnt_sbj)}.params;
         end
     end
 end
