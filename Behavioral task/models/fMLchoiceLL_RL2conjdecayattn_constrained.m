@@ -35,16 +35,16 @@ else
 end
 
 if strcmp(sesdata.attn_mode_choice, "const")
-    beta_attn_choice = 0;
+    beta_attn_choice = 1;
     if strcmp(sesdata.attn_mode_learn, "const")
-        beta_attn_learn = 0;
+        beta_attn_learn = 1;
     else
         beta_attn_learn = xpar(NparamWithLR+1);
     end
 else
     beta_attn_choice = xpar(NparamWithLR+1);
     if strcmp(sesdata.attn_mode_learn, "const")
-        beta_attn_learn = 0;
+        beta_attn_learn = 1;
     else
         beta_attn_learn = xpar(NparamWithLR+2);
     end
@@ -112,9 +112,9 @@ for cnt_trial=1:ntrials
     end
 
     attn_w_learn = attention_weights( ...
-                    beta_attn_choice*(omega*vf([idx_shape(1), idx_color(1), idx_pattern(1)])...
+                    beta_attn_learn*(omega*vf([idx_shape(1), idx_color(1), idx_pattern(1)])...
                                      +(1-omega)*vc([idx_patterncolor(1), idx_patternshape(1), idx_shapecolor(1)])), ...
-                    beta_attn_choice*(omega*vf([idx_shape(2), idx_color(2), idx_pattern(2)])...
+                    beta_attn_learn*(omega*vf([idx_shape(2), idx_color(2), idx_pattern(2)])...
                                      +(1-omega)*vc([idx_patterncolor(2), idx_patternshape(2), idx_shapecolor(2)])), ...
                     sesdata.attn_mode_learn, 1);
 
