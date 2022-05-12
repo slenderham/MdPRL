@@ -8,7 +8,7 @@ addpath("../PRLexp/SubjectData_all/")
 addpath("../utils")
 addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 
-%%
+%% load subjects
 
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
@@ -35,306 +35,153 @@ subjects2_prl = "SubjectData2/PRL_"+subjects2;
 subjects_inputs = [subjects1_inputs subjects2_inputs];
 subjects_prl = [subjects1_prl subjects2_prl];
 
-% 
-% subjects = [subjects]
 
-% subjects = {'AA'};
+%% load model specs
 
-attn_modes = {'const', 'diff', 'sum', 'max'};
-len_i_1 = length(attn_modes);
-len_i_2 = length(attn_modes);
+attn_ops = ["diff", "sum", "max"];
+attn_times = ["C", "L", "CL"];
+
+[attn_ops, attn_times] = meshgrid(attn_ops, attn_times);
+attn_modes = ["const", "none"; attn_ops(:) attn_times(:)];
 
 all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
-                   "fMLchoiceLL_RL2ftobjdecayattn", ...
-                   "fMLchoiceLL_RL2conjdecayattn", ...
-                   "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
-                   "fMLchoiceLL_RL2conjdecayattn_constrained"];
+    "fMLchoiceLL_RL2ftobjdecayattn", ...
+    "fMLchoiceLL_RL2conjdecayattn", ...
+    "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
+    "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-nrep        = 10;
+all_model_Nparambasic = [3, 4, 4, 4, 4];
+all_model_Nalphas = [2, 2, 2, 2, 2];
+all_model_Nbetas = [1, 1, 2, 1, 2];
 
-op          = optimset('Display', 'off', 'MaxIter', 4000);
+bound_eps = 1e-6;
+bias_bound = 50;
+p_bias_bound = 50;
+temp_bound = 100;
+p_temp_bound = 100;
+
+all_lbs = {...
+    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps]};
+
+all_plbs = {...
+    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
+    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps]};
+
+all_ubs = {...
+    [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
+    [bias_bound, temp_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
+    [bias_bound, temp_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound, temp_bound], ...
+    [bias_bound, temp_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
+    [bias_bound, temp_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound, temp_bound]};
+
+all_pubs = {...
+    [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
+    [p_bias_bound, p_temp_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
+    [p_bias_bound, p_temp_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound, p_temp_bound], ...
+    [p_bias_bound, p_temp_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
+    [p_bias_bound, p_temp_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound, p_temp_bound]};
+
+nrep = 10;
+
+op = optimset('Display', 'off');
+%% optimize
+
 poolobj = parpool('local', 16);
+for m = 1:length(all_model_names)
+    disp(strcat("Fitting model ", all_model_names(m)));
+    basic_params = cell(length(subjects_inputs)); % store the attention-less model's parameters for each model type
+    for a = 1:length(attn_modes)
+        disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
+        parfor cnt_sbj = 1:length(subjects_inputs)
+            disp(strcat("Fitting subject ", num2str(cnt_sbj)));
+            inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
+            resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
 
-parfor cnt_sbj = 1:length(subjects_inputs)
-    inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
-    resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
+            inputs_struct = load(inputname);
+            results_struct = load(resultsname);
+% 
+            expr = results_struct.expr;
+            input = inputs_struct.input;
+            results = results_struct.results;
 
-    inputs_struct = load(inputname);
-    results_struct = load(resultsname);
+            expr.shapeMap = repmat([1 2 3 ;
+                1 2 3 ;
+                1 2 3 ], 1,1,3) ;
 
-    expr = results_struct.expr;
-    input = inputs_struct.input;
-    results = results_struct.results;
+            expr.colorMap = repmat([1 1 1 ;
+                2 2 2 ;
+                3 3 3], 1,1,3) ;
 
-    expr.shapeMap = repmat([1 2 3 ;
-        1 2 3 ;
-        1 2 3 ], 1,1,3) ;
+            expr.patternMap(:,:,1) = ones(3,3) ;
+            expr.patternMap(:,:,2) = 2*ones(3,3) ;
+            expr.patternMap(:,:,3) = 3*ones(3,3) ;
 
-    expr.colorMap = repmat([1 1 1 ;
-        2 2 2 ;
-        3 3 3], 1,1,3) ;
-
-    expr.patternMap(:,:,1) = ones(3,3) ;
-    expr.patternMap(:,:,2) = 2*ones(3,3) ;
-    expr.patternMap(:,:,3) = 3*ones(3,3) ;
-
-    fvalminRL2_ft_attn = ones(len_i_1, len_i_2)*10000;
-    fvalminRL2_ftobj_attn = ones(len_i_1, len_i_2)*10000;
-    fvalminRL2_ftconj_attn = ones(len_i_1, len_i_2)*10000;
-    fvalminRL2_ftconj_attn_onlyfattn = ones(len_i_1, len_i_2)*10000;
-    fvalminRL2_ftconj_attn_constr = ones(len_i_1, len_i_2)*10000;
-
-    for cnt_rep  = 1:nrep
-%         disp(['----------------------------------------------'])
-        disp(['Subject: ', num2str(cnt_sbj),', Repeat: ', num2str(cnt_rep)])
-
-        for i1 = 1:len_i_1
-            for i2 = 1:len_i_2
-%                 disp(['Attention For Choice: ', attn_modes{i1},', Learning: ', attn_modes{i2}])
+            minfval = 1000000;
+            
+            for cnt_rep = 1:nrep
                 sesdata = struct();
-                sesdata.sig     = 1 ;
                 sesdata.input   = input ;
                 sesdata.expr    = expr ;
                 sesdata.results = results ;
                 sesdata.NtrialsShort = expr.NtrialsShort ;
                 sesdata.flagUnr = 1 ;
-                sesdata.flagSepAttn = 1;
 
-                %% RL2 Feature decay
                 sesdata.flag_couple = 0 ;
                 sesdata.flag_updatesim = 0 ;
-                
-                NparamBasic = 3 ;
-                if sesdata.flagUnr==1
-                    sesdata.Nalpha = 2 ;
-                else
-                    sesdata.Nalpha = 1 ;
-                end
 
-                if i1==1 && i2==1
+                % load parameter numbers
+                NparamBasic = all_model_Nparambasic(m);
+                sesdata.Nalpha = all_model_Nalphas(m);
+
+                if a==1
                     sesdata.Nbeta = 0;
-                elseif i1==1 || i2==1
-                    sesdata.Nbeta = 1;
                 else
-                    sesdata.Nbeta = 2;
+                    sesdata.Nbeta = all_model_Nbetas(m);
                 end
 
-                sesdata.attn_mode_choice = attn_modes{i1};
-                sesdata.attn_mode_learn = attn_modes{i2};
-                
-                plbs = [-1,  0, 0, 0, 0,  0,  0];
-                pubs = [ 1, 10, 1, 1, 1, 10, 10];
+                % load attn type (const, diff, sum, max) and attn
+                % time(none, choice, learning, both)
+                sesdata.attn_op = attn_modes(a,1);
+                sesdata.attn_time = attn_modes(a,2);
+
+                % load lb and ub, initialize
+                plbs = all_plbs{m};
+                pubs = all_pubs{m};
                 plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ipar= plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
-                
-                ll = @(x)sum(fMLchoiceLL_RL2ftdecayattn(x, sesdata));
-                
-                lbs = [-50,  0, 0, 0, 0,  0,  0];
-                ubs = [ 50, 50, 1, 1, 1, 50, 50];
+                ipar = plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
+                if a>1 && cnt_rep==1 % initialize with the no-attn model's parameters for one trial
+                    ipar(1:length(basic_params{cnt_sbj})) = basic_params{cnt_sbj};
+                end
+                lbs = all_lbs{m};
+                ubs = all_ubs{m};
                 lbs = lbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 ubs = ubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                
-                [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
-                
-                if fval <= fvalminRL2_ft_attn(i1, i2)
-                    fvalminRL2_ft_attn(i1, i2) = fval ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.params(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta) = (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.fval = fval ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.avgfval = fval./length(sesdata.results.reward) ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.iters = output.iterations;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.exitflag = exitflag ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.hessian = hessian(ll, xpar) ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.lbs = lbs ;
-                    mlparRL2ft_decay_attn{i1, i2, cnt_sbj}.ubs = ubs ;
-                end
 
-                %% RL2 Feature+Obj decay
-                NparamBasic = 4 ;
+                % load model likelihood func and optimize
+                ll = str2func(all_model_names(m));
+                ll = @(x)sum(ll(x, sesdata));
+                [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op) ;
 
-                if sesdata.flagUnr==1
-                    sesdata.Nalpha = 4 ;
-                else
-                    sesdata.Nalpha = 2 ;
-                end
-                
-                if i1==1 && i2==1
-                    sesdata.Nbeta = 0;
-                elseif i1==1 || i2==1
-                    sesdata.Nbeta = 1;
-                else
-                    sesdata.Nbeta = 2;
-                end
-
-                sesdata.attn_mode_choice = attn_modes{i1};
-                sesdata.attn_mode_learn = attn_modes{i2};
-                
-                plbs = [-1,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                pubs = [ 1, 10, 1, 1, 1, 1, 1, 1, 10, 10];
-                plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ipar= plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
-                
-                ll = @(x)sum(fMLchoiceLL_RL2ftobjdecayattn(x, sesdata));
-                
-                lbs = [-50,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                ubs = [ 50, 50, 1, 1, 1, 1, 1, 1, 50, 50];
-                lbs = lbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ubs = ubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                
-                [xpar, fval, exitflag, output] = fmincon(ll, ipar, [],[],[],[], lbs, ubs, [], op) ;
-                
-                if fval <= fvalminRL2_ftobj_attn(i1, i2)
-                    fvalminRL2_ftobj_attn(i1, i2) = fval ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.params(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.fval = fval ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.avgfval = fval./length(sesdata.results.reward) ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.iters = output.iterations;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.exitflag = exitflag ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.hessian = hessian(ll, xpar) ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.lbs = lbs ;
-                    mlparRL2ftobj_decay_attn{i1, i2, cnt_sbj}.ubs = ubs ;
-                end
-
-                %% RL2 conjunction decay
-                NparamBasic = 4 ;
-
-                if sesdata.flagUnr==1
-                    sesdata.Nalpha = 4 ;
-                else
-                    sesdata.Nalpha = 2 ;
-                end
-                
-                if i1==1 && i2==1
-                    sesdata.Nbeta = 0;
-                elseif i1==1 || i2==1
-                    sesdata.Nbeta = 1;
-                else
-                    sesdata.Nbeta = 2;
-                end
-                
-                sesdata.attn_mode_choice = attn_modes{i1};
-                sesdata.attn_mode_learn = attn_modes{i2};
-                
-                plbs = [-1,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                pubs = [ 1, 10, 1, 1, 1, 1, 1, 1, 10, 10];
-                plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ipar= plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
-                
-                ll = @(x)sum(fMLchoiceLL_RL2conjdecayattn(x, sesdata));
-                
-                lbs = [-50,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                ubs = [ 50, 50, 1, 1, 1, 1, 1, 1, 50, 50];
-                lbs = lbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ubs = ubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                
-                [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
-                
-                if fval <= fvalminRL2_ftconj_attn(i1, i2)
-                    fvalminRL2_ftconj_attn(i1, i2) = fval ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.params(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.fval = fval ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.avgfval = fval./length(sesdata.results.reward) ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.iters = output.iterations;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.exitflag = exitflag ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.hessian = hessian(ll, xpar) ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.lbs = lbs ;
-                    mlparRL2conj_decay_attn{i1, i2, cnt_sbj}.ubs = ubs ;
-                end
-
-                %% RL2 conjunction decay with only feature attention
-                NparamBasic = 4 ;
-
-                if sesdata.flagUnr==1
-                    sesdata.Nalpha = 4 ;
-                else
-                    sesdata.Nalpha = 2 ;
-                end
-                
-                if i1==1 && i2==1
-                    sesdata.Nbeta = 0;
-                elseif i1==1 || i2==1
-                    sesdata.Nbeta = 1;
-                else
-                    sesdata.Nbeta = 2;
-                end
-
-                sesdata.attn_mode_choice = attn_modes{i1};
-                sesdata.attn_mode_learn = attn_modes{i2};
-                
-                plbs = [-1,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                pubs = [ 1, 10, 1, 1, 1, 1, 1, 1, 10, 10];
-                plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ipar= plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
-                
-                ll = @(x)sum(fMLchoiceLL_RL2conjdecayattn_onlyfattn(x, sesdata));
-                
-                lbs = [-50,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                ubs = [ 50, 50, 1, 1, 1, 1, 1, 1, 50, 50];
-                lbs = lbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ubs = ubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                
-                [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
-                
-                if fval <= fvalminRL2_ftconj_attn_onlyfattn(i1, i2)
-                    fvalminRL2_ftconj_attn_onlyfattn(i1, i2) = fval ;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.params(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.fval = fval ;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.avgfval = fval./length(sesdata.results.reward) ;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.iters = output.iterations;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.exitflag = exitflag;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.hessian = hessian(ll, xpar) ;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.lbs = lbs ;
-                    mlparRL2conj_decay_attn_onlyfattn{i1, i2, cnt_sbj}.ubs = ubs ;
-                end
-
-                %% RL2 conjunction decay constrained attn
-                NparamBasic = 4 ;
-
-                if sesdata.flagUnr==1
-                    sesdata.Nalpha = 4 ;
-                else
-                    sesdata.Nalpha = 2 ;
-                end
-                
-                if i1==1 && i2==1
-                    sesdata.Nbeta = 0;
-                elseif i1==1 || i2==1
-                    sesdata.Nbeta = 1;
-                else
-                    sesdata.Nbeta = 2;
-                end
-                
-                sesdata.attn_mode_choice = attn_modes{i1};
-                sesdata.attn_mode_learn = attn_modes{i2};
-                
-                plbs = [-1,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                pubs = [ 1, 10, 1, 1, 1, 1, 1, 1, 10, 10];
-                plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ipar= plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
-                
-                ll = @(x)sum(fMLchoiceLL_RL2conjdecayattn_constrained(x, sesdata));
-                
-                lbs = [-50,  0, 0, 0, 0, 0, 0, 0,  0,  0];
-                ubs = [ 50, 50, 1, 1, 1, 1, 1, 1, 50, 50];
-                lbs = lbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                ubs = ubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                
-                [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
-                
-                if fval <= fvalminRL2_ftconj_attn_constr(i1, i2)
-                    fvalminRL2_ftconj_attn_constr(i1, i2) = fval ;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.params(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)= (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.fval = fval ;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.avgfval = fval./length(sesdata.results.reward) ;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.iters = output.iterations;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.exitflag = exitflag;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.hessian = hessian(ll, xpar) ;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.lbs = lbs ;
-                    mlparRL2conj_decay_attn_constr{i1, i2, cnt_sbj}.ubs = ubs ;
+                if fval <= minfval
+                    minfval = fval ;
+                    fit_results{m, a, cnt_sbj}.params = (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
+                    fit_results{m, a, cnt_sbj}.fval = fval ;
+                    fit_results{m, a, cnt_sbj}.iters = output.iterations;
+                    fit_results{m, a, cnt_sbj}.exitflag = exitflag ;
+                    if a==1
+                        basic_params{cnt_sbj} = xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
+                    end
+%                     fit_results{m, a, cnt_sbj}.hessian = hessian(ll, xpar) ;
+%                     fit_results.lbs = lbs ;
+%                     fit_results.ubs = ubs ;
                 end
             end
         end

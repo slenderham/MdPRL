@@ -12,8 +12,8 @@ loglikehood = 0 ;
 NparamBasic = 4 ;
 
 BiasL = xpar(1) ;
-mag  = xpar(2) ;
-omega  = xpar(3) ;
+magF  = xpar(2) ;
+magC  = xpar(3) ;
 decay = xpar(4) ;
 
 alpha_rewColor      = xpar(NparamBasic+1) ;
@@ -35,20 +35,12 @@ else
 end
 
 
-if strcmp(sesdata.attn_mode_choice, "const")
-    beta_attn_choice = 1;
-    if strcmp(sesdata.attn_mode_learn, "const")
-        beta_attn_learn = 1;
-    else
-        beta_attn_learn = xpar(NparamWithLR+1);
-    end
+if strcmp(sesdata.attn_time, "none")
+    beta_attn_feat = 1;
+    beta_attn_conj = 1;
 else
-    beta_attn_choice = xpar(NparamWithLR+1);
-    if strcmp(sesdata.attn_mode_learn, "const")
-        beta_attn_learn = 1;
-    else
-        beta_attn_learn = xpar(NparamWithLR+2);
-    end
+    beta_attn_feat = xpar(NparamWithLR+1);
+    beta_attn_conj = xpar(NparamWithLR+2);
 end
 
 
@@ -89,42 +81,53 @@ for cnt_trial=1:ntrials
     idx_shapecolor(2) = (idx_shape(2)-1)*3 + (idx_color(2)-4)+19 ; % 19-27
     assert(19<=idx_shapecolor(1) & idx_shapecolor(1)<=27 & 19<=idx_shapecolor(2) & idx_shapecolor(2)<=27);
 
-    attn_w_feat_choice = attention_weights(vf, ...
+    attn_w_feat = attention_weights(vf, ...
         [idx_shape(1), idx_color(1), idx_pattern(1)], ...
         [idx_shape(2), idx_color(2), idx_pattern(2)], ...
-        sesdata.attn_mode_choice, beta_attn_choice*omega);
+        sesdata.attn_op, beta_attn_feat);
 
-    attn_w_conj_choice = attention_weights(vc, ...
+    attn_w_conj = attention_weights(vc, ...
         [idx_patternshape(1), idx_patterncolor(1), idx_shapecolor(1)], ...
         [idx_patternshape(2), idx_patterncolor(2), idx_shapecolor(2)], ...
-        sesdata.attn_mode_choice, beta_attn_choice*(1-omega));
+        sesdata.attn_op, beta_attn_conj);
 
-    pChoiceR = 1./(1+exp(-mag*omega*(attn_w_feat_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
-                                    +attn_w_feat_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
-                                    +attn_w_feat_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
-                         -mag*(1-omega)*(attn_w_conj_choice(1)*(vc(idx_patternshape(2))-vc(idx_patternshape(1))) ...
-                                        +attn_w_conj_choice(2)*(vc(idx_patterncolor(2))-vc(idx_patterncolor(1))) ...
-                                        +attn_w_conj_choice(3)*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1)))) ...
-                         +BiasL));
+    if strcmp(sesdata.attn_time, "C")
+        attn_w_feat_choice = attn_w_feat;
+        attn_w_conj_choice = attn_w_conj;
+        attn_w_feat_learn = ones(1, 3)/3;
+        attn_w_conj_learn = ones(1, 3)/3;
+    elseif strcmp(sesdata.attn_time, "L")
+        attn_w_feat_choice = ones(1, 3)/3;
+        attn_w_conj_choice = ones(1, 3)/3;
+        attn_w_feat_learn = attn_w_feat;
+        attn_w_conj_learn = attn_w_conj;
+    elseif strcmp(sesdata.attn_time, "CL")
+        attn_w_feat_choice = attn_w_feat;
+        attn_w_conj_choice = attn_w_conj;
+        attn_w_feat_learn = attn_w_feat;
+        attn_w_conj_learn = attn_w_conj;
+    elseif strcmp(sesdata.attn_time, "none")
+        attn_w_feat_choice = ones(1, 3)/3;
+        attn_w_conj_choice = ones(1, 3)/3;
+        attn_w_feat_learn = ones(1, 3)/3;
+        attn_w_conj_learn = ones(1, 3)/3;
+    end
+       
+    logit = magF*(attn_w_feat_choice(1)*(vf(idx_shape(2))-vf(idx_shape(1))) ...
+                 +attn_w_feat_choice(2)*(vf(idx_color(2))-vf(idx_color(1))) ...
+                 +attn_w_feat_choice(3)*(vf(idx_pattern(2))-vf(idx_pattern(1))))...
+           +magC*(attn_w_conj_choice(1)*(vc(idx_patternshape(2))-vc(idx_patternshape(1))) ...
+                 +attn_w_conj_choice(2)*(vc(idx_patterncolor(2))-vc(idx_patterncolor(1))) ...
+                 +attn_w_conj_choice(3)*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1)))) ...
+           -BiasL;
 
-    pChoiceL = 1-pChoiceR ;
     if cnt_trial >= 1
         if choice == 2
-            loglikehood(cnt_trial) = - log(pChoiceR) ;
+            loglikehood(cnt_trial) =  - logsigmoid(logit) ;
         else
-            loglikehood(cnt_trial) = - log(pChoiceL) ;
+            loglikehood(cnt_trial) =  - logsigmoid(-logit) ;
         end
     end
-
-    attn_w_feat_learn = attention_weights(vf, ...
-        [idx_shape(1), idx_color(1), idx_pattern(1)], ...
-        [idx_shape(2), idx_color(2), idx_pattern(2)], ...
-        sesdata.attn_mode_learn, beta_attn_learn*omega);
-
-    attn_w_conj_learn = attention_weights(vc, ...
-        [idx_patternshape(1), idx_patterncolor(1), idx_shapecolor(1)], ...
-        [idx_patternshape(2), idx_patterncolor(2), idx_shapecolor(2)], ...
-        sesdata.attn_mode_learn, beta_attn_learn*(1-omega));
 
     % conjunction
     if correct
@@ -270,7 +273,7 @@ end
 end
 
 % function v = decayV(v, unCh, decay)
-%     v(unCh) = v(unCh)*(1-decay) ;
+%     v(unCh) = v(unCh)*(1-decay) ;
 % end
 function v = decayV(v, unCh, decay)
 v(unCh) = v(unCh) - (v(unCh)-0.5)*(decay) ;
@@ -329,7 +332,7 @@ function [attn] = attention_weights(v, idxes1, idxes2, mode, beta)
     if strcmp(mode, 'diff')
         attn = softmax(beta*abs(v(idxes1)-v(idxes2)));
     elseif strcmp(mode, 'sum')
-        attn = softmax(beta*(v(idxes1)+v(idxes2)));
+        attn = softmax(beta*(v(idxes1)+v(idxes2))/2);
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v(idxes1), v(idxes2)));
     elseif strcmp(mode, 'const')
