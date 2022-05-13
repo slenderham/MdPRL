@@ -98,15 +98,15 @@ for i1=1:4
 end
 wAIC = nan*w;
 wAIC(1,1,:) = 2.*w(1,1,:)+2*8;
-wAIC(1,2:end,:) = 2.*w(1,2:end,:)+2*10;
-wAIC(2:end,1,:) = 2.*w(2:end,1,:)+2*10;
-wAIC(2:end,2:end,:) = 2.*w(2:end,2:end,:)+2*12;
+wAIC(1,2:end,:) = 2.*w(1,2:end,:)+2*9;
+wAIC(2:end,1,:) = 2.*w(2:end,1,:)+2*9;
+wAIC(2:end,2:end,:) = 2.*w(2:end,2:end,:)+2*10;
 
 wBIC = nan*w;
 wBIC(1,1,:) = 2.*w(1,1,:)+8*log(ntrials);
-wBIC(1,2:end,:) = 2.*w(1,2:end,:)+10*log(ntrials);
-wBIC(2:end,1,:) = 2.*w(2:end,1,:)+10*log(ntrials);
-wBIC(2:end,2:end,:) = 2.*w(2:end,2:end,:)+12*log(ntrials);
+wBIC(1,2:end,:) = 2.*w(1,2:end,:)+9*log(ntrials);
+wBIC(2:end,1,:) = 2.*w(2:end,1,:)+9*log(ntrials);
+wBIC(2:end,2:end,:) = 2.*w(2:end,2:end,:)+10*log(ntrials);
 
 % figure;
 % mw = mean(w,3);
@@ -145,15 +145,15 @@ for i1=1:4
 end
 xAIC = nan*x;
 xAIC(1,1,:) = 2.*x(1,1,:)+2*8;
-xAIC(1,2:end,:) = 2.*x(1,2:end,:)+2*10;
-xAIC(2:end,1,:) = 2.*x(2:end,1,:)+2*10;
-xAIC(2:end,2:end,:) = 2.*x(2:end,2:end,:)+2*12;
+xAIC(1,2:end,:) = 2.*x(1,2:end,:)+2*9;
+xAIC(2:end,1,:) = 2.*x(2:end,1,:)+2*9;
+xAIC(2:end,2:end,:) = 2.*x(2:end,2:end,:)+2*10;
 
 xBIC = nan*x;
 xBIC(1,1,:) = 2.*x(1,1,:)+8*log(ntrials);
-xBIC(1,2:end,:) = 2.*x(1,2:end,:)+10*log(ntrials);
-xBIC(2:end,1,:) = 2.*x(2:end,1,:)+10*log(ntrials);
-xBIC(2:end,2:end,:) = 2.*x(2:end,2:end,:)+12*log(ntrials);
+xBIC(1,2:end,:) = 2.*x(1,2:end,:)+9*log(ntrials);
+xBIC(2:end,1,:) = 2.*x(2:end,1,:)+9*log(ntrials);
+xBIC(2:end,2:end,:) = 2.*x(2:end,2:end,:)+10*log(ntrials);
 
 % figure;
 % mx = mean(x,3);
@@ -379,7 +379,6 @@ for i1=1:4
     end
 end
 
-
 for i1=1:4
     for i2=1:4
         for cnt_sbj=1:length(idxperf)
@@ -425,7 +424,6 @@ subjects = {...
     'EE', 'FF', 'GG', 'HH', 'II', 'JJ', 'KK', 'LL', ...
     'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT', ...
     'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
-
 
 for cnt_sbj = 1:length(subjects_inputs)
     disp(['Subject: ', num2str(idxperf(cnt_sbj))])
@@ -584,6 +582,36 @@ AIC_ftconj_constr(1,1,:,:) = LL_ftconj_constr(1,1,:,:) + 8/ntrials;
 AIC_ftconj_constr(1,2:end,:,:) = LL_ftconj_constr(1,2:end,:,:) + 10/ntrials;
 AIC_ftconj_constr(2:end,1,:,:) = LL_ftconj_constr(2:end,1,:,:) + 10/ntrials;
 AIC_ftconj_constr(2:end,2:end,:,:) = LL_ftconj_constr(2:end,2:end,:,:) + 12/ntrials;
+
+BIC_ft = nan*LL_ft;
+BIC_ft(1,1,:,:) = LL_ft(1,1,:,:) + 5*log(ntrials)/2/ntrials;
+BIC_ft(1,2:end,:,:) = LL_ft(1,2:end,:,:) + 6*log(ntrials)/2/ntrials;
+BIC_ft(2:end,1,:,:) = LL_ft(2:end,1,:,:) + 6*log(ntrials)/2/ntrials;
+BIC_ft(2:end,2:end,:,:) = LL_ft(2:end,2:end,:,:) + 7*log(ntrials)/2/ntrials;
+
+BIC_ftobj = nan*LL_ftobj;
+BIC_ftobj(1,1,:,:) = LL_ftobj(1,1,:,:) + 8*log(ntrials)/2/ntrials;
+BIC_ftobj(1,2:end,:,:) = LL_ftobj(1,2:end,:,:) + 9*log(ntrials)/2/ntrials;
+BIC_ftobj(2:end,1,:,:) = LL_ftobj(2:end,1,:,:) + 9*log(ntrials)/2/ntrials;
+BIC_ftobj(2:end,2:end,:,:) = LL_ftobj(2:end,2:end,:,:) + 10*log(ntrials)/2/ntrials;
+
+BIC_ftconj_onlyfattn = nan*LL_ftconj_onlyfattn;
+BIC_ftconj_onlyfattn(1,1,:,:) = LL_ftconj_onlyfattn(1,1,:,:) + 8*log(ntrials)/2/ntrials;
+BIC_ftconj_onlyfattn(1,2:end,:,:) = LL_ftconj_onlyfattn(1,2:end,:,:) + 9*log(ntrials)/2/ntrials;
+BIC_ftconj_onlyfattn(2:end,1,:,:) = LL_ftconj_onlyfattn(2:end,1,:,:) + 9*log(ntrials)/2/ntrials;
+BIC_ftconj_onlyfattn(2:end,2:end,:,:) = LL_ftconj_onlyfattn(2:end,2:end,:,:) + 10*log(ntrials)/2/ntrials;
+
+BIC_ftconj = nan*LL_ftconj;
+BIC_ftconj(1,1,:,:) = LL_ftconj(1,1,:,:) + 8*log(ntrials)/2/ntrials;
+BIC_ftconj(1,2:end,:,:) = LL_ftconj(1,2:end,:,:) + 10*log(ntrials)/2/ntrials;
+BIC_ftconj(2:end,1,:,:) = LL_ftconj(2:end,1,:,:) + 10*log(ntrials)/2/ntrials;
+BIC_ftconj(2:end,2:end,:,:) = LL_ftconj(2:end,2:end,:,:) + 12*log(ntrials)/2/ntrials;
+
+BIC_ftconj_constr = nan*LL_ftconj_constr;
+BIC_ftconj_constr(1,1,:,:) = LL_ftconj_constr(1,1,:,:) + 8*log(ntrials)/2/ntrials;
+BIC_ftconj_constr(1,2:end,:,:) = LL_ftconj_constr(1,2:end,:,:) + 10*log(ntrials)/2/ntrials;
+BIC_ftconj_constr(2:end,1,:,:) = LL_ftconj_constr(2:end,1,:,:) + 10*log(ntrials)/2/ntrials;
+BIC_ftconj_constr(2:end,2:end,:,:) = LL_ftconj_constr(2:end,2:end,:,:) + 12*log(ntrials)/2/ntrials;
 
 
 %% Plot Attention
@@ -806,16 +834,16 @@ legend(pm2, {'shape+colorXpattern', 'color+shapeXpattern', 'pattern+colorXshape'
 %% bayesian model selection
 
 total_inds = reshape(1:80, [4 4 5]);
-model_names = {["F+C_{tied}", "F+C_{untied}", "F+O", "F"], attn_modes, attn_modes};
+model_names = {["F+C_{tied}", "F+C_{untied}", "F+C_{feat attn}", "F+O", "F"], attn_modes, attn_modes};
 model_partitions = ["Input type", "Attn at Learning", "Attn at Choice"];
 
 families = reshape(permute(total_inds, [3 1 2]), [5, 16]);
 families = mat2cell(families, [1 1 1 1 1]);
-[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zBIC/2, [16, length(idxperf)])'], ...
                                   families);
 disp(bor)
 figure;
@@ -834,11 +862,11 @@ xticklabels(model_names{1})
 
 families = reshape(permute(total_inds, [1 2 3]), [4, 20]);
 families = mat2cell(families, [1 1 1 1]);
-[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zBIC/2, [16, length(idxperf)])'], ...
                                   families);
 disp(bor)
 figure;
@@ -857,11 +885,11 @@ xticklabels(model_names{2})
 
 families = reshape(permute(total_inds, [2 3 1]), [4, 20]);
 families = mat2cell(families, [1 1 1 1]);
-[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zBIC/2, [16, length(idxperf)])'], ...
                                   families);
 disp(bor)
 figure;
@@ -881,11 +909,11 @@ xticklabels(model_names{3})
 
 families = reshape(total_inds, [16 5]);
 families = mat2cell(families, repmat([1], 1, 16));
-[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zBIC/2, [16, length(idxperf)])'], ...
                                   families);
 disp(bor)
 figure;
@@ -905,12 +933,13 @@ xticklabels(xlabels)
 % Plot model performance
 % Plot all model alpha and stack
 
-[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-xAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-vAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-yAIC/2, [16, length(idxperf)])' ...
-                                  reshape(-zAIC/2, [16, length(idxperf)])'], ...
+[alpha,exp_r,xp,pxp,bor,g] = bms([reshape(-wBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-xBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-vBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-yBIC/2, [16, length(idxperf)])' ...
+                                  reshape(-zBIC/2, [16, length(idxperf)])'], ...
                                   mat2cell((1:80)', repmat([1], 1, 80)));
+disp(bor);
 figure;
 bar(reshape(alpha/sum(alpha, 'all'), [16, 5]), 'stacked')
 xticks(1:16)

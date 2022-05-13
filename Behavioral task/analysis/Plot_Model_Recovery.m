@@ -62,76 +62,76 @@ xlabels = reshape(reshape(xlabels, [4 4])', [16, 1]);
 
 sim_dim = 4;
 ll_temp=0;
-for i1=3:4
-    for i2=3:4
-        for sim_i1=3:4
-            for sim_i2=3:4
-                for cnt_samp=1:10
-                    disp(strcat('Sample: ', num2str(cnt_samp), ...
-                        ', Attn Choice: ', attn_modes{sim_i1}, ...
-                        ', Attn Learn: ', attn_modes{sim_i2}));
+for i1=1:4
+    for i2=1:4
+        for sim_i1=1:4
+            for sim_i2=1:4
+                for cnt_samp=1:100
+%                     disp(strcat('Sample: ', num2str(cnt_samp), ...
+%                         ', Attn Choice: ', attn_modes{sim_i1}, ...
+%                         ', Attn Learn: ', attn_modes{sim_i2}));
                     inputname   = ['../PRLexp/inputs_sim/input_', num2str(cnt_samp,'%03.f'), '.mat'] ;
                 
-                    inputs_struct = load(inputname);
-                
-                    expr = inputs_struct.expr;
-                    input = inputs_struct.input;
-                
-                    expr.shapeMap = repmat([1 2 3 ;
-                        1 2 3 ;
-                        1 2 3 ], 1,1,3) ;
-                
-                    expr.colorMap = repmat([1 1 1 ;
-                        2 2 2 ;
-                        3 3 3], 1,1,3) ;
-                
-                    expr.patternMap(:,:,1) = ones(3,3) ;
-                    expr.patternMap(:,:,2) = 2*ones(3,3) ;
-                    expr.patternMap(:,:,3) = 3*ones(3,3) ;
+%                     inputs_struct = load(inputname);
+%                 
+%                     expr = inputs_struct.expr;
+%                     input = inputs_struct.input;
+%                 
+%                     expr.shapeMap = repmat([1 2 3 ;
+%                         1 2 3 ;
+%                         1 2 3 ], 1,1,3) ;
+%                 
+%                     expr.colorMap = repmat([1 1 1 ;
+%                         2 2 2 ;
+%                         3 3 3], 1,1,3) ;
+%                 
+%                     expr.patternMap(:,:,1) = ones(3,3) ;
+%                     expr.patternMap(:,:,2) = 2*ones(3,3) ;
+%                     expr.patternMap(:,:,3) = 3*ones(3,3) ;
 
                     ll_temp(i1, i2, cnt_samp, sim_i1, sim_i2) = mlparRL2conj_decay_attn_constr{i1, i2, cnt_samp, sim_i1, sim_i2, 4}(100);
 
-                    sesdata = struct();
-                    sesdata.sig     = 1 ;
-                    sesdata.input   = input ;
-                    sesdata.expr    = expr ;
-                    sesdata.NtrialsShort = expr.NtrialsShort ;
-                    sesdata.flagUnr = 1 ;
-                    sesdata.flag_couple = 0 ;
-                    sesdata.flag_updatesim = 0 ;
-                    sesdata.flagSepAttn = 1;
+%                     sesdata = struct();
+%                     sesdata.sig     = 1 ;
+%                     sesdata.input   = input ;
+%                     sesdata.expr    = expr ;
+%                     sesdata.NtrialsShort = expr.NtrialsShort ;
+%                     sesdata.flagUnr = 1 ;
+%                     sesdata.flag_couple = 0 ;
+%                     sesdata.flag_updatesim = 0 ;
+%                     sesdata.flagSepAttn = 1;
+% 
+%                     sesdata.attn_mode_choice = attn_modes{i1};
+%                     sesdata.attn_mode_learn = attn_modes{i2};
+%                     sesdata.results.choice = all_Cs(cnt_samp, sim_i1, sim_i2, sim_dim, :);
+%                     sesdata.results.reward = all_Rs(cnt_samp, sim_i1, sim_i2, sim_dim, :);
+%                     NparamBasic = 4 ;
+% 
+%                     if sesdata.flagUnr==1
+%                         sesdata.Nalpha = 4 ;
+%                     else
+%                         sesdata.Nalpha = 2 ;
+%                     end
+% 
+%                     if i1==1 && i2==1
+%                         sesdata.Nbeta = 0;
+%                     elseif i1==1 || i2==1
+%                         sesdata.Nbeta = 2;
+%                     else
+%                         sesdata.Nbeta = 4;
+%                     end
+% 
+%                     lbs = [-50,  0,  0, 0, 0, 0, 0, 0,  0,  0,  0,  0];
+%                     ubs = [ 50, 50, 50, 1, 1, 1, 1, 1, 50, 50, 50, 50];
+%                     log_priors = -log(ubs-lbs);
 
-                    sesdata.attn_mode_choice = attn_modes{i1};
-                    sesdata.attn_mode_learn = attn_modes{i2};
-                    sesdata.results.choice = all_Cs(cnt_samp, sim_i1, sim_i2, sim_dim, :);
-                    sesdata.results.reward = all_Rs(cnt_samp, sim_i1, sim_i2, sim_dim, :);
-                    NparamBasic = 4 ;
-
-                    if sesdata.flagUnr==1
-                        sesdata.Nalpha = 4 ;
-                    else
-                        sesdata.Nalpha = 2 ;
-                    end
-
-                    if i1==1 && i2==1
-                        sesdata.Nbeta = 0;
-                    elseif i1==1 || i2==1
-                        sesdata.Nbeta = 2;
-                    else
-                        sesdata.Nbeta = 4;
-                    end
-
-                    lbs = [-50,  0,  0, 0, 0, 0, 0, 0,  0,  0,  0,  0];
-                    ubs = [ 50, 50, 50, 1, 1, 1, 1, 1, 50, 50, 50, 50];
-                    log_priors = -log(ubs-lbs);
-
-                    ll = @(x) sum(fMLchoiceLL_RL2conjdecayattn_constrained(x, sesdata));
-                    xpar = mlparRL2conj_decay_attn_constr{i1, i2, cnt_samp, sim_i1, sim_i2, 4}(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-                    hess_temp{i1, i2, cnt_samp, sim_i1, sim_i2} = hessian(ll, xpar);
-                    priors = sum(log_priors(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta));
-                    LApprox_temp(i1, i2, cnt_samp, sim_i1, sim_i2) = ...
-                        -laplace_approximation(-ll_temp(i1, i2, cnt_samp, sim_i1, sim_i2), priors, ...
-                        hess_temp{i1, i2, cnt_samp, sim_i1, sim_i2}, NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
+%                     ll = @(x) sum(fMLchoiceLL_RL2conjdecayattn_constrained(x, sesdata));
+%                     xpar = mlparRL2conj_decay_attn_constr{i1, i2, cnt_samp, sim_i1, sim_i2, 4}(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
+%                     hess_temp{i1, i2, cnt_samp, sim_i1, sim_i2} = hessian(ll, xpar);
+%                     priors = sum(log_priors(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta));
+%                     LApprox_temp(i1, i2, cnt_samp, sim_i1, sim_i2) = ...
+%                         -laplace_approximation(-ll_temp(i1, i2, cnt_samp, sim_i1, sim_i2), priors, ...
+%                         hess_temp{i1, i2, cnt_samp, sim_i1, sim_i2}, NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 end
             end
         end
@@ -154,7 +154,7 @@ conf_mat = zeros(16);
 for s=1:nSample
     for m=1:4
         for n=1:4
-            [M, I] = min(permute(AIC_temp(:,:,s,m,n),[2 1 3 4 5]), [],[1 2],'linear');
+            [M, I] = min(permute(BIC_temp(:,:,s,m,n),[2 1 3 4 5]), [],[1 2],'linear');
             conf_mat((m-1)*4+n,I) = conf_mat((m-1)*4+n,I)+1/nSample;
         end
     end
