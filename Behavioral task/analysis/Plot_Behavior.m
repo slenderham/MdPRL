@@ -1,4 +1,4 @@
-
+clear
 clc 
 close all
 
@@ -38,7 +38,7 @@ RL2obj_decay        = cat(1,obj.mlparRL2obj_decay{idxSubject}) ;
 
 %%
 
-probeTrialsAll = load(['../PRLexp/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
+probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
 
 for cnt_probe = 1:length(probeTrialsAll)
     pEstAll{cnt_probe}   = nan*ones(length(subjects),27) ;
@@ -47,8 +47,8 @@ end
 
 clear sesdata
 for cnt_sbj = 1:length(subjects)
-    inputname   = ['../PRLexp/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
-    resultsname = ['../PRLexp/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
+    inputname   = ['../PRLexp/inputs_all/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
     
     load(inputname)
     load(resultsname)

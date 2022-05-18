@@ -12,9 +12,12 @@ loglikehood = 0 ;
 NparamBasic = 4 ;
 
 BiasL = xpar(1) ;
-magF  = xpar(2) ;
-magC  = xpar(3) ;
+mag  = xpar(2) ;
+omega  = xpar(3) ;
 decay = xpar(4) ;
+
+magF = mag*omega;
+magC = mag*(1-omega);
 
 alpha_rewColor      = xpar(NparamBasic+1) ;
 alpha_rewShape      = xpar(NparamBasic+1) ;
@@ -38,8 +41,8 @@ if strcmp(sesdata.attn_time, "none")
     beta_attn_feat = 1;
     beta_attn_conj = 1;
 else
-    beta_attn_feat = xpar(NparamWithLR+1);
-    beta_attn_conj = xpar(NparamWithLR+2);
+    beta_attn_feat = xpar(NparamWithLR+1)*omega;
+    beta_attn_conj = xpar(NparamWithLR+1)*(1-omega);
 end
 
 shapeMap        = sesdata.expr.shapeMap ;

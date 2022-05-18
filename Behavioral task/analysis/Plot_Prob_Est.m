@@ -7,7 +7,7 @@ addpath("../files")
 addpath("../models")
 addpath("../utils")
 
-subjects = [...
+subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
     "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
     "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
@@ -17,23 +17,31 @@ subjects = [...
     "EE", "FF", "GG", "HH", "II", "JJ", "KK", "LL", ...
     "MM", "NN", "OO", "PP", "QQ", "RR", "SS", "TT", ...
     "UU", "VV", "WW", "XX", "YY", "ZZ"];
+subjects1 = lower(subjects1);
+subjects1_inputs = "inputs/input_"+subjects1;
+subjects1_prl = "SubjectData/PRL_"+subjects1;
 
-subjects = [...
-    "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
+subjects2 = [...
+    "AA", "AB", "AC", "AD", "AE", "AG", ...
     "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
     "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
     "AW", "AX", "AY"] ;
+subjects2_inputs = "inputs2/input_"+subjects2;
+subjects2_prl = "SubjectData2/PRL_"+subjects2;
 
+subjects_inputs = [subjects1_inputs subjects2_inputs];
+subjects_prl = [subjects1_prl subjects2_prl];
 
 ntrialPerf       = 33:432;
 perfTH           = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
-idxSubject       = 1:length(subjects);
+perfTH = 0.53;
+idxSubject       = 1:length(subjects_inputs);
 wSize            = 20 ; 
 
-for cnt_sbj = 1:length(subjects)
+for cnt_sbj = 1:length(subjects_inputs)
     disp(cnt_sbj)
-    inputname   = ['../PRLexp/inputs2/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
-    resultsname = ['../PRLexp/SubjectData2/PRL_', lower(subjects{cnt_sbj}) , '.mat'] ;
+    inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj}, '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj}, '.mat'] ;
     
     load(inputname)
     load(resultsname)
@@ -46,22 +54,23 @@ end
 
 idxperf = perfMean>perfTH;
 idxperf(29) = false;
-subjects = subjects(idxperf);
+subjects_inputs = subjects_inputs(idxperf);
+subjects_prl = subjects_prl(idxperf);
 
 %% 
 
-probeTrialsAll = load(['../PRLexp/inputs2/input_', 'aa' , '.mat']).expr.trialProbe;
+probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
 
 for cnt_probe = 1:length(probeTrialsAll)
-    pEstAll{cnt_probe}   = nan*ones(length(subjects),27) ;
+    pEstAll{cnt_probe}   = nan*ones(length(subjects_inputs),27) ;
     XAll{cnt_probe}      = [] ;
 end
 
 clear sesdata
 clear SS
-for cnt_sbj = 1:length(subjects)
-    inputname   = strcat('../PRLexp/inputs2/input_', lower(subjects(cnt_sbj)) , '.mat') ;
-    resultsname = strcat('../PRLexp/SubjectData2/PRL_', lower(subjects(cnt_sbj)) , '.mat') ;
+for cnt_sbj = 1:length(subjects_inputs)
+    inputname   = strcat('../PRLexp/inputs_all/', subjects_inputs(cnt_sbj) , '.mat') ;
+    resultsname = strcat('../PRLexp/SubjectData_all/', subjects_prl(cnt_sbj) , '.mat') ;
 
     load(inputname)
     load(resultsname)
@@ -77,15 +86,9 @@ for cnt_sbj = 1:length(subjects)
     expr.patternMap(:,:,1)      = ones(3,3) ;
     expr.patternMap(:,:,2)      = 2*ones(3,3) ;
     expr.patternMap(:,:,3)      = 3*ones(3,3) ;
-    disp(expr.flaginf)
-    disp(expr.playcombinations)
-%     disp(reshape(expr.prob{1}, 1, []))
-
 
     for cnt_probe = 1:length(results.probEst)
-        % read the estimated Odds ratio and convert to logits
         probEst         = results.probEst{cnt_probe} ;
-%         probEst(isnan(probEst)) = 1;
         probEst         = probEst./(1+probEst) ;
 
         % regression coefficient

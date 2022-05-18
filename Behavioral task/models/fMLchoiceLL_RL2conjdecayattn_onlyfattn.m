@@ -12,9 +12,12 @@ loglikehood = 0 ;
 NparamBasic = 4 ;
 
 BiasL = xpar(1) ;
-magF  = xpar(2) ;
-magC  = xpar(3) ;
+mag  = xpar(2) ;
+omega  = xpar(3) ;
 decay = xpar(4) ;
+
+magF = mag*omega;
+magC = mag*(1-omega);
 
 alpha_rewColor      = xpar(NparamBasic+1) ;
 alpha_rewShape      = xpar(NparamBasic+1) ;
