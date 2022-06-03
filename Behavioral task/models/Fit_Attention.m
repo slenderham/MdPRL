@@ -6,7 +6,7 @@ randstate = clock ;
 addpath("../PRLexp/inputs_all/")
 addpath("../PRLexp/SubjectData_all/")
 addpath("../utils")
-addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
+% addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 
 %% load subjects
 
@@ -59,8 +59,8 @@ all_model_Nbetas = [1, 1, 1, 1, 1];
 bound_eps = 0;
 bias_bound = 10;
 p_bias_bound = 5;
-temp_bound = 200;
-p_temp_bound = 100;
+temp_bound = 1000;
+p_temp_bound = 200;
 
 all_lbs = {...
     [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
@@ -177,7 +177,7 @@ for m = 1:length(all_model_names)
 
                 if fval <= minfval
                     minfval = fval ;
-                    fit_results{m, a, cnt_sbj}.params = (xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta)) ;
+                    fit_results{m, a, cnt_sbj}.params = xpar(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                     fit_results{m, a, cnt_sbj}.fval = fval ;
                     fit_results{m, a, cnt_sbj}.iters = output.iterations;
                     fit_results{m, a, cnt_sbj}.exitflag = exitflag ;

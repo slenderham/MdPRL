@@ -4,12 +4,13 @@ clear
 close all
 % rng('shuffle')
 randstate = clock ;
+addpath('../utils')
 
 %%
 
-load('./files/RPL2Analysisv3_5_FeatureBased') ;
-obj         = load('./files/RPL2Analysisv3_5_ObjectBased') ;
-conj        = load('./files/RPL2Analysisv3_5_ConjunctionBased') ;
+load('../files/RPL2Analysisv3_5_FeatureBased') ;
+obj         = load('../files/RPL2Analysisv3_5_ObjectBased') ;
+conj        = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
 
 test        = str2func('signrank') ;
 idxSubject  = [1:length(subjects)] ;
@@ -17,16 +18,20 @@ idxSubject  = [1:length(subjects)] ;
 %%
 
 for cnt_sbj = 1:length(subjects)
-    inputname   = ['./PRLexp/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
-    resultsname = ['./PRLexp/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
+    inputname   = ['../PRLexp/inputs_all/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
 
     load(inputname)
     load(resultsname)
 
     ntrialPerf          = [33:length(results.reward)] ;%[33:432] ;
-    perfTH              = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
+    perfTH              = 0.53 ;
     [~, idxMax]         = max(expr.prob{1}(input.inputTarget)) ;
-    choiceRew{cnt_sbj}  = results.choice' == idxMax' ;
+    disp([cnt_sbj size(results.choice), size(idxMax)])
+%     if cnt_sbj==5
+%         continue
+%     end
+    choiceRew{cnt_sbj}  = results.choice' == idxMax;
     perf(cnt_sbj)       = nanmean(choiceRew{cnt_sbj}(33:432)) ;
     
     expr.shapeMap       = expr.targetShape ;

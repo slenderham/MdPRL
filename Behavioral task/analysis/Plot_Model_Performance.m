@@ -6,8 +6,10 @@ addpath("../PRLexp/SubjectData_all/")
 addpath("../files")
 addpath("../models")
 addpath("../utils")
-addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
-addpath("../utils/vbmc")
+% addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
+% addpath("../utils/vbmc")
+
+set(0,'defaultAxesFontSize',15)
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -70,17 +72,25 @@ for cnt_sbj = 1:length(subjects_inputs)
     load(inputname)
     load(resultsname)
     
-    rew{cnt_sbj}                  = results.reward ;
+    rew(cnt_sbj,:)                = results.reward ;
     [~, idxMax]                   = max(expr.prob{1}(input.inputTarget)) ;
-    choiceRew{cnt_sbj}            = results.choice' == idxMax ;
-    perfMean(cnt_sbj)             = nanmean(choiceRew{cnt_sbj}(ntrialPerf)) ;
+    choiceRew(cnt_sbj,:)          = results.choice' == idxMax ;
+    perfMean(cnt_sbj)             = nanmean(choiceRew(cnt_sbj,ntrialPerf)) ;
 end
 idxperf = find(perfMean>=perfTH);
 % idxperf = 1:length(subjects);
 
+figure
+plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, 'k');
+plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
+xlabel('Trial Number')
+ylabel('Performance')
+legend({'', 'Reward', '', 'Proportion Better'})
+
 %% load results with attn and ML params
 
 attns = load('../files/RPL2Analysis_Attention.mat') ;
+
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
         for cnt_sbj = 1:length(idxperf)
@@ -91,7 +101,69 @@ for m = 1:length(all_model_names)
     end
 end
 
+%% bayesian model selection
+
+[alpha_AIC,exp_r_AIC,xp_AIC,pxp_AIC,bor_AIC,g_AIC] = bms(reshape(-permute(AICs/2, [2 1 3]), [50, length(idxperf)])', ...
+                                mat2cell((1:50)', repmat([1], 1, 50)));
+disp(bor_AIC);
+figure;
+h = bar(reshape(pxp_AIC, 10, 5));hold on;
+
+hx_pos = nan(10, 5);
+for i = 1:5
+    hx_pos(:,i) = h(i).XEndPoints;
+end
+
+plot(hx_pos(:), alpha_AIC/sum(alpha_AIC), 'ko', 'DisplayName', "E[Freq]")
+xticks(1:10)
+xticklabels(attn_modes_legend)
+set(h, {'DisplayName'}, {'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
+ylabel('pxp')
+legend()
+
+
+[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
+                                mat2cell((1:50)', repmat([1], 1, 50)));
+disp(bor_BIC);
+figure;
+h = bar(reshape(pxp_BIC, 10, 5));hold on;
+
+hx_pos = nan(10, 5);
+for i = 1:5
+    hx_pos(:,i) = h(i).XEndPoints;
+end
+
+plot(hx_pos(:), alpha_BIC/sum(alpha_BIC), 'ko', 'DisplayName', "E[Freq]")
+xticks(1:10)
+xticklabels(attn_modes_legend)
+set(h, {'DisplayName'}, {'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
+ylabel('pxp')
+legend()
+
+[~, best_model_inds] = max(g_BIC);
+% title('Posterior Model Probability')
+
+% [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
+%                                 mat2cell(reshape(1:50, [10, 5])', repmat([1], 1, 5)));
+% disp(bor_BIC);
+% figure;
+% h = bar(pxp_BIC);
+% xticks(1:5)
+% xticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'})
+% ylabel('pxp')
+% 
+% 
+% [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-BICs/2, [50, length(idxperf)])', ...
+%                                 mat2cell(reshape(1:50, [5, 10])', repmat([1], 1, 10)));
+% disp(bor_BIC);
+% figure;
+% h = bar(pxp_BIC);
+% xticks(1:10)
+% xticklabels(attn_modes_legend(:,1))
+% ylabel('pxp')
+
 %% Simulate model with best param
+
 for m = 1:length(all_model_names)
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
@@ -99,7 +171,7 @@ for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
         disp("-------------------------------------------------------");
         disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
-        for cnt_sbj = 1:length(subjects_inputs)
+        parfor cnt_sbj = 1:length(subjects_inputs)
 %             disp(strcat("Fitting subject ", num2str(cnt_sbj)));
             inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
             resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
@@ -133,7 +205,6 @@ for m = 1:length(all_model_names)
             sesdata.flag_couple = 0 ;
             sesdata.flag_updatesim = 0 ;
 
-
             % load attn type (const, diff, sum, max) and attn
             % time(none, choice, learning, both)
             sesdata.attn_op = attn_modes(a,1);
@@ -142,61 +213,44 @@ for m = 1:length(all_model_names)
             % load best params
             best_pars = attns.fit_results{m, a, cnt_sbj}.params;
 
-
-            % load model likelihood func and optimize
             ll = str2func(all_model_names(m));
+            
+            [trial_ll, trial_values, trial_attns] = ll(best_pars, sesdata);
 
-            trial_lls(m, a, cnt_sbj, :) = ll(best_pars, sesdata);
+            all_values{m, a, cnt_sbj} = trial_values;
+            all_attns{m, a, cnt_sbj} = trial_attns;
+            trial_lls(m, a, cnt_sbj, :) = trial_ll;
             trial_AICs(m, a, cnt_sbj, :) = 2*trial_lls(m, a, cnt_sbj, :)+2*length(best_pars)/ntrials;
             trial_BICs(m, a, cnt_sbj, :) = 2*trial_lls(m, a, cnt_sbj, :)+log(ntrials)*length(best_pars)/ntrials;
         end
     end
 end
 
-%% bayesian model selection
+unfilt_AICs = trial_AICs;
+unfilt_BICs = trial_BICs;
 
-[alpha_AIC,exp_r_AIC,xp_BAC,pxp_AIC,bor_AIC,g_AIC] = bms(reshape(-permute(AICs, [2 1 3])/2, [50, length(idxperf)])', ...
-                                mat2cell((1:50)', repmat([1], 1, 50)));
-disp(bor_AIC);
-figure;
-h = bar(reshape(pxp_AIC, 10, 5));
-xticks(1:10)
-xticklabels(attn_modes_legend)
-set(h, {'DisplayName'}, {'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
-ylabel('pxp')
-legend()
-
-
-
-[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs, [2 1 3])/2, [50, length(idxperf)])', ...
-                                mat2cell((1:50)', repmat([1], 1, 50)));
-disp(bor_BIC);
-figure;
-h = bar(reshape(pxp_BIC, 10, 5));
-xticks(1:10)
-xticklabels(attn_modes_legend)
-set(h, {'DisplayName'}, {'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
-ylabel('pxp')
-legend()
-% title('Posterior Model Probability')
+trial_AICs=trial_AICs(:,:,idxperf,:);
+trial_BICs=trial_BICs(:,:,idxperf,:);
 
 %% Plot Model Evidence
 
-wSize = 50;
+wSize = 20;
 clrmat = colormap('lines(5)') ;
 
-smth_AIC = movmedian(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
-smth_BIC = movmedian(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
-smth_ll = movmedian(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
+probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
+probeTrialsAll = [1 probeTrialsAll];
+
+smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
+smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
+smth_ll = movmean(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
 
 for i=1:5
     [~, min_attn_type] = min(mean(BICs(i,:,:), 3));
     l(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
-                                squeeze(std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(10*length(idxperf)), ...
+                                squeeze(std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
                                 wSize, clrmat(i,:));hold on
 end
 legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
-
 xlabel('Trial')
 ylabel('Trial-wise BIC')
 
@@ -204,10 +258,135 @@ figure
 for i=1:5
     [~, min_attn_type] = min(mean(AICs(i,:,:), 3));
     l(i) = plot_shaded_errorbar(squeeze(mean(smth_AIC(i,min_attn_type,:,:), [1 2 3])), ...
-                                squeeze(std(smth_AIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(10*length(idxperf)), ...
+                                squeeze(std(smth_AIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
                                 wSize, clrmat(i,:));hold on
 end
 legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
-
 xlabel('Trial')
 ylabel('Trial-wise AIC')
+
+%% quantify effect of attention
+%% sharpness of attention (entropy)? focus on the correct feature (cross entropy)
+
+for m = 1:length(all_model_names)
+    for a = 1:length(attn_modes)
+        for cnt_sbj = 1:length(idxperf)
+            if strcmp(attn_modes(a,2), 'C')
+                attn_where = 1;
+            elseif strcmp(attn_modes(a,2), 'L')  
+                attn_where = 2;
+            elseif strcmp(attn_modes(a,2), 'CL')
+                attn_where = 2;
+            else
+                attn_where = 1;
+            end
+            if m~=3
+                all_model_ents(m, a, cnt_sbj, :) = squeeze(entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
+            else
+                all_model_ents(m, a, cnt_sbj, :) = squeeze((entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,:)) ...
+                                                           +entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:)))/2);
+            end
+        end
+    end
+end
+
+fig=  figure;
+tiledlayout(3,3);
+for a = 2:length(attn_modes)
+    nexttile;
+    for m = 1:length(all_model_names)
+        plot_shaded_errorbar(squeeze(mean(all_model_ents(m,a,:,:), 3)), squeeze(std(all_model_ents(m,a,:,:), [], 3))/sqrt(length(idxperf)), 1, clrmat(m,:));hold on;
+        ylim([0, 1.2])
+        if mod(a, 3)==2
+            ylabel(attn_modes(a, 1))
+        end
+        if (a-1)/3>2
+            xlabel(attn_modes(a, 2))
+        end
+    end
+end
+
+lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1)); 
+lg.Layout.Tile = 'East';
+% fax=axes(fig,'visible','off'); 
+% fax.XLabel.Visible='on';
+% fax.YLabel.Visible='on';
+% ylabel(fax,'Attn Type');
+% xlabel(fax,'Attn Time');
+
+%% figure out how the flaginf is used if at all
+
+for m = 1:length(all_model_names)
+    for a = 1:length(attn_modes)
+        for cnt_sbj = 1:length(idxperf)
+            if strcmp(attn_modes(a,2), 'C')
+                attn_where = 1;
+            elseif strcmp(attn_modes(a,2), 'L')  
+                attn_where = 2;
+            elseif strcmp(attn_modes(a,2), 'CL')
+                attn_where = 2;
+            else
+                attn_where = 1;
+            end
+            if m~=3 
+                all_model_ces(m, a, cnt_sbj, :) = squeeze(cross_entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:), [0 1 0]));
+            else
+                all_model_ces(m, a, cnt_sbj, :) = squeeze((cross_entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,:), [0 1 0]) ...
+                                                           +cross_entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:), [0 1 0]))/2);
+            end
+        end
+    end
+end
+
+fig=  figure;
+tiledlayout(3,3);
+for a = 2:length(attn_modes)
+    nexttile;
+    for m = 1:length(all_model_names)
+        plot_shaded_errorbar(squeeze(mean(all_model_ces(m,a,:,:), 3)), squeeze(std(all_model_ces(m,a,:,:), [], 3))/sqrt(length(idxperf)), 1, clrmat(m,:));hold on;
+        ylim([0, 10])
+        if mod(a, 3)==2
+            ylabel(attn_modes(a, 1))
+        end
+        if (a-1)/3>2
+            xlabel(attn_modes(a, 2))
+        end
+    end
+end
+
+lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1)); 
+lg.Layout.Tile = 'East';
+
+
+%% 
+
+
+
+
+%% extra explained variance based on diff BIC
+figure;
+imagesc(1-mean(lls(5,3,:), 3)./mean(lls, 3));
+axis image
+colorbar();
+xticks(1:10)
+xticklabels(attn_modes_legend)
+yticks(1:5)
+yticklabels(all_model_names_legend')
+
+
+
+%% difference in value
+
+
+
+
+
+%% run model recovery
+
+%% look at parameter, confirmation bias?
+%% significance of "complementary" attention
+
+%% differential response
+%% correlation with different reward values
+
+

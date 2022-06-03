@@ -40,7 +40,7 @@ function [alpha,exp_r,xp,pxp,bor,g] = bms(lme, families)
     Ni      = size(lme,1);  % number of subjects
     Nk      = size(lme,2);  % number of models
     c       = 1;
-    cc      = 10e-4;
+    cc      = 10e-6;
     
     if isempty(families)
         for i=1:Nk

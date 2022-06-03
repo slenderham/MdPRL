@@ -7,8 +7,8 @@ function hline = plot_shaded_errorbar(m, sd, wSize, clr)
     set(hpatch,'EdgeColor','none');
     set(hpatch,'FaceColor',clr);
     hline     = plot(uX,m,'-','Color',clr);
-    set(hline,'LineWidth',2);
+    set(hline,'LineWidth',1.5);
     set(hline,'Color',clr);
     box off
-    alpha(hpatch,0.1);
+    alpha(hpatch,0.2);
 end
