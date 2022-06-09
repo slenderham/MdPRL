@@ -8,9 +8,9 @@ addpath("../files")
 addpath("../models")
 addpath("../utils")
 
-load('../files/RPL2Analysisv3_5_FeatureBased') ;
-obj              = load('../files/RPL2Analysisv3_5_ObjectBased') ;
-conj             = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
+load('../files/RPL2Analysisv3_5_FeatureBased_new.mat') ;
+obj              = load('../files/RPL2Analysisv3_5_ObjectBased_new.mat') ;
+conj             = load('../files/RPL2Analysisv3_5_ConjunctionBased_new.mat') ;
 
 test             = str2func('signrank') ;
 cntDfit          = 1 ;

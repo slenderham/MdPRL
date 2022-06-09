@@ -8,18 +8,37 @@ addpath('../utils')
 
 %%
 
-load('../files/RPL2Analysisv3_5_FeatureBased') ;
-obj         = load('../files/RPL2Analysisv3_5_ObjectBased') ;
-conj        = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
+subjects1 = [...
+    "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
+    "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
+    "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
+    "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", ...
+    "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", ...
+    "BM", "BN", "BO", "BP", "BQ", "BR", "CC", "DD", ...
+    "EE", "FF", "GG", "HH", "II", "JJ", "KK", "LL", ...
+    "MM", "NN", "OO", "PP", "QQ", "RR", "SS", "TT", ...
+    "UU", "VV", "WW", "XX", "YY", "ZZ"];
+subjects1 = lower(subjects1);
+subjects1_inputs = "inputs/input_"+subjects1;
+subjects1_prl = "SubjectData/PRL_"+subjects1;
 
-test        = str2func('signrank') ;
-idxSubject  = [1:length(subjects)] ;
+subjects2 = [...
+    "AA", "AB", "AC", "AD", "AE", "AG", ...
+    "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
+    "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
+    "AW", "AX", "AY"] ;
+subjects2_inputs = "inputs2/input_"+subjects2;
+subjects2_prl = "SubjectData2/PRL_"+subjects2;
+
+subjects_inputs = [subjects1_inputs subjects2_inputs];
+subjects_prl = [subjects1_prl subjects2_prl];
+
 
 %%
 
-for cnt_sbj = 1:length(subjects)
-    inputname   = ['../PRLexp/inputs_all/inputs/input_', subjects{cnt_sbj} , '.mat'] ;
-    resultsname = ['../PRLexp/SubjectData_all/SubjectData/PRL_', subjects{cnt_sbj} , '.mat'] ;
+for cnt_sbj = 1:length(subjects_inputs)
+    inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
 
     load(inputname)
     load(resultsname)
@@ -27,12 +46,11 @@ for cnt_sbj = 1:length(subjects)
     ntrialPerf          = [33:length(results.reward)] ;%[33:432] ;
     perfTH              = 0.53 ;
     [~, idxMax]         = max(expr.prob{1}(input.inputTarget)) ;
-    disp([cnt_sbj size(results.choice), size(idxMax)])
 %     if cnt_sbj==5
 %         continue
 %     end
     choiceRew{cnt_sbj}  = results.choice' == idxMax;
-    perf(cnt_sbj)       = nanmean(choiceRew{cnt_sbj}(33:432)) ;
+    perf(cnt_sbj)       = nanmean(choiceRew{cnt_sbj}(ntrialPerf)) ;
     
     expr.shapeMap       = expr.targetShape ;
     expr.colorMap       = expr.targetColor ;
@@ -72,26 +90,37 @@ for cnt_sbj = 1:length(subjects)
 
         if expr.flaginf==1
             infO        = shapeO ;
-            expr.inf    = expr.shapeMap ;
-            cnt_uinf    = find(expr.patternMap==patternO | expr.colorMap==colorO) ;
-            cnt_Tcj     = find(expr.patternMap==patternO & expr.colorMap==colorO) ;
-            cnt_ucj     = find((expr.patternMap==patternO & expr.shapeMap==shapeO) | (expr.colorMap==colorO & expr.shapeMap==shapeO)) ;
+            expr.inf = expr.shapeMap ;
+            cnt_uinf1 = find(expr.patternMap==patternO);
+            cnt_uinf2 = find(expr.colorMap==colorO);
+            cnt_Tcj = find(expr.patternMap==patternO & expr.colorMap==colorO);
+            cnt_ucj1 = find(expr.patternMap==patternO & expr.shapeMap==shapeO);
+            cnt_ucj2 = find(expr.colorMap==colorO & expr.shapeMap==shapeO);
         elseif expr.flaginf==2
             infO        = patternO ;
             expr.inf    = expr.patternMap ;
-            cnt_uinf    = find(expr.shapeMap==shapeO | expr.colorMap==colorO) ;
-            cnt_Tcj     = find(expr.shapeMap==shapeO & expr.colorMap==colorO) ;
-            cnt_ucj     = find((expr.shapeMap==shapeO & expr.patternMap==patternO) | (expr.colorMap==colorO & expr.patternMap==patternO)) ;
+            cnt_uinf1 = find(expr.shapeMap==shapeO);
+            cnt_uinf2 = find(expr.colorMap==colorO);
+            cnt_Tcj = find(expr.shapeMap==shapeO & expr.colorMap==colorO) ;
+            cnt_ucj1 = find(expr.shapeMap==shapeO & expr.patternMap==patternO); 
+            cnt_ucj2 = find(expr.colorMap==colorO & expr.patternMap==patternO);
         end
         
+        % get all objects that share at least one feature
         cnt_Tall        = find(expr.shapeMap==shapeO | expr.colorMap==colorO | expr.patternMap==patternO ) ;
+        % remove the object itself
         cnt_Tall        = cnt_Tall(~ismember(cnt_Tall, cnt_O)) ;
+        % find objects that share the informative feature
         cnt_Tinf        = find(expr.inf==infO) ;
-        cnt_Tinf        = cnt_Tinf(~ismember(cnt_Tinf, cnt_O)) ;
-        cnt_Tninf       = cnt_Tall(~ismember(cnt_Tall, cnt_Tinf)) ;
+        cnt_Tinf        = cnt_Tinf(~ismember(cnt_Tinf, cnt_O)) ; % remove itself
+        % find objects that don't share the informative feature
+        cnt_Tninf       = cnt_Tall(~ismember(cnt_Tall, cnt_Tinf)) ; 
         cnt_Tinf        = cnt_Tinf(~ismember(cnt_Tinf, cnt_uinf)) ;
+        % find objects that share the informative conjunction
         cnt_Tcj         = cnt_Tcj(~ismember(cnt_Tcj, cnt_O)) ;
-        cnt_ucj         = cnt_ucj(~ismember(cnt_ucj, cnt_O)) ;
+        % find objects that share the uninformative conjunction
+        cnt_ucj1         = cnt_ucj1(~ismember(cnt_ucj1, cnt_O)) ;
+        cnt_ucj2         = cnt_ucj2(~ismember(cnt_ucj2, cnt_O)) ;
         cnt_Tninf       = cnt_Tninf(~ismember(cnt_Tninf, cnt_Tcj)) ;
         cnt_Trest       = find(expr.shapeMap~=shapeO & expr.colorMap~=colorO & expr.patternMap~=patternO ) ;
         
@@ -103,8 +132,12 @@ for cnt_sbj = 1:length(subjects)
         idxCell{5}      = cnt_O ;
         
         % find trials with reward on object in trial (i) and no object on (i+1)
-        idx_rewO        = idx_rew(targCh(idx_rew)==cnt_O & sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_O))==0 & sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_Trest))==1) ;
-        idx_unrO        = idx_unr(targCh(idx_unr)==cnt_O & sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_O))==0 & sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_Trest))==1) ;
+        idx_rewO        = idx_rew(targCh(idx_rew)==cnt_O & ...
+            sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_O))==0 & ...
+            sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_Trest))==1) ;
+        idx_unrO        = idx_unr(targCh(idx_unr)==cnt_O & ...
+            sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_O))==0 & ...
+            sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_Trest))==1) ;
         
         % find trials with no target and no similar features for both options on trial (i+1):
         idx_rewOI       = idx_rewO(sum(ismember(input.inputTarget(:, idx_rewO+1),  cnt_Tinf))==1) ;
@@ -178,41 +211,6 @@ idxperf(find(pObAll==0)) = 0 ;
 idxperf             = find(idxperf) ;
 
 %%
-
-for cntDfit = 1:3
-    RL2conj_couple{cntDfit}      = cat(1,conj.mlparRL2conj_couple{cntDfit,[idxSubject]}) ;
-    RL2conj_uncouple{cntDfit}    = cat(1,conj.mlparRL2conj_uncouple{cntDfit,[idxSubject]}) ;
-    RL2conj_decay{cntDfit}       = cat(1,conj.mlparRL2conj_decay{cntDfit,[idxSubject]}) ;
-end
-
-RL2ft_couple        = cat(1,mlparRL2_couple{[idxSubject]}) ;
-RL2ft_uncouple      = cat(1,mlparRL2_uncouple{[idxSubject]}) ;
-RL2ft_decay         = cat(1,mlparRL2_decay{[idxSubject]}) ;
-
-RL2obj_couple       = cat(1,obj.mlparRL2obj_couple{[idxSubject]}) ;
-RL2obj_uncouple     = cat(1,obj.mlparRL2obj_uncouple{[idxSubject]}) ;
-RL2obj_decay        = cat(1,obj.mlparRL2obj_decay{[idxSubject]}) ;
-
-N                   = [6 6 7 4 4 5 7 7 8] ;
-Nt                  = 432 ;
-
-LL                  = ([RL2ft_couple(:,100)          RL2ft_uncouple(:,100)            RL2ft_decay(:,100) ...
-                        RL2obj_couple(:,100)         RL2obj_uncouple(:,100)           RL2obj_decay(:,100) ...
-                        RL2conj_couple{1}(:,100)     RL2conj_uncouple{1}(:,100)       RL2conj_decay{1}(:,100) ...
-                        RL2conj_couple{2}(:,100)     RL2conj_uncouple{2}(:,100)       RL2conj_decay{2}(:,100) ...
-                        RL2conj_couple{3}(:,100)     RL2conj_uncouple{3}(:,100)       RL2conj_decay{3}(:,100)]) ;
-                    
-AIC                 = ([2*N(1)+2*RL2ft_couple(:,100)         2*N(2)+2*RL2ft_uncouple(:,100)           2*N(3)+2*RL2ft_decay(:,100) ...
-                        2*N(4)+2*RL2obj_couple(:,100)        2*N(5)+2*RL2obj_uncouple(:,100)          2*N(6)+2*RL2obj_decay(:,100) ...
-                        2*N(7)+2*RL2conj_couple{1}(:,100)    2*N(8)+2*RL2conj_uncouple{1}(:,100)      2*N(9)+2*RL2conj_decay{1}(:,100) ...
-                        2*N(7)+2*RL2conj_couple{2}(:,100)    2*N(8)+2*RL2conj_uncouple{2}(:,100)      2*N(9)+2*RL2conj_decay{2}(:,100) ...
-                        2*N(7)+2*RL2conj_couple{3}(:,100)    2*N(8)+2*RL2conj_uncouple{3}(:,100)      2*N(9)+2*RL2conj_decay{3}(:,100)]) ;
-
-BIC                 = ([N(1)*log(Nt)+2*RL2ft_couple(:,100)         N(2)*log(Nt)+2*RL2ft_uncouple(:,100)             N(3)*log(Nt)+2*RL2ft_decay(:,100) ...
-                        N(4)*log(Nt)+2*RL2obj_couple(:,100)        N(5)*log(Nt)+2*RL2obj_uncouple(:,100)          N(6)*log(Nt)+2*RL2obj_decay(:,100) ...
-                        N(7)*log(Nt)+2*RL2conj_couple{1}(:,100)    N(8)*log(Nt)+2*RL2conj_uncouple{1}(:,100)      N(9)*log(Nt)+2*RL2conj_decay{1}(:,100) ...
-                        N(7)*log(Nt)+2*RL2conj_couple{2}(:,100)    N(8)*log(Nt)+2*RL2conj_uncouple{2}(:,100)      N(9)*log(Nt)+2*RL2conj_decay{2}(:,100) ...
-                        N(7)*log(Nt)+2*RL2conj_couple{3}(:,100)    N(8)*log(Nt)+2*RL2conj_uncouple{3}(:,100)      N(9)*log(Nt)+2*RL2conj_decay{3}(:,100)]) ;
 
 [idxFtMd idxObjMd idxConjMd idxModel] = fIndex(LL) ;
 

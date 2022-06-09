@@ -1,5 +1,9 @@
 function hline = plot_shaded_errorbar(m, sd, wSize, clr)
-    uX = wSize:432 ;
+    if size(wSize)==1
+        uX = wSize:432;
+    else
+        uX = wSize;
+    end
     x = [uX, fliplr(uX)];
     y = [m'+sd', fliplr(m'-sd')];
     hold on
