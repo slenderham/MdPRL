@@ -91,19 +91,17 @@ for cnt_sbj = 1:length(subjects_inputs)
         if expr.flaginf==1
             infO        = shapeO ;
             expr.inf = expr.shapeMap ;
-            cnt_uinf1 = find(expr.patternMap==patternO);
-            cnt_uinf2 = find(expr.colorMap==colorO);
+            cnt_uinf = find(expr.patternMap==patternO | expr.colorMap==colorO);
             cnt_Tcj = find(expr.patternMap==patternO & expr.colorMap==colorO);
-            cnt_ucj1 = find(expr.patternMap==patternO & expr.shapeMap==shapeO);
-            cnt_ucj2 = find(expr.colorMap==colorO & expr.shapeMap==shapeO);
+            cnt_ucj = find((expr.patternMap==patternO & expr.shapeMap==shapeO) | ...
+                            (expr.colorMap==colorO & expr.shapeMap==shapeO));
         elseif expr.flaginf==2
             infO        = patternO ;
             expr.inf    = expr.patternMap ;
-            cnt_uinf1 = find(expr.shapeMap==shapeO);
-            cnt_uinf2 = find(expr.colorMap==colorO);
+            cnt_uinf = find(expr.shapeMap==shapeO | expr.colorMap==colorO);
             cnt_Tcj = find(expr.shapeMap==shapeO & expr.colorMap==colorO) ;
-            cnt_ucj1 = find(expr.shapeMap==shapeO & expr.patternMap==patternO); 
-            cnt_ucj2 = find(expr.colorMap==colorO & expr.patternMap==patternO);
+            cnt_ucj = find((expr.shapeMap==shapeO & expr.patternMap==patternO) | ...
+                           (expr.colorMap==colorO & expr.patternMap==patternO));
         end
         
         % get all objects that share at least one feature
@@ -119,8 +117,7 @@ for cnt_sbj = 1:length(subjects_inputs)
         % find objects that share the informative conjunction
         cnt_Tcj         = cnt_Tcj(~ismember(cnt_Tcj, cnt_O)) ;
         % find objects that share the uninformative conjunction
-        cnt_ucj1         = cnt_ucj1(~ismember(cnt_ucj1, cnt_O)) ;
-        cnt_ucj2         = cnt_ucj2(~ismember(cnt_ucj2, cnt_O)) ;
+        cnt_ucj         = cnt_ucj(~ismember(cnt_ucj, cnt_O)) ;
         cnt_Tninf       = cnt_Tninf(~ismember(cnt_Tninf, cnt_Tcj)) ;
         cnt_Trest       = find(expr.shapeMap~=shapeO & expr.colorMap~=colorO & expr.patternMap~=patternO ) ;
         

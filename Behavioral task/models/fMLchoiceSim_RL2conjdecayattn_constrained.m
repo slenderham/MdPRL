@@ -1,4 +1,4 @@
-function [C, R, V, A] = fMLchoiceSim_RL2conjdecayattn_constrained(xpar, sesdata)
+function [logits, C, R, V, A] = fMLchoiceSim_RL2conjdecayattn_constrained(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2)obj model using ML method
 %
@@ -11,21 +11,24 @@ function [C, R, V, A] = fMLchoiceSim_RL2conjdecayattn_constrained(xpar, sesdata)
 NparamBasic = 4 ;
 
 BiasL = xpar(1) ;
-mag = xpar(2);
-omega  = xpar(3);
+mag  = xpar(2) ;
+omega  = xpar(3) ;
 decay = xpar(4) ;
+
+magF = mag*omega;
+magC = mag*(1-omega);
 
 alpha_rewColor      = xpar(NparamBasic+1) ;
 alpha_rewShape      = xpar(NparamBasic+1) ;
 alpha_rewPattern    = xpar(NparamBasic+1) ;
-alpha_rew           = xpar(NparamBasic+2) ;
-NparamWithLR = NparamBasic+2;
+alpha_rew           = xpar(NparamBasic+1) ;
+NparamWithLR = NparamBasic+1;
 if sesdata.flagUnr==1
-    alpha_unrColor      = xpar(NparamBasic+3) ;
-    alpha_unrShape      = xpar(NparamBasic+3) ;
-    alpha_unrPattern    = xpar(NparamBasic+3) ;
-    alpha_unr           = xpar(NparamBasic+4) ;
-    NparamWithLR = NparamBasic+4;
+    alpha_unrColor      = xpar(NparamBasic+2) ;
+    alpha_unrShape      = xpar(NparamBasic+2) ;
+    alpha_unrPattern    = xpar(NparamBasic+2) ;
+    alpha_unr           = xpar(NparamBasic+2) ;
+    NparamWithLR = NparamBasic+2;
 else
     alpha_unrColor      = alpha_rewColor ;
     alpha_unrShape      = alpha_rewShape ;
@@ -33,42 +36,29 @@ else
     alpha_unr           = alpha_rew ;
 end
 
-if strcmp(sesdata.attn_mode_choice, "const")
-    beta_attn_choice = 0;
-    if strcmp(sesdata.attn_mode_learn, "const")
-        beta_attn_learn = 0;
-    else
-        beta_attn_learn = xpar(NparamWithLR+1);
-    end
+if strcmp(sesdata.attn_time, "none")
+    beta_attn_feat = 1;
+    beta_attn_conj = 1;
 else
-    beta_attn_choice = xpar(NparamWithLR+1);
-    if strcmp(sesdata.attn_mode_learn, "const")
-        beta_attn_learn = 0;
-    else
-        beta_attn_learn = xpar(NparamWithLR+2);
-    end
+    beta_attn_feat = xpar(NparamWithLR+1)*omega;
+    beta_attn_conj = xpar(NparamWithLR+1)*(1-omega);
 end
 
 shapeMap        = sesdata.expr.shapeMap ;
 colorMap        = sesdata.expr.colorMap ;
 patternMap      = sesdata.expr.patternMap ;
 inputTarget     = sesdata.input.inputTarget ;
-% correcttrials   = sesdata.results.reward ;
-% choicetrials    = sesdata.results.choice ;
+correcttrials   = sesdata.results.reward ;
+choicetrials    = sesdata.results.choice ;
 flag_couple     = sesdata.flag_couple ;
 flag_updatesim  = sesdata.flag_updatesim ;
-ntrials         = sesdata.expr.Ntrials ;
+ntrials         = length(choicetrials) ;
 inputRewards    = sesdata.input.inputReward ;
 
 vf              = (0.5*ones(9,1)) ; % 1-3 shape, 4-6 color, 7-9 pattern
 vc              = (0.5*ones(27,1)) ; % 1-9 pXs, 10-18 pXc, 19-27 sXc
 
 for cnt_trial=1:ntrials
-
-%     correct = correcttrials(cnt_trial) ;
-%     choice = choicetrials(cnt_trial) ;
-%     correctunCh = inputRewards(3-choice, cnt_trial) ;
-%     choiceunCh = 3-choice;
 
     idx_shape(2)    = shapeMap(inputTarget(2, cnt_trial)) ; % 1-3
     idx_color(2)    = colorMap(inputTarget(2, cnt_trial))+3 ; % 4-6
@@ -86,23 +76,39 @@ for cnt_trial=1:ntrials
     idx_shapecolor(2) = (idx_shape(2)-1)*3 + (idx_color(2)-4)+19 ; % 19-27
     assert(19<=idx_shapecolor(1) & idx_shapecolor(1)<=27 & 19<=idx_shapecolor(2) & idx_shapecolor(2)<=27);
 
-    attn_w_choice = attention_weights( ...
-                    beta_attn_choice*(omega*vf([idx_shape(1), idx_color(1), idx_pattern(1)])...
-                                     +(1-omega)*vc([idx_patterncolor(1), idx_patternshape(1), idx_shapecolor(1)])), ...
-                    beta_attn_choice*(omega*vf([idx_shape(2), idx_color(2), idx_pattern(2)])...
-                                     +(1-omega)*vc([idx_patterncolor(2), idx_patternshape(2), idx_shapecolor(2)])), ...
-                    sesdata.attn_mode_choice, 1);
+    attn_w = attention_weights( ...
+                    beta_attn_feat*vf([idx_shape(1), idx_color(1), idx_pattern(1)])...
+                   +beta_attn_conj*vc([idx_patterncolor(1), idx_patternshape(1), idx_shapecolor(1)]), ...
+                    beta_attn_feat*vf([idx_shape(2), idx_color(2), idx_pattern(2)])...
+                   +beta_attn_conj*vc([idx_patterncolor(2), idx_patternshape(2), idx_shapecolor(2)]), ...
+                    sesdata.attn_op, 1);
 
-    pChoiceR = 1./(1+exp(-mag*(attn_w_choice(1)*(omega*(vf(idx_shape(2))-vf(idx_shape(1))) ...
-                                                +(1-omega)*(vc(idx_patterncolor(2))-vc(idx_patterncolor(1)))) ...
-                              +attn_w_choice(2)*(omega*(vf(idx_color(2))-vf(idx_color(1))) ...
-                                                +(1-omega)*(vc(idx_patternshape(2))-vc(idx_patternshape(1)))) ...
-                              +attn_w_choice(3)*(omega*(vf(idx_pattern(2))-vf(idx_pattern(1))) ...
-                                                +(1-omega)*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1))))) ...
-                         +BiasL));
+    if strcmp(sesdata.attn_time, "C")
+        attn_w_choice = attn_w;
+        attn_w_learn = ones(1, 3)/3;
+    elseif strcmp(sesdata.attn_time, "L")
+        attn_w_choice = ones(1, 3)/3;
+        attn_w_learn = attn_w;
+    elseif strcmp(sesdata.attn_time, "CL")
+        attn_w_choice = attn_w;
+        attn_w_learn = attn_w;
+    elseif strcmp(sesdata.attn_time, "none")
+        attn_w_choice = ones(1, 3)/3;
+        attn_w_learn = ones(1, 3)/3;
+    end
 
-    pChoiceL = 1-pChoiceR ;
+    logit = attn_w_choice(1)*(magF*(vf(idx_shape(2))-vf(idx_shape(1)))+...
+                              magC*(vc(idx_patterncolor(2))-vc(idx_patterncolor(1)))) ...
+           +attn_w_choice(2)*(magF*(vf(idx_color(2))-vf(idx_color(1)))+...
+                              magC*(vc(idx_patternshape(2))-vc(idx_patternshape(1)))) ...
+           +attn_w_choice(3)*(magF*(vf(idx_pattern(2))-vf(idx_pattern(1)))+ ...
+                              magC*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1)))) ...
+           -BiasL;
+
+    logits(cnt_trial) = logit;
     
+    pChoiceR = 1./(1+exp(-logit));
+
     choice = binornd(1, pChoiceR)+1;
     choiceunCh = 3-choice;
     C(cnt_trial) = choice;
@@ -110,13 +116,6 @@ for cnt_trial=1:ntrials
     correct = inputRewards(choice, cnt_trial) ;
     correctunCh = inputRewards(3-choice, cnt_trial) ;
     R(cnt_trial) = correct;
-    
-    attn_w_learn = attention_weights( ...
-                    beta_attn_learn*(omega*vf([idx_shape(1), idx_color(1), idx_pattern(1)])...
-                                     +(1-omega)*vc([idx_patterncolor(1), idx_patternshape(1), idx_shapecolor(1)])), ...
-                    beta_attn_learn*(omega*vf([idx_shape(2), idx_color(2), idx_pattern(2)])...
-                                     +(1-omega)*vc([idx_patterncolor(2), idx_patternshape(2), idx_shapecolor(2)])), ...
-                    sesdata.attn_mode_learn, 1);
 
     % conjunction
     if correct
@@ -272,7 +271,7 @@ end
 end
 
 % function v = decayV(v, unCh, decay)
-%     v(unCh) = v(unCh)*(1-decay) ;
+%     v(unCh) = v(unCh)*(1-decay) ;
 % end
 function v = decayV(v, unCh, decay)
 v(unCh) = v(unCh) - (v(unCh)-0.5)*(decay) ;
@@ -331,7 +330,7 @@ function [attn] = attention_weights(v1, v2, mode, beta)
     if strcmp(mode, 'diff')
         attn = softmax(beta*abs(v1-v2));
     elseif strcmp(mode, 'sum')
-        attn = softmax(beta*(v1+v2));
+        attn = softmax(beta*(v1+v2)/2);
     elseif strcmp(mode, 'max')
         attn = softmax(beta*max(v1, v2));
     elseif strcmp(mode, 'const')

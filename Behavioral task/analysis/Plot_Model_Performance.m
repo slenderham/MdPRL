@@ -58,6 +58,7 @@ attn_modes_legend = strcat(attn_modes(:,1),"X",attn_modes(:,2));
 [all_model_names_legend, attn_modes_legend] = meshgrid(all_model_names_legend, attn_modes_legend);
 all_legends = strcat(all_model_names_legend(:), "X", attn_modes_legend(:));
 
+
 ntrials = 432;
 ntrialPerf       = 33:432;
 % perfTH           = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
@@ -76,153 +77,6 @@ for cnt_sbj = 1:length(subjects_inputs)
     [~, idxMax]                   = max(expr.prob{1}(input.inputTarget)) ;
     choiceRew(cnt_sbj,:)          = results.choice' == idxMax ;
     perfMean(cnt_sbj)             = nanmean(choiceRew(cnt_sbj,ntrialPerf)) ;
-
-    % calculate differential response
-    expr.shapeMap       = expr.targetShape ;
-    expr.colorMap       = expr.targetColor ;
-    expr.patternMap     = expr.targetPattern ;
-    
-    input.inputTarget   = input.inputTarget(:, ntrialPerf) ;
-    expr.Ntrials        = length(ntrialPerf) ;
-    results.reward      = results.reward(ntrialPerf) ;
-    results.choice      = results.choice(ntrialPerf) ;
-
-    idx_rew             = find(results.reward(2:end-1)==1)+1 ;
-    idx_unr             = find(results.reward(2:end-1)==0)+1 ;
-    targCh              = input.inputTarget(results.choice'+2*(0:(expr.Ntrials-1))) ;
-    
-    pFtTrials{cnt_sbj}      = nan*ones(1, length(ntrialPerf)) ;
-    pFt0Trials{cnt_sbj}     = nan*ones(1, length(ntrialPerf)) ;
-    
-    pObTrials{cnt_sbj}      = nan*ones(1, length(ntrialPerf)) ;
-    pOb0Trials{cnt_sbj}     = nan*ones(1, length(ntrialPerf)) ;
-    
-    pFtinfTrials{cnt_sbj}   = nan*ones(1, length(ntrialPerf)) ;
-    pFtinf0Trials{cnt_sbj}  = nan*ones(1, length(ntrialPerf)) ;
-    
-    pFtninfTrials{cnt_sbj}  = nan*ones(1, length(ntrialPerf)) ;
-    pFtninf0Trials{cnt_sbj} = nan*ones(1, length(ntrialPerf)) ;
-    
-    pCjTrials{cnt_sbj}      = nan*ones(1, length(ntrialPerf)) ;
-    pCj0Trials{cnt_sbj}     = nan*ones(1, length(ntrialPerf)) ;
-    
-    pCjnTrials{cnt_sbj}     = nan*ones(1, length(ntrialPerf)) ;
-    pCjn0Trials{cnt_sbj}    = nan*ones(1, length(ntrialPerf)) ;
-    
-    for cnt_O = expr.playcombinations
-        shapeO          = find(ismember(1:3, expr.shapeMap(cnt_O))) ;
-        colorO          = find(ismember(1:3, expr.colorMap(cnt_O))) ;
-        patternO        = find(ismember(1:3, expr.patternMap(cnt_O))) ;
-
-        if expr.flaginf==1
-            infO        = shapeO ;
-            expr.inf    = expr.shapeMap ;
-            cnt_uinf    = find(expr.patternMap==patternO | expr.colorMap==colorO) ;
-            cnt_Tcj     = find(expr.patternMap==patternO & expr.colorMap==colorO) ;
-            cnt_ucj     = find((expr.patternMap==patternO & expr.shapeMap==shapeO) | (expr.colorMap==colorO & expr.shapeMap==shapeO)) ;
-        elseif expr.flaginf==2
-            infO        = patternO ;
-            expr.inf    = expr.patternMap ;
-            cnt_uinf    = find(expr.shapeMap==shapeO | expr.colorMap==colorO) ;
-            cnt_Tcj     = find(expr.shapeMap==shapeO & expr.colorMap==colorO) ;
-            cnt_ucj     = find((expr.shapeMap==shapeO & expr.patternMap==patternO) | (expr.colorMap==colorO & expr.patternMap==patternO)) ;
-        end
-        
-        % get all objects that share at least one feature
-        cnt_Tall        = find(expr.shapeMap==shapeO | expr.colorMap==colorO | expr.patternMap==patternO ) ;
-        % remove the object itself
-        cnt_Tall        = cnt_Tall(~ismember(cnt_Tall, cnt_O)) ;
-        % find objects that share the informative feature
-        cnt_Tinf        = find(expr.inf==infO) ;
-        cnt_Tinf        = cnt_Tinf(~ismember(cnt_Tinf, cnt_O)) ; % remove itself
-        % find objects that don't share the informative feature
-        cnt_Tninf       = cnt_Tall(~ismember(cnt_Tall, cnt_Tinf)) ; 
-        cnt_Tinf        = cnt_Tinf(~ismember(cnt_Tinf, cnt_uinf)) ;
-        % find objects that share the informative conjunction
-        cnt_Tcj         = cnt_Tcj(~ismember(cnt_Tcj, cnt_O)) ;
-        % find objects that share the uninformative conjunction
-        cnt_ucj         = cnt_ucj(~ismember(cnt_ucj, cnt_O)) ;
-        cnt_Tninf       = cnt_Tninf(~ismember(cnt_Tninf, cnt_Tcj)) ;
-        cnt_Trest       = find(expr.shapeMap~=shapeO & expr.colorMap~=colorO & expr.patternMap~=patternO ) ;
-        
-        % 1) inf feature, 2) noninf feature, 3) inf conj, 4) object
-        idxCell{1}      = cnt_Tinf ;
-        idxCell{2}      = cnt_Tninf ;
-        idxCell{3}      = cnt_Tcj ;
-        idxCell{4}      = cnt_ucj ;
-        idxCell{5}      = cnt_O ;
-        
-        % find trials with reward on object in trial (i) and no object on (i+1)
-        idx_rewO        = idx_rew(targCh(idx_rew)==cnt_O & ...
-            sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_O))==0 & ...
-            sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_Trest))==1) ;
-        idx_unrO        = idx_unr(targCh(idx_unr)==cnt_O & ...
-            sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_O))==0 & ...
-            sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_Trest))==1) ;
-        
-        % find trials with no target and no similar features for both options on trial (i+1):
-        idx_rewOI       = idx_rewO(sum(ismember(input.inputTarget(:, idx_rewO+1),  cnt_Tinf))==1) ;
-        idx_unrOI       = idx_unrO(sum(ismember(input.inputTarget(:, idx_unrO+1),  cnt_Tinf))==1) ;
-        
-        idx_rewON       = idx_rewO(sum(ismember(input.inputTarget(:, idx_rewO+1),  cnt_Tninf))==1) ;
-        idx_unrON       = idx_unrO(sum(ismember(input.inputTarget(:, idx_unrO+1),  cnt_Tninf))==1) ;
-        
-        idx_rewOT       = idx_rewO(sum(ismember(input.inputTarget(:, idx_rewO+1),  cnt_Tall))==1) ;
-        idx_unrOT       = idx_unrO(sum(ismember(input.inputTarget(:, idx_unrO+1),  cnt_Tall))==1) ;
-        
-        idx_rewOC       = idx_rewO(sum(ismember(input.inputTarget(:, idx_rewO+1),  cnt_Tcj))==1) ;
-        idx_unrOC       = idx_unrO(sum(ismember(input.inputTarget(:, idx_unrO+1),  cnt_Tcj))==1) ;
-        
-        idx_rewIC       = idx_rewO(sum(ismember(input.inputTarget(:, idx_rewO+1),  cnt_ucj))==1) ;
-        idx_unrIC       = idx_unrO(sum(ismember(input.inputTarget(:, idx_unrO+1),  cnt_ucj))==1) ;
-        
-        % find trials with reward on object in trial (i) and object on (i+1)
-        idx_rewOb       = idx_rew(targCh(idx_rew)==cnt_O & sum(ismember(input.inputTarget(:, idx_rew+1),  cnt_O))==1) ;
-        idx_unrOb       = idx_unr(targCh(idx_unr)==cnt_O & sum(ismember(input.inputTarget(:, idx_unr+1),  cnt_O))==1) ;
-        
-        % find trials with target and no similar features for both options on trial (i+1):
-        idx_rewOb       = idx_rewOb(sum(ismember(input.inputTarget(:, idx_rewOb+1),  cnt_Tall))==0) ;
-        idx_unrOb       = idx_unrOb(sum(ismember(input.inputTarget(:, idx_unrOb+1),  cnt_Tall))==0) ;
-        
-        % save through time
-        pFtTrials{cnt_sbj}(idx_rewOT+1)         = ismember(targCh(idx_rewOT+1), cnt_Tall) ;
-        pFt0Trials{cnt_sbj}(idx_unrOT+1)        = ismember(targCh(idx_unrOT+1), cnt_Tall) ;
-        
-        pObTrials{cnt_sbj}(idx_rewOb+1)         = ismember(targCh(idx_rewOb+1), cnt_O) ;
-        pOb0Trials{cnt_sbj}(idx_unrOb+1)        = ismember(targCh(idx_unrOb+1), cnt_O) ;
-        
-        pFtinfTrials{cnt_sbj}(idx_rewOI+1)      = ismember(targCh(idx_rewOI+1), cnt_Tinf) ;
-        pFtinf0Trials{cnt_sbj}(idx_unrOI+1)     = ismember(targCh(idx_unrOI+1), cnt_Tinf) ;
-        
-        pFtninfTrials{cnt_sbj}(idx_rewON+1)     = ismember(targCh(idx_rewON+1), cnt_Tninf) ;
-        pFtninf0Trials{cnt_sbj}(idx_unrON+1)    = ismember(targCh(idx_unrON+1), cnt_Tninf) ;
-        
-        pCjTrials{cnt_sbj}(idx_rewOC+1)         = ismember(targCh(idx_rewOC+1), cnt_Tcj) ;
-        pCj0Trials{cnt_sbj}(idx_unrOC+1)        = ismember(targCh(idx_unrOC+1), cnt_Tcj) ;
-        
-        pCjnTrials{cnt_sbj}(idx_rewIC+1)        = ismember(targCh(idx_rewIC+1), cnt_ucj) ;
-        pCjn0Trials{cnt_sbj}(idx_unrIC+1)       = ismember(targCh(idx_unrIC+1), cnt_ucj) ;
-    end
-    pFtAll(cnt_sbj)     = nanmean(pFtTrials{cnt_sbj})    - nanmean(pFt0Trials{cnt_sbj}) ;
-    pObAll(cnt_sbj)     = nanmean(pObTrials{cnt_sbj})    - nanmean(pOb0Trials{cnt_sbj}) ;
-    pFtinfAll(cnt_sbj)  = nanmean(pFtinfTrials{cnt_sbj}) - nanmean(pFtinf0Trials{cnt_sbj}) ;
-    pFtninfAll(cnt_sbj) = nanmean(pFtninfTrials{cnt_sbj})- nanmean(pFtninf0Trials{cnt_sbj}) ;
-    pCjinfAll(cnt_sbj)  = nanmean(pCjTrials{cnt_sbj})    - nanmean(pCj0Trials{cnt_sbj}) ;
-    pCjninfAll(cnt_sbj) = nanmean(pCjnTrials{cnt_sbj})   - nanmean(pCjn0Trials{cnt_sbj}) ;
-    
-    pFt(cnt_sbj,1)     = nanmean(pFtTrials{cnt_sbj}) ;
-    pOb(cnt_sbj,1)     = nanmean(pObTrials{cnt_sbj}) ;
-    pFtinf(cnt_sbj,1)  = nanmean(pFtinfTrials{cnt_sbj}) ;
-    pFtninf(cnt_sbj,1) = nanmean(pFtninfTrials{cnt_sbj}) ;
-    pCjinf(cnt_sbj,1)  = nanmean(pCjTrials{cnt_sbj}) ;
-    pCjninf(cnt_sbj,1) = nanmean(pCjnTrials{cnt_sbj}) ;
-    
-    pFt(cnt_sbj,2)     = nanmean(pFt0Trials{cnt_sbj}) ;
-    pOb(cnt_sbj,2)     = nanmean(pOb0Trials{cnt_sbj}) ;
-    pFtinf(cnt_sbj,2)  = nanmean(pFtinf0Trials{cnt_sbj}) ;
-    pFtninf(cnt_sbj,2) = nanmean(pFtninf0Trials{cnt_sbj}) ;
-    pCjinf(cnt_sbj,2)  = nanmean(pCj0Trials{cnt_sbj}) ;
-    pCjninf(cnt_sbj,2) = nanmean(pCjn0Trials{cnt_sbj}) ;
 end
 
 idxperf = perfMean>=perfTH;
@@ -241,7 +95,7 @@ xlim([0, 432])
 
 %% load results with attn and ML params
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -315,54 +169,33 @@ xticks(1:10)
 xticklabels(attn_modes_legend(:,1))
 ylabel('pxp')
 
-%% plot DRs
-
-range = [-0.6:0.1:0.6] ;
-
-figure
-hold on
-plot(pFtninfAll(idxperf), pFtinfAll(idxperf), 'db', 'linewidth', 2, 'markersize', 8)
-plot(-0.6:0.1:0.6, -0.6:0.1:0.6, '--k')
-axis([-0.6 1.2 -0.6 0.6])
-set(gca,'FontName','Helvetica','FontSize',20,'FontWeight','normal','LineWidth',2,'yTick',-0.6:0.2:0.6,'Xtick',-0.60:0.2:0.6)
-box off
-set(gca, 'tickdir', 'out')
-ylabel('DR inf. feature')
-xlabel('DR non inf. features')
-
-axes('position', [0.65 0.25 0.2 0.2])
-hold on
-histogram(pFtinfAll(idxperf)-pFtninfAll(idxperf), range, 'FaceColor', 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.7) ;
-plot(nanmedian(pFtinfAll(idxperf)-pFtninfAll(idxperf))*ones(10,1), linspace(0,19.6, 10),'--b', 'linewidth', 1)
-plot(0*ones(10,1), linspace(0,19.6, 10),'-', 'color', 0*[1 1 1], 'linewidth', 1)
-set(gca,'FontName','Helvetica','FontSize',20,'FontWeight','normal','LineWidth',2,'yTick',0:10:20,'Xtick',-0.6:0.6:0.6)
-box off
-set(gca, 'tickdir', 'out')
-axis([-0.6 0.6 0 20])
-
-
-figure
-hold on
-plot(pCjninfAll(idxperf(best_model_inds>20)), pCjinfAll(idxperf(best_model_inds>20)), 'db', 'linewidth', 2, 'markersize', 8)
-plot(-0.6:0.1:0.6, -0.6:0.1:0.6, '--k')
-axis([-0.6 1.2 -0.6 0.6])
-set(gca,'FontName','Helvetica','FontSize',20,'FontWeight','normal','LineWidth',2,'yTick',-0.6:0.2:0.6,'Xtick',-0.60:0.2:0.6)
-box off
-set(gca, 'tickdir', 'out')
-
-ylabel('DR inf. conjunction')
-xlabel('DR non inf. conjunctions')
-
-axes('position', [0.65 0.25 0.2 0.2])
-hold on
-histogram(pCjinfAll(idxperf(best_model_inds>20))-pCjninfAll(idxperf(best_model_inds>20)), range, 'FaceColor', 'b', 'EdgeColor', 'none', 'FaceAlpha', 0.7) ;
-plot(nanmedian(pCjinfAll(idxperf(best_model_inds>20))-pCjninfAll(idxperf(best_model_inds>20)))*ones(10,1), linspace(0,19.6, 10),'--b', 'linewidth', 1)
-plot(0*ones(10,1), linspace(0,19.6, 10),'-', 'color', 0*[1 1 1], 'linewidth', 1)
-set(gca,'FontName','Helvetica','FontSize',20,'FontWeight','normal','LineWidth',2,'yTick',0:10:20,'Xtick',-0.6:0.6:0.6)
-box off
-set(gca, 'tickdir', 'out')
-axis([-0.6 0.6 0 20])
-
+%%
+t = tiledlayout(5, 7, 'TileSpacing','compact');
+nexttile([1 6])
+% imagesc(alpha_attn'/sum(alpha_attn));
+imagesc(pxp_attn)
+caxis([0 1])
+xticks([])
+yticks([])
+nexttile
+axis off
+nexttile([4 6])
+imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
+imagesc(reshape(pxp_BIC, 10, 5)');
+caxis([0 1])
+xticks(1:10)
+xticklabels(attn_modes_legend)
+yticks(1:5)
+yticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
+nexttile([4 1])
+% imagesc(alpha_input/sum(alpha_input));
+imagesc(pxp_input')
+caxis([0 1])
+xticks([])
+yticks([])
+colormap(flipud(bone))
+cb = colorbar;
+cb.Layout.Tile = 'South';
 
 %% Simulate model with best param
 
@@ -380,7 +213,7 @@ for m = 1:length(all_model_names)
 
             inputs_struct = load(inputname);
             results_struct = load(resultsname);
-% 
+
             expr = results_struct.expr;
             input = inputs_struct.input;
             results = results_struct.results;
@@ -436,16 +269,17 @@ trial_BICs=trial_BICs(:,:,idxperf,:);
 
 %% Plot Model Evidence
 
-wSize = 50;
+wSize = 20;
 clrmat = colormap('lines(5)') ;
 
 smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_ll = movmean(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
 
+figure
 for i=1:5
     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
-    disp(min_attn_type)
+%     disp(min_attn_type)
     l(i) = plot_shaded_errorbar(squeeze(median(smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
                                 squeeze(1.25*std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
                                 wSize, clrmat(i,:));hold on
@@ -457,7 +291,7 @@ ylabel('Trial-wise BIC')
 figure
 for i=1:5
     [~, min_attn_type] = max(alpha_AIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
-    disp(min_attn_type)
+%     disp(min_attn_type)
     l(i) = plot_shaded_errorbar(squeeze(median(smth_AIC(i,min_attn_type,:,:), [1 2 3])), ...
                                 squeeze(1.25*std(smth_AIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
                                 wSize, clrmat(i,:));hold on
@@ -468,12 +302,12 @@ ylabel('Trial-wise AIC')
 
 %% compare evidence at diff epochs / detect transition
 
-probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
-probeTrialsAll = [1 probeTrialsAll];
-
-for i=1:length(probeTrialsAll)-1
-    binned_trial_BICs(:,:,:,i) = mean(trial_BICs(:,:,:,probeTrialsAll(i):probeTrialsAll(i+1)), 4);
-end
+% probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
+% probeTrialsAll = [1 probeTrialsAll];
+% 
+% for i=1:length(probeTrialsAll)-1
+%     binned_trial_BICs(:,:,:,i) = mean(trial_BICs(:,:,:,probeTrialsAll(i):probeTrialsAll(i+1)), 4);
+% end
 
 
 %% quantify effect of attention
@@ -537,7 +371,7 @@ posterior_model_kls = sum(all_model_kls.*permute(reshape(g_BIC, [10 5 length(idx
 plot_shaded_errorbar(squeeze(mean(posterior_model_ents, 3)), squeeze(std(posterior_model_ents, [], 3))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on;
 plot_shaded_errorbar(squeeze(mean(posterior_model_kls, 3)), squeeze(std(posterior_model_kls, [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('coral'));hold on;
 legend(["", "Entropy", "", "KL_{symm}"])
-ylim([0, 10])
+ylim([0, 15])
 xlim([0, ntrials+10])
 xlabel('Trial')
 
@@ -592,26 +426,26 @@ figure
 clrmat = colormap('winter(3)');
 posterior_model_ces = sum(all_model_ces.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1]), [2 1 3 4 5]), [1 2]);
 posterior_model_ces = squeeze(posterior_model_ces);
-wSize = 20;
-smth_ces = movmean(posterior_model_ces, [0 wSize-1], 2, 'Endpoints', 'discard');
+wSize = 1;
+smth_ces = movmean(squeeze(posterior_model_ces), [0 wSize-1], 2, 'Endpoints', 'discard');
 for d=[2 1 3]
     plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), wSize, clrmat(d,:));hold on;
 end
 legend(["", "inf", "", "noninf1", "", "noninf2"]); 
-ylim([0.1, 0.6])
+ylim([0.15, 0.6])
 xlim([wSize, ntrials+10])
 xlabel('Trial')
 ylabel('Attention Weights')
 
 %% extra explained variance based on diff lls
-figure;
-imagesc(1-mean(lls(5,3,:), 3)./mean(lls, 3));
-axis image
-colorbar();
-xticks(1:10)
-xticklabels(attn_modes_legend)
-yticks(1:5)
-yticklabels(all_model_names_legend')
+% figure;
+% imagesc(1-mean(lls(5,3,:), 3)./mean(lls, 3));
+% axis image
+% colorbar();
+% xticks(1:10)
+% xticklabels(attn_modes_legend)
+% yticks(1:5)
+% yticklabels(all_model_names_legend')
 
 %% differential signals in value (pairwise difference in values in different dimensions)
 %% significance of "complementary" attention
@@ -639,11 +473,72 @@ for m = 1:length(all_model_names)
     end
 end
 
-posterior_model_pdists = nansum(all_value_pdists.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1 1]), [2 1 3 4 5]), [1 2]);
-posterior_model_pdists = squeeze(posterior_model_pdists);
+% posterior_model_pdists = nansum(all_value_pdists.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1 1]), [2 1 3 4 5]), [1 2]);
+% posterior_model_pdists = squeeze(posterior_model_pdists);
+
+figure;
+clrmat=colormap('lines(6)');
+clrmat = clrmat([2 1 3 4 5 6], :);
+for i=[2 1 3 4 5 6]
+subplot(1, 2, floor((i-1)/3)+1);
+plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3:5,1,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3:5,1,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+end
+subplot(1,2,1);
+ylim([0 0.2]);
+yticks(0:0.025:0.2)
+ylabel('Value Separability')
+legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"]);
+subplot(1,2,2);
+ylim([0 0.15]);
+yticks(0:0.025:0.15)
+legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"]);
+han=axes(gcf,'visible','off');
+han.Title.Visible='on';
+han.XLabel.Visible='on';
+xlabel(han,'Trial');
 
 
+figure;
+clrmat=colormap('lines(6)');
+clrmat = clrmat([2 1 3 4 5 6], :);
+for i=[2 1 3 4 5 6]
+subplot(1, 2, floor((i-1)/3)+1);
+plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+end
+subplot(1,2,1);
+ylim([0 0.2]);
+yticks(0:0.025:0.2)
+ylabel('Value Separability')
+legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"]);
+subplot(1,2,2);
+ylim([0 0.15]);
+yticks(0:0.025:0.15)
+legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"]);
+han=axes(gcf,'visible','off');
+han.Title.Visible='on';
+han.XLabel.Visible='on';
+xlabel(han,'Trial');
 
+figure;
+clrmat=colormap('lines(6)');
+clrmat = clrmat([2 1 3 4 5 6], :);
+for i=[2 1 3 4 5 6]
+subplot(1, 2, floor((i-1)/3)+1);
+plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(5,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(5,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+end
+subplot(1,2,1);
+ylim([0 0.2]);
+yticks(0:0.025:0.2)
+ylabel('Value Separability')
+legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"]);
+subplot(1,2,2);
+ylim([0 0.15]);
+yticks(0:0.025:0.15)
+legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"]);
+han=axes(gcf,'visible','off');
+han.Title.Visible='on';
+han.XLabel.Visible='on';
+xlabel(han,'Trial');
 %% model ablation to force attention on informative feature/conj pair
 
 %% simulate without teacher-forcing trial to see robustness
@@ -656,18 +551,170 @@ posterior_model_pdists = squeeze(posterior_model_pdists);
 %% correlate differential signal with attention weights
 
 
-
-
 %% **********
 %% calculate value difference in attention-less model to see interaction between learning and attention
 %% difference in parameters between attention and non-attention models (especially diff in lrs)
 %% **********
 
 %% **********
-%% consistency of behavior with simulated models with attention to see if it accounts for 
+%% consistency of behavior with simulated models with attention to see if it accounts for individual differences
 %% **********
 
+all_sim_model_names = ["fMLchoiceSim_RL2ftdecayattn", ...
+    "fMLchoiceSim_RL2ftobjdecayattn", ...
+    "fMLchoiceSim_RL2conjdecayattn", ...
+    "fMLchoiceSim_RL2conjdecayattn_onlyfattn", ...
+    "fMLchoiceSim_RL2conjdecayattn_constrained"];
 
-%% **********
-%% register for sfn membership
-%% **********
+clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns
+nreps = 20;
+for m = [1 5]
+    disp("=======================================================");
+    disp(strcat("Simulating model ", all_model_names(m)));
+    for a = [1 3]
+        disp("-------------------------------------------------------");
+        disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
+        parfor cnt_sbj = 1:length(subjects_inputs)
+            for cnt_rep = 1:nreps
+                inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
+                resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
+    
+                inputs_struct = load(inputname);
+                results_struct = load(resultsname);
+    % 
+                expr = results_struct.expr;
+                input = inputs_struct.input;
+                results = results_struct.results;
+    
+                expr.shapeMap = repmat([1 2 3 ;
+                    1 2 3 ;
+                    1 2 3 ], 1,1,3) ;
+    
+                expr.colorMap = repmat([1 1 1 ;
+                    2 2 2 ;
+                    3 3 3], 1,1,3) ;
+    
+                expr.patternMap(:,:,1) = ones(3,3) ;
+                expr.patternMap(:,:,2) = 2*ones(3,3) ;
+                expr.patternMap(:,:,3) = 3*ones(3,3) ;
+                
+                sesdata = struct();
+                sesdata.input   = input ;
+                sesdata.expr    = expr ;
+                sesdata.results = results ;
+                sesdata.NtrialsShort = expr.NtrialsShort ;
+                sesdata.flagUnr = 1 ;
+    
+                sesdata.flag_couple = 0 ;
+                sesdata.flag_updatesim = 0 ;
+    
+                % load attn type (const, diff, sum, max) and attn
+                % time(none, choice, learning, both)
+                sesdata.attn_op = attn_modes(a,1);
+                sesdata.attn_time = attn_modes(a,2);
+
+                % load best params
+                best_pars = attns.fit_results{m, a, cnt_sbj}.params;
+    
+                sim_model = str2func(all_sim_model_names(m));
+                
+                [sim_logits, sim_choices, sim_rewards, sim_values, sim_attns] = sim_model(best_pars, sesdata);
+
+                all_sim_choices(m, a, cnt_sbj, cnt_rep, :) = sim_choices;
+                all_sim_rewards(m, a, cnt_sbj, cnt_rep, :) = sim_rewards;
+                [~, idxMax] = max(expr.prob{1}(input.inputTarget)) ;
+                all_sim_corrects(m, a, cnt_sbj, cnt_rep, :) = sim_choices==idxMax;
+                all_sim_correct_behav(m, a, cnt_sbj, cnt_rep, :) = sim_choices==results.choice';
+                all_sim_lls(m, a, cnt_sbj, cnt_rep, :) = -logsigmoid(sim_logits'.*(sesdata.results.choice*2-3));
+                all_sim_values{m, a, cnt_sbj, cnt_rep} = sim_values;
+                all_sim_attns{m, a, cnt_sbj, cnt_rep} = sim_attns;
+%                 sim_trial_BICs(m, a, cnt_sbj, :) = 2*all_sim_lls(m, a, cnt_sbj, cnt_rep)+log(ntrials)*length(best_pars)/ntrials;
+            end
+        end
+    end
+end
+
+%%
+for m = [1 5]
+    for a = [1 3]
+        for cnt_sbj = 1:length(idxperf)
+            mean_attns = zeros(ntrials, 3);
+            mean_ents = 0;
+            mean_kls = 0;
+            for cnt_rep = 1:nreps
+                if strcmp(attn_modes(a,2), 'C')
+                    attn_where = 1;
+                elseif strcmp(attn_modes(a,2), 'L')
+                    attn_where = 2;
+                elseif strcmp(attn_modes(a,2), 'CL')
+                    attn_where = 2;
+                else
+                    attn_where = 1;
+                end
+                 mean_ents = mean_ents + 1/nreps*squeeze(entropy(all_sim_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
+                 mean_kls = mean_kls + 1/nreps*squeeze(symm_kl_div(all_sim_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), ...
+                    all_sim_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 2));
+
+                for d = 1:3
+                    mean_attns(:,d) = mean_attns(:,d) + squeeze(all_sim_attns{m, a, idxperf(cnt_sbj), cnt_rep}(attn_where,d,:))/nreps;
+                end
+            end
+            all_sim_model_ents(m, a, cnt_sbj, :) = mean_ents;
+            all_sim_model_kls(m, a, cnt_sbj, :) = mean_kls;
+            all_sim_model_ces(m, a, cnt_sbj, :, :) = mean_attns;
+        end
+    end
+end
+
+figure
+clrmat = colormap('winter(3)');
+wSize = 1;
+smth_ces = movmean(squeeze(all_sim_model_ces(1,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+for d=[2 1 3]
+    plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), wSize, clrmat(d,:));hold on;
+end
+legend(["", "inf", "", "noninf1", "", "noninf2"]);
+ylim([0.15, 0.6])
+xlim([wSize, ntrials+10])
+xlabel('Trial')
+ylabel('Attention Weights')
+
+figure
+clrmat = colormap('winter(3)');
+wSize = 1;
+smth_ces = movmean(squeeze(all_sim_model_ces(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+for d=[2 1 3]
+    plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), wSize, clrmat(d,:));hold on;
+end
+legend(["", "inf", "", "noninf1", "", "noninf2"]);
+ylim([0.15, 0.6])
+xlim([wSize, ntrials+10])
+xlabel('Trial')
+ylabel('Attention Weights')
+
+figure
+plot_shaded_errorbar(squeeze(mean(all_sim_model_ents(5,3,:,:,:), 3)), squeeze(std(all_sim_model_ents(5,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on;
+plot_shaded_errorbar(squeeze(mean(all_sim_model_kls(5,3,:,:,:), 3)), squeeze(std(all_sim_model_kls(5,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('coral'));hold on;
+legend(["", "Entropy", "", "KL_{symm}"])
+ylim([0, 15])
+xlim([0, ntrials+10])
+xlabel('Trial')
+figure
+plot_shaded_errorbar(squeeze(mean(all_sim_model_ents(1,3,:,:,:), 3)), squeeze(std(all_sim_model_ents(1,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on;
+plot_shaded_errorbar(squeeze(mean(all_sim_model_kls(1,3,:,:,:), 3)), squeeze(std(all_sim_model_kls(1,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('coral'));hold on;
+legend(["", "Entropy", "", "KL_{symm}"])
+ylim([0, 15])
+xlim([0, ntrials+10])
+xlabel('Trial')
+
+figure
+plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(1,1,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(1,1,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on
+plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(1,3,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(1,3,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('blue'));hold on
+plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(5,1,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(5,1,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('limegreen'));hold on
+plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(5,3,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(5,3,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('green'));hold on
+plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
+xlabel('Trial')
+xlim([0 ntrials+10])
+ylabel('Percent Correct')
+legend(["", "F_{no attn}", "", "F_{diffXL}", "", "F+C_{no attn}", "", "F+C_{tied diffXL}", "", "Human"], 'location', 'southeast')
+
