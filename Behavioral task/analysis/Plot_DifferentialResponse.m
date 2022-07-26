@@ -204,20 +204,20 @@ end
 %%
 
 idxperf             = (perf>perfTH) ;
-idxperf(find(pObAll==0)) = 0 ;
+% idxperf(find(pObAll==0)) = 0 ;
 idxperf             = find(idxperf) ;
 
 %%
 
-[idxFtMd idxObjMd idxConjMd idxModel] = fIndex(LL) ;
-
-idxFt       = idxFtMd ;
-idxObj      = idxObjMd ;
-idxConj     = idxConjMd{1} ;
-
-idxFt       = idxperf(ismember(idxperf, idxFt)) ;
-idxObj      = idxperf(ismember(idxperf, idxObj)) ;
-idxConj     = idxperf(ismember(idxperf, idxConj)) ;
+% [idxFtMd idxObjMd idxConjMd idxModel] = fIndex(LL) ;
+% 
+% idxFt       = idxFtMd ;
+% idxObj      = idxObjMd ;
+% idxConj     = idxConjMd{1} ;
+% 
+% idxFt       = idxperf(ismember(idxperf, idxFt)) ;
+% idxObj      = idxperf(ismember(idxperf, idxObj)) ;
+% idxConj     = idxperf(ismember(idxperf, idxConj)) ;
 
 %%
 

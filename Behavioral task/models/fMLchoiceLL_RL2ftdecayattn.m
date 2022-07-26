@@ -1,4 +1,4 @@
-function [loglikehood, V, A] = fMLchoiceLL_RL2ftdecayattn(xpar, sesdata)
+function [loglikehood, latents] = fMLchoiceLL_RL2ftdecayattn(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2) model using ML method
 %
@@ -46,8 +46,10 @@ v = (0.5*ones(9,1)) ;
 for cnt_trial=1:ntrials
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ;
-    correctunCh = inputRewards(3-choice, cnt_trial) ;
-    choiceunCh = 3-choice ;
+    if ~isnan(choice) && ~isnan(correct)
+        correctunCh = inputRewards(3-choice, cnt_trial) ;
+        choiceunCh = 3-choice ;
+    end
 
     idx_shape(2)    = shapeMap(inputTarget(2, cnt_trial)) ;
     idx_color(2)    = colorMap(inputTarget(2, cnt_trial))+3 ;
@@ -81,6 +83,18 @@ for cnt_trial=1:ntrials
           - BiasL;
 
     if cnt_trial >= 1
+        if isnan(choice) || isnan(correct)  
+            pChoiceR = 1./(1+exp(-logit));
+        
+            choice = binornd(1, pChoiceR)+1;
+            choiceunCh = 3-choice;
+            
+            correct = inputRewards(choice, cnt_trial) ;
+            correctunCh = inputRewards(3-choice, cnt_trial) ;
+        end
+        latents.R(cnt_trial) = correct;
+        latents.C(cnt_trial) = choice;
+        latents.logits(cnt_trial) = logit;
         if choice == 2
             loglikehood(cnt_trial) =  - logsigmoid(logit) ;
         else
@@ -158,9 +172,9 @@ for cnt_trial=1:ntrials
             v = update(v, idxC, idxW, alpha_unrPattern*attn_w_learn(3)) ;
         end
     end
-    V(:,cnt_trial) = v ;
-    A(1,1:3,cnt_trial)=attn_w_choice;
-    A(2,1:3,cnt_trial)=attn_w_learn;
+    latents.V(:,cnt_trial) = v ;
+    latents.A(1,1:3,cnt_trial)=attn_w_choice;
+    latents.A(2,1:3,cnt_trial)=attn_w_learn;
 end
 end
 

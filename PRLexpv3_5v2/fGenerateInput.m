@@ -60,7 +60,7 @@ for cnt_Nblocks = 1:expr.Nblocks
             end
         end
         corr_blocksShort        = abs(corr(inputSideR_blocksShort, inputSideL_blocksShort)) ;
-        [idx_corrR idx_corrL]   = find(corr_blocksShort==min(corr_blocksShort(:))) ;
+        [idx_corrR, idx_corrL]  = find(corr_blocksShort==min(corr_blocksShort(:))) ;
         idx_rand                = randi(length(idx_corrR)) ;
         inputRewardR            = [inputRewardR; inputSideR_blocksShort(:,idx_corrR(idx_rand))] ;
         inputRewardL            = [inputRewardL; inputSideL_blocksShort(:,idx_corrL(idx_rand))] ;

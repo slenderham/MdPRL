@@ -2,7 +2,7 @@ clc
 close all
 clear
 
-set(0,'defaultAxesFontSize',15)
+set(0,'defaultAxesFontSize',18)
 %%
 
 addpath("../files")
@@ -56,7 +56,7 @@ end
 
 idxperf = perfMean>=perfTH;
 idxperf(29) = false;
-idxperf(36) = false;
+% idxperf(36) = false;
 subjects_inputs = subjects_inputs(idxperf);
 subjects_prl = subjects_prl(idxperf);
 
@@ -95,17 +95,17 @@ for cnt_sbj = 1:length(subjects_inputs)
     for cnt_probe = 1:length(results.probEst)
         probEst         = results.probEst{cnt_probe} ;
         probEst         = probEst./(1+probEst) ;
-%         probEst = log(probEst);
+        %         probEst = log(probEst);
 
         % regression coefficient
-        X   = 4 ; 
+        X   = 4 ;
         ll1 = [X      1  1/X;
-               1/X^2  1  X^2;
-               X      1  1/X]' ;
+            1/X^2  1  X^2;
+            X      1  1/X]' ;
 
-        X   = 3 ; 
+        X   = 3 ;
         ll  = [X      1  1/X]' ;
-        
+
         LLSh            = nan*ones(3,3,3) ;
         LLSh(1,:,:)     = ll1*ll(1) ;
         LLSh(2,:,:)     = ones(size(ll1))*ll(2) ;
@@ -123,105 +123,136 @@ for cnt_sbj = 1:length(subjects_inputs)
         % conjunctions
         Regconj1 = mean(expr.prob{1}, 1);
         Regconj1 = repmat(Regconj1, [3 1 1]);
-%         Regconj1 = Regft1.*Regconj1 ./ (Regft1.*Regconj1+(1-Regft1).*(1-Regconj1));
+        %         Regconj1 = Regft1.*Regconj1 ./ (Regft1.*Regconj1+(1-Regft1).*(1-Regconj1));
         Regconj2 = mean(expr.prob{1}, 2);
         Regconj2 = repmat(Regconj2, [1 3 1]);
-%         Regconj2 = Regft2.*Regconj2 ./ (Regft2.*Regconj2+(1-Regft2).*(1-Regconj2));
+        %         Regconj2 = Regft2.*Regconj2 ./ (Regft2.*Regconj2+(1-Regft2).*(1-Regconj2));
         Regconj3 = mean(expr.prob{1}, 3);
         Regconj3 = repmat(Regconj3, [1 1 3]);
-%         Regconj3 = Regft3.*Regconj3 ./ (Regft3.*Regconj3+(1-Regft3).*(1-Regconj3));
+        %         Regconj3 = Regft3.*Regconj3 ./ (Regft3.*Regconj3+(1-Regft3).*(1-Regconj3));
 
         % objects
         LLRegobj = LLSh ;
         Regobj = LLRegobj./(1+LLRegobj) ;
 
         XTEMP = [Regft1(expr.playcombinations); Regft2(expr.playcombinations); ...
-                 Regconj1(expr.playcombinations); Regconj2(expr.playcombinations); ...
-                 Regconj3(expr.playcombinations); Regobj(expr.playcombinations); ...
-                 probEst(expr.playcombinations)]' ;
+            Regconj1(expr.playcombinations); Regconj2(expr.playcombinations); ...
+            Regconj3(expr.playcombinations); Regobj(expr.playcombinations); ...
+            probEst(expr.playcombinations)]' ;
         XTEMP = round(XTEMP./0.05)*0.05 ;
         XTEMP = log(XTEMP+1e-6) - log(1-XTEMP+1e-6);
 
-%         XALL(cnt_probe, cnt_sbj, :, :) = XTEMP;
+        %         XALL(cnt_probe, cnt_sbj, :, :) = XTEMP;
 
         X = XTEMP(:,end);
         Y1 = XTEMP(:, 1);
-%         Y1 = [Y1 ones(size(Y1,1),1)] ;
         Y21 = XTEMP(:,[1 3]);
-%         Y21 = [Y21 ones(size(Y21,1),1)] ;
         Y22 = XTEMP(:, 4);
-%         Y22 = [Y22 ones(size(Y22,1),1)] ;
         Y23 = XTEMP(:, 5);
-%         Y23 = [Y23 ones(size(Y23,1),1)] ;
         Y3 = XTEMP(:, 6);
-%         Y3 = [Y3 ones(size(Y3,1),1)] ;
 
-        mdl = fitlm(Y1, X);
-        b1(:,cnt_probe,cnt_sbj) = mdl.Coefficients.Estimate;
-        RsqS(1, cnt_probe,cnt_sbj) = mdl.Rsquared.Adjusted;
-        lme(1, cnt_probe,cnt_sbj) = -mdl.LogLikelihood;
-        
-        mdl = fitlm(Y21, X);
-        b21(:,cnt_probe,cnt_sbj) = mdl.Coefficients.Estimate;
-        RsqS(2, cnt_probe,cnt_sbj) = mdl.Rsquared.Adjusted;
-        lme(2, cnt_probe,cnt_sbj) = -mdl.LogLikelihood;
-        
-        mdl = fitlm(Y22, X);
-        b22(:,cnt_probe,cnt_sbj) = mdl.Coefficients.Estimate;
-        RsqS(3, cnt_probe,cnt_sbj) = mdl.Rsquared.Adjusted;
-        lme(3, cnt_probe,cnt_sbj) = -mdl.LogLikelihood;
-        
-        mdl = fitlm(Y23, X);
-        b23(:,cnt_probe,cnt_sbj) = mdl.Coefficients.Estimate;
-        RsqS(4, cnt_probe,cnt_sbj) = mdl.Rsquared.Adjusted;
-        lme(4, cnt_probe,cnt_sbj) = -mdl.LogLikelihood;
 
-        mdl = fitlm(Y3, X);
-        b3(:,cnt_probe,cnt_sbj) = mdl.Coefficients.Estimate;
-        RsqS(5, cnt_probe,cnt_sbj) = mdl.Rsquared.Adjusted;
-        lme(5, cnt_probe,cnt_sbj) = -mdl.LogLikelihood;
+        all_prob_ests(:, cnt_probe, cnt_sbj) = X;
 
-        all_prob_ests(:, cnt_probe, cnt_sbj) = probEst(expr.playcombinations);
-%                 if any(isnan(probEst))
-%           SS(cnt_sbj, cnt_probe, :) = nan*[tbl{2:end,2}];
-%                 else
-%         [p,tbl,stats,terms] = anovan(probEst(expr.playcombinations), ...
-%                                     {expr.shapeMap(expr.playcombinations), ...
-%                                      expr.colorMap(expr.playcombinations), ...
-%                                      expr.patternMap(expr.playcombinations)}, ...
-%                                 "model","interaction", ...
-%                                 "varnames",["shape", "color", "pattern"],'display','off');
-%             SS(cnt_sbj, cnt_probe, :) = [tbl{2:end,2}];
-%                 end
     end
 end
 
+%% fit random effect model
+
+p_vals = nan*ones(5,1);
+for cnt_probe=1:5
+    tbl1 = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
+        repmat(Y1, [sum(idxperf), 1]), ...
+        repelem(1:sum(idxperf), 27)', ...
+        'VariableNames', {'Y', 'Finf', 'Subject'});
+    tbl21 = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
+        repmat(Y21(:,1), [sum(idxperf), 1]), ...
+        repmat(Y21(:,2), [sum(idxperf), 1]), ...
+        repelem(1:sum(idxperf), 27)', ...
+        'VariableNames', {'Y', 'Finf', 'Cinf', 'Subject'});
+    tbl22 = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
+        repmat(Y22, [sum(idxperf), 1]), ...
+        repelem(1:sum(idxperf), 27)', ...
+        'VariableNames', {'Y', 'Cnoninf1', 'Subject'});
+    tbl23 = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
+        repmat(Y23, [sum(idxperf), 1]), ...
+        repelem(1:sum(idxperf), 27)', ...
+        'VariableNames', {'Y', 'Cnoninf2', 'Subject'});
+    tbl3 = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
+        repmat(Y3, [sum(idxperf), 1]), ...
+        repelem(1:sum(idxperf), 27)', ...
+        'VariableNames', {'Y', 'O', 'Subject'});
+
+    mdl1 = fitlme(tbl1, 'Y~1+Finf+(Finf|Subject)');
+    mdl21 = fitlme(tbl21, 'Y~1+Finf+Cinf+(Finf|Subject)+(Cinf-1|Subject)');
+    mdl22 = fitlme(tbl22, 'Y~1+Cnoninf1+(Cnoninf1|Subject)');
+    mdl23 = fitlme(tbl23, 'Y~1+Cnoninf2+(Cnoninf2|Subject)');
+    mdl3 = fitlme(tbl3, 'Y~1+O+(O|Subject)');
+
+    RsqS(1, cnt_probe) = mdl1.Rsquared.Adjusted;
+    RsqS(2, cnt_probe) = mdl21.Rsquared.Adjusted;
+    RsqS(3, cnt_probe) = mdl22.Rsquared.Adjusted;
+    RsqS(4, cnt_probe) = mdl23.Rsquared.Adjusted;
+    RsqS(5, cnt_probe) = mdl3.Rsquared.Adjusted;
+
+    betas(cnt_probe, 1, :) = [mdl21.Coefficients.Estimate(2), mdl21.Coefficients.SE(2)]';
+    betas(cnt_probe, 2, :) = [mdl21.Coefficients.Estimate(3), mdl21.Coefficients.SE(3)]';
+    betas(cnt_probe, 3, :) = [mdl3.Coefficients.Estimate(2), mdl3.Coefficients.SE(2)]';
+end
+
+
+
 %% population level anova
+
+% for cnt_probe = 1:length(results.probEst)
+%     tbl = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1),...
+%                 nominal(repmat(expr.shapeMap(expr.playcombinations)', [sum(idxperf), 1])), ...
+%                 nominal(repmat(expr.colorMap(expr.playcombinations)', [sum(idxperf), 1])), ...
+%                 nominal(repmat(expr.patternMap(expr.playcombinations)', [sum(idxperf), 1])),...
+%                 nominal(repelem(1:sum(idxperf), 27)'), ...
+%                 'VariableNames', {'Y', 'Shape', 'Color', 'Pattern', 'Subject'});
+%     mdl = fitlme(tbl, 'Y~Shape*Color*Pattern');
+%     anova(mdl)
+% %     anova_ps(cnt_probe, :) = p;
+% %     eta2(cnt_probe, :) = ([tbl{2:end-2,2}]-[tbl{2:end-2,3}].*[tbl{end-1,5}])./([tbl{end,2}]+[tbl{end-1,5}]);
+% end
+
 for cnt_probe = 1:length(results.probEst)
     [p,tbl,stats,terms] = anovan(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), 1, []), ...
-                                {repmat(expr.shapeMap(expr.playcombinations), [1, sum(idxperf)]), ...
-                                 repmat(expr.colorMap(expr.playcombinations), [1, sum(idxperf)]), ...
-                                 repmat(expr.patternMap(expr.playcombinations), [1, sum(idxperf)])}, ...
-                                "model","full", ...
-                                "varnames",["shape", "color", "pattern"],'display','off');
+        {nominal(repmat(expr.shapeMap(expr.playcombinations), [1, sum(idxperf)])), ...
+         nominal(repmat(expr.colorMap(expr.playcombinations), [1, sum(idxperf)])), ...
+         nominal(repmat(expr.patternMap(expr.playcombinations), [1, sum(idxperf)]))},...
+         "model",3, "varnames",["shape", "color", "pattern"],'display','off');
     anova_ps(cnt_probe, :) = p;
     eta2(cnt_probe, :) = ([tbl{2:end-2,2}]-[tbl{2:end-2,3}].*[tbl{end-1,5}])./([tbl{end,2}]+[tbl{end-1,5}]);
 end
 
-%% 
+%%
 
 figure
 clrmats = colormap('turbo(6)');
 clrmats = clrmats(1:5, :);
 for i=1:5
-errorbar(nanmean(RsqS(i,:,:), 3)', nanstd(RsqS(i,:,:), [], 3)'/sqrt(size(RsqS, 3)), 'Color', clrmats(i,:), 'LineWidth', 1);hold on;
+    plot(RsqS(i,:), 'Color', clrmats(i,:), 'LineWidth', 1);hold on;
 end
-ylim([0, 0.425])
-legend(["F_{inf}", "F_{inf}+C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], "Location", "northwest")
+ylim([0, 0.4])
+legend(["F_{inf}", "F_{inf}+C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], ...
+    "Location", "eastoutside", 'Orientation', 'vertical');
 xticks(1:5)
 xlabel('Value Estimation Trial')
 ylabel('R^2')
 xlim([0.5, 5.5])
+
+figure
+eb = errorbar(betas(:,:,1), betas(:,:,2), '-o', 'LineWidth', 1);
+eb(1).Color = clrmats(1,:);
+eb(2).Color = clrmats(2,:);
+eb(3).Color = clrmats(5,:);
+xlim([0.5, 5.5]);
+legend(["F_{inf}", "C_{inf}", "O"], "Location", "eastoutside", 'Orientation', 'vertical');
+xlabel('Value Estimation Trial')
+ylabel('Regression Weights')
+
 
 % figure
 % prob_est_rmses = (XALL(:,:,:,4)-reshape(expr.prob{1}(expr.playcombinations), [1 1 27])).^2;
@@ -230,10 +261,12 @@ xlim([0.5, 5.5])
 figure;
 plot(eta2(:,[2 1 3 5 6 4 7]), '-o', 'LineWidth', 1); hold on;
 xlim([0.5, 5.5])
-ylim([-0.05, 0.3])
+ylim([-0.01, 0.15])
 xticks(1:5)
 xlabel('Value Estimation Trial')
 ylabel('\omega^2')
-legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], "Location", "northwest");
+legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], ...
+    "Location", "eastoutside", 'Orientation', 'vertical');
 
 % SS = SS(:,:,1:7)./SS(:,:,9);
+

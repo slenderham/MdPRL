@@ -1,4 +1,4 @@
-function [loglikehood, V, A] = fMLchoiceLL_RL2conjdecayattn(xpar, sesdata)
+function [loglikehood, latents] = fMLchoiceLL_RL2conjdecayattn(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2)obj model using ML method
 %
@@ -37,7 +37,6 @@ else
     alpha_unr           = alpha_rew ;
 end
 
-
 if strcmp(sesdata.attn_time, "none")
     beta_attn_feat = 1;
     beta_attn_conj = 1;
@@ -65,8 +64,10 @@ for cnt_trial=1:ntrials
 
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ;
-    correctunCh = inputRewards(3-choice, cnt_trial) ;
-    choiceunCh = 3-choice;
+    if ~isnan(choice) && ~isnan(correct)
+        correctunCh = inputRewards(3-choice, cnt_trial) ;
+        choiceunCh = 3-choice ;
+    end
 
     idx_shape(2)    = shapeMap(inputTarget(2, cnt_trial)) ; % 1-3
     idx_color(2)    = colorMap(inputTarget(2, cnt_trial))+3 ; % 4-6
@@ -125,6 +126,18 @@ for cnt_trial=1:ntrials
            -BiasL;
 
     if cnt_trial >= 1
+        if isnan(choice) || isnan(correct)
+            pChoiceR = 1./(1+exp(-logit));
+        
+            choice = binornd(1, pChoiceR)+1;
+            choiceunCh = 3-choice;
+            
+            correct = inputRewards(choice, cnt_trial) ;
+            correctunCh = inputRewards(3-choice, cnt_trial) ;
+        end
+        latents.R(cnt_trial) = correct;
+        latents.C(cnt_trial) = choice;
+        latents.logits(cnt_trial) = logit;
         if choice == 2
             loglikehood(cnt_trial) =  - logsigmoid(logit) ;
         else
@@ -266,12 +279,12 @@ for cnt_trial=1:ntrials
             vf = update(vf, idxC, idxW, alpha_unrPattern*attn_w_feat_learn(3)) ;
         end
     end
-    V(1:9,cnt_trial) = vf ;
-    V(10:36,cnt_trial) = vc ;
-    A(1,1:3,cnt_trial) = attn_w_feat_choice;
-    A(2,1:3,cnt_trial) = attn_w_feat_learn;
-    A(1,4:6,cnt_trial) = attn_w_conj_choice;
-    A(2,4:6,cnt_trial) = attn_w_conj_learn;
+    latents.V(1:9,cnt_trial) = vf ;
+    latents.V(10:36,cnt_trial) = vc ;
+    latents.A(1,1:3,cnt_trial) = attn_w_feat_choice;
+    latents.A(2,1:3,cnt_trial) = attn_w_feat_learn;
+    latents.A(1,4:6,cnt_trial) = attn_w_conj_choice;
+    latents.A(2,4:6,cnt_trial) = attn_w_conj_learn;
 end
 end
 

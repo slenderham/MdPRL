@@ -1,4 +1,4 @@
-function [loglikehood, V, A] = fMLchoiceLL_RL2conjdecayattn_constrained(xpar, sesdata)
+function [loglikehood, latents] = fMLchoiceLL_RL2conjdecayattn_constrained(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2)obj model using ML method
 %
@@ -45,12 +45,19 @@ else
     beta_attn_conj = xpar(NparamWithLR+1)*(1-omega);
 end
 
+% input to feature maps
 shapeMap        = sesdata.expr.shapeMap ;
 colorMap        = sesdata.expr.colorMap ;
 patternMap      = sesdata.expr.patternMap ;
+
+% S(tates)
 inputTarget     = sesdata.input.inputTarget ;
+% R(ewards)
 correcttrials   = sesdata.results.reward ;
+% A(ctions)
 choicetrials    = sesdata.results.choice ;
+
+% model specs
 flag_couple     = sesdata.flag_couple ;
 flag_updatesim  = sesdata.flag_updatesim ;
 ntrials         = length(choicetrials) ;
@@ -61,11 +68,15 @@ vc              = (0.5*ones(27,1)) ; % 1-9 pXs, 10-18 pXc, 19-27 sXc
 
 for cnt_trial=1:ntrials
 
+    % current trial A and R
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ;
-    correctunCh = inputRewards(3-choice, cnt_trial) ;
-    choiceunCh = 3-choice;
+    if ~isnan(choice) && ~isnan(correct)
+        correctunCh = inputRewards(3-choice, cnt_trial) ;
+        choiceunCh = 3-choice ;
+    end
 
+    % current trial S
     idx_shape(2)    = shapeMap(inputTarget(2, cnt_trial)) ; % 1-3
     idx_color(2)    = colorMap(inputTarget(2, cnt_trial))+3 ; % 4-6
     idx_pattern(2)  = patternMap(inputTarget(2, cnt_trial))+6 ; % 7-9
@@ -112,6 +123,19 @@ for cnt_trial=1:ntrials
            -BiasL;
 
     if cnt_trial >= 1
+        % if choice is nan then sample the choice
+        if isnan(choice) || isnan(correct)  
+            pChoiceR = 1./(1+exp(-logit));
+        
+            choice = binornd(1, pChoiceR)+1;
+            choiceunCh = 3-choice;
+            
+            correct = inputRewards(choice, cnt_trial) ;
+            correctunCh = inputRewards(3-choice, cnt_trial) ;
+        end
+        latents.R(cnt_trial) = correct;
+        latents.C(cnt_trial) = choice;
+        latents.logits(cnt_trial) = logit;
         if choice == 2
             loglikehood(cnt_trial) =  - logsigmoid(logit) ;
         else
@@ -265,10 +289,10 @@ for cnt_trial=1:ntrials
             vf = update(vf, idxC, idxW, alpha_unrPattern*attn_w_learn(3)) ;
         end
     end
-    V(1:9,cnt_trial) = vf ;
-    V(10:36,cnt_trial) = vc ;
-    A(1,1:3,cnt_trial) = attn_w_choice;
-    A(2,1:3,cnt_trial) = attn_w_learn;
+    latents.V(1:9,cnt_trial) = vf ;
+    latents.V(10:36,cnt_trial) = vc ;
+    latents.A(1,1:3,cnt_trial) = attn_w_choice;
+    latents.A(2,1:3,cnt_trial) = attn_w_learn;
 end
 end
 

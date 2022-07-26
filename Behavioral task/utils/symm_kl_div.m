@@ -8,7 +8,7 @@ function dist=symm_kl_div(P,Q,dim)
 
 % normalizing the P and Q
 
-dist = (P.*(log(P+1e-8)-log(Q+1e-8)) + Q.*(log(Q+1e-8)-log(P+1e-8)));
+dist = (P.*(log(P+1e-10)-log(Q+1e-10)) + Q.*(log(Q+1e-10)-log(P+1e-10)));
 dist(isnan(dist))=0; % resolving the case when P(i)==0
 dist = sum(dist, dim);
 end
