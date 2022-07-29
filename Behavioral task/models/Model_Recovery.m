@@ -221,9 +221,6 @@ end
 %% model fitting
 disp('Simulation complete, now fitting')
 
-% all_model_names = ["fMLchoiceLL_RL2conjdecayattn_constrained"];
-
-% poolobj = parpool('local');
 for m = 5
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
