@@ -9,7 +9,7 @@ addpath("../utils")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',20)
+set(0,'defaultAxesFontSize',18)
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -84,6 +84,22 @@ idxperf(29) = 0;
 idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
+%% load model fit
+attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
+
+for m = 1:length(all_model_names)
+    for a = 1:length(attn_modes)
+        for cnt_sbj = 1:length(idxperf)
+            lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;            
+            AICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+2*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
+            BICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+log(ntrials)*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
+        end
+    end
+end
+
+[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
+                                mat2cell((1:50)', repmat([1], 1, 50)));
+
 
 %% Simulate model with best param
 load('../files/simulated_vars')
@@ -106,30 +122,30 @@ smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_ll = movmean(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
 
 t = tiledlayout(3, 1,'TileSpacing','compact');
-% bgAx = axes(t,'XTick',[],'YTick',[],'Box','off');
-% bgAx.Layout.TileSpan = [2 1];
 ylabel(t, 'Trial-wise BIC', 'FontSize', 18)
 ax1 = nexttile([2 1]);
 for i=1:5
-%     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
-    min_attn_type = 3;
-%     disp(min_attn_type)
+    [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
+    if i==4
+        min_attn_type = 3;
+    end
+    disp(min_attn_type)
     l(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
                                 squeeze(std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-                                wSize, clrmat(i,:));hold on
+                                1:ntrials-wSize+1, clrmat(i,:));hold on
 end
 ax1.Box = 'off';
 ax1.XAxis.Visible = 'off';
-ylim([0.90, 1.35]);
-xlim([25, 450]);
-yline(0.90, ":")
+ylim([0.92, 1.35]);
+xlim([-10, 400]);
+yline(0.92, ":")
 legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
 
 ax2 = nexttile();
 ax2.Layout.Tile = 3;
-l = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(1,3,:,:), [1 2 3])), ...
-                     squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(1,3,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-                     wSize, [0 0 0]);
+l = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [1 2 3])), ...
+                     squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
+                     1:ntrials-wSize+1, [0 0 0]);
 yline(0.05, ":")
 yline(0);
 legend(l, ["F+C_{tied}-F"])
@@ -151,15 +167,6 @@ xlabel('Trial')
 % legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
 % xlabel('Trial')
 % ylabel('Trial-wise AIC')
-
-%% compare evidence at diff epochs / detect transition
-
-% probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
-% probeTrialsAll = [1 probeTrialsAll];
-% 
-% for i=1:length(probeTrialsAll)-1
-%     binned_trial_BICs(:,:,:,i) = mean(trial_BICs(:,:,:,probeTrialsAll(i):probeTrialsAll(i+1)), 4);
-% end
 
 
 %% quantify effect of attention
@@ -230,6 +237,11 @@ ylabel('KL_{symm}')
 ylim([0, 15])
 xlim([0, ntrials+10])
 xlabel('Trial')
+
+% figure;
+% correlation between ents, kl, and model fit (sharper attention -> better
+% fit for attentional model)
+% correlation between ents, kl, and accuracy (shouldn't be)
 
 %% focus on the feature (avg attn weight)
 
@@ -333,6 +345,7 @@ xlim([0.49, 0.78])
 ylim([-0.1, 1.1])
 xlabel("Performance")
 ylabel("Average attentional weights")
+
 
 %% differential signals in value (pairwise difference in values in different dimensions)
 %% significance of "complementary" attention
@@ -447,9 +460,12 @@ han=axes(gcf,'visible','off');
 han.Title.Visible='on';
 han.XLabel.Visible='on';
 xlabel(han,'Trial');
-%% model ablation to force attention on informative feature/conj pair
 
-%% run model recovery
+%%
+
+
+
+%% model ablation to force attention on informative feature/conj pair
 
 %% look at parameter, confirmation bias?
 

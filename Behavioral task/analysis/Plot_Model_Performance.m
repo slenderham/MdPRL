@@ -112,62 +112,21 @@ end
 [alpha_AIC,exp_r_AIC,xp_AIC,pxp_AIC,bor_AIC,g_AIC] = bms(reshape(-permute(AICs/2, [2 1 3]), [50, length(idxperf)])', ...
                                 mat2cell((1:50)', repmat([1], 1, 50)));
 disp(bor_AIC);
-% figure;
-% h = bar(reshape(pxp_AIC, 10, 5));hold on;
-% 
-% hx_pos = nan(10, 5);
-% for i = 1:5
-%     hx_pos(:,i) = h(i).XEndPoints;
-% end
-% 
-% plot(hx_pos(:), alpha_AIC/sum(alpha_AIC), 'ko', 'DisplayName', "E[Freq]")
-% xticks(1:10)
-% xticklabels(attn_modes_legend)
-% set(h, {'DisplayName'}, {'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
-% ylabel('pxp')
-% legend()
-
 
 [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
                                 mat2cell((1:50)', repmat([1], 1, 50)));
 disp(bor_BIC);
-% figure;
-% h = bar(reshape(pxp_BIC, 10, 5));hold on;
-% 
-% hx_pos = nan(10, 5);
-% for i = 1:5
-%     hx_pos(:,i) = h(i).XEndPoints;
-% end
-% 
-% plot(hx_pos(:), alpha_BIC/sum(alpha_BIC), 'ko', 'DisplayName', "E[Freq]")
-% xticks(1:10)
-% xticklabels(attn_modes_legend)
-% set(h, {'DisplayName'}, {'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
-% ylabel('pxp')
-% legend()
-
 [~, best_model_inds] = max(g_BIC);
-% title('Posterior Model Probability')
+
 
 [alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
                                 mat2cell(reshape(1:50, [10, 5])', repmat([1], 1, 5)));
 disp(bor_input);
-% figure;
-% h = bar(pxp_input);hold on;
-% plot(alpha_input/sum(alpha_input), 'ko', 'DisplayName', "E[Freq]")
-% xticks(1:5)
-% xticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'})
-% ylabel('pxp')
+
 
 [alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, [50, length(idxperf)])', ...
                                 mat2cell(reshape(1:50, [5, 10])', repmat([1], 1, 10)));
 disp(bor_attn);
-% figure;
-% h = bar(pxp_attn);hold on;
-% plot(alpha_attn/sum(alpha_attn), 'ko', 'DisplayName', "E[Freq]")
-% xticks(1:10)
-% xticklabels(attn_modes_legend(:,1))
-% ylabel('pxp')
 
 t = tiledlayout(5, 7, 'TileSpacing','compact');
 nexttile([1 6])
