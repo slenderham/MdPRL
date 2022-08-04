@@ -90,68 +90,85 @@ shapecolorMap = 3*(shapeMap-1)+colorMap;
 
 clear all_Xs_for_lr all_Ys_for_lr lr_weights_mean
 
-parfor cnt_O_ch = 1:27
-    all_Xs_for_lr = [];
-    all_Ys_for_lr = [];
-    disp(['Choice on ', num2str(cnt_O_ch)]);
-    for cnt_sbj = 1:length(subjects_inputs)
-        inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
-        resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
+for cnt_O_fb = 1:27
+    for cnt_O_ch = 1:27
+        all_Xs_for_lr = [];
+        all_Ys_for_lr = [];
+        disp(['Feedback on ', num2str(cnt_O_fb), ', choice on ', num2str(cnt_O_ch)]);
+        for cnt_sbj = 1:length(subjects_inputs)
+            inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
+            resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
 
-        inputs_struct = load(inputname);
-        results_struct = load(resultsname);
+            inputs_struct = load(inputname);
+            results_struct = load(resultsname);
 
-        inputTarget   = inputs_struct.input.inputTarget;
-        Ntrials      = length(results_struct.results.reward);
-        rewards      = results_struct.results.reward;
-        choices      = results_struct.results.choice;
+            inputTarget   = inputs_struct.input.inputTarget;
+            Ntrials      = length(results_struct.results.reward);
+            rewards      = results_struct.results.reward;
+            choices      = results_struct.results.choice;
 
-        % the object chosen and unchosen
-        targCh = inputs_struct.input.inputTarget(...
-            results_struct.results.choice'+2*(0:(results_struct.expr.Ntrials-1))) ;
-        targUnch = inputs_struct.input.inputTarget(...
-            (3-results_struct.results.choice)'+2*(0:(results_struct.expr.Ntrials-1))) ;
+            % the object chosen and unchosen
+            targCh = inputs_struct.input.inputTarget(...
+                results_struct.results.choice'+2*(0:(results_struct.expr.Ntrials-1))) ;
+            targUnch = inputs_struct.input.inputTarget(...
+                (3-results_struct.results.choice)'+2*(0:(results_struct.expr.Ntrials-1))) ;
 
-        % whether rewarded or not
-        idx_rew = rewards==1;
-        idx_unr = rewards==0;
+            % whether rewarded or not
+            idx_rew = rewards==1;
+            idx_unr = rewards==0;
 
-        % trials where either object is appears
-        Ct_ch = targCh==cnt_O_ch;
-        uCt_ch = targUnch==cnt_O_ch;
+            % trials where either object is appears
+            Ct_fb = targCh==cnt_O_fb; 
+            Ct_ch = targCh==cnt_O_ch; 
+            uCt_fb = targUnch==cnt_O_fb;
+            uCt_ch = targUnch==cnt_O_ch;
 
-        % discard all trials where the object
-        rows_to_include = find(Ct_ch==1 | uCt_ch==1);
+            % discard all trials where the object
+            rows_to_include_fb = Ct_fb==1 | uCt_fb==1;
+            rows_to_include_ch = Ct_ch==1 | uCt_ch==1;
+            rows_to_include = rows_to_include_fb | rows_to_include_ch;
+            
+            rows_to_include_fb = rows_to_include_fb(rows_to_include);
+            rows_to_include_ch = rows_to_include_ch(rows_to_include);
+            
+            Ct_fb = Ct_fb(rows_to_include);
+            uCt_fb = uCt_fb(rows_to_include);
+            
+            Ct_ch = Ct_ch(rows_to_include);
 
-        Xs_for_lr = [];
-        Ys_for_lr = [];
+            % chosen and rewarded
+            CtxRew = idx_rew(rows_to_include).*Ct_fb';
+            % chosen and unrewarded
+            CtxUnr = idx_unr(rows_to_include).*Ct_fb';
+            Unch = uCt_fb';
 
-        % for each time O_ch is an option
-        % look back to find the last time O_fb is an option
-        for l = rows_to_include
-            if l==1
-                continue
+            Xs_for_lr = [];
+            Ys_for_lr = [];
+
+            % for each time O_ch is an option
+            % look back to find the last time O_fb is an option
+            for l = 1:length(Ct_ch)
+                if rows_to_include_ch(l)==1
+                    for k=l-1:-1:1
+                        if rows_to_include_fb(k)==1
+                            Xs_for_lr = [Xs_for_lr; CtxRew(k)-CtxUnr(k)];
+                            Ys_for_lr = [Ys_for_lr; Ct_ch(l)];
+                            break;
+                        end
+                    end
+                end
             end
-            curr_X = zeros(1,27);
-            curr_X(targCh(l-1)) = idx_rew(l-1)-idx_unr(l-1);
-
-            Xs_for_lr = [Xs_for_lr; curr_X];
-            Ys_for_lr = [Ys_for_lr; Ct_ch(l)];
+            all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
+            all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
         end
-
-        all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
-        all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
-    end
-
-    for cnt_O_fb = 1:27
+        
         tbl_to_fit = array2table( ...
-            [all_Ys_for_lr, all_Xs_for_lr(:,[cnt_O_fb 28])], ...
+            [all_Ys_for_lr, all_Xs_for_lr], ...
             "VariableNames", ["choice", "CxR", "subject"]);
         mdl = fitglme(tbl_to_fit, 'choice~CxR+(CxR|subject)', 'Distribution','Binomial');
-        mdls{cnt_O_ch, cnt_O_fb} = mdl;
+        mdls{cnt_O_fb, cnt_O_ch} = mdl;
     end
 end
-
 
 %% 
 
@@ -181,4 +198,5 @@ for i=1:7
     all_maps_sim_flat(:,i) = all_maps_sim{i}(:);
 end
 
-mdl = fitlm(all_maps_sim_flat, reshape(mean(bs, 3), [], 1));
+mdl = fitlm(all_maps_sim_flat, reshape(mean(bs, 3), [], 1), ...
+    'VarNames', {'F_inf', 'F_noninf1', 'F_noninf2', 'C_inf', 'C_noninf1', 'C_noninf2', 'O', 'Weight'})

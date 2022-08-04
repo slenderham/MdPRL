@@ -69,10 +69,10 @@ cmap = lines(256);
 for cnt_sbj = 1:length(subjects_inputs)
     inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
     resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
-    
+
     load(inputname)
     load(resultsname)
-    
+
     rew(cnt_sbj,:)                = results.reward ;
     [~, idxMax]                   = max(expr.prob{1}(input.inputTarget)) ;
     choiceRew(cnt_sbj,:)          = results.choice' == idxMax ;
@@ -90,7 +90,7 @@ attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
         for cnt_sbj = 1:length(idxperf)
-            lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;            
+            lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;
             AICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+2*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
             BICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+log(ntrials)*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
         end
@@ -98,7 +98,7 @@ for m = 1:length(all_model_names)
 end
 
 [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
-                                mat2cell((1:50)', repmat([1], 1, 50)));
+    mat2cell((1:50)', repmat([1], 1, 50)));
 
 
 %% Simulate model with best param
@@ -131,8 +131,8 @@ for i=1:5
     end
     disp(min_attn_type)
     l(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
-                                squeeze(std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-                                1:ntrials-wSize+1, clrmat(i,:));hold on
+        squeeze(std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
+        1:ntrials-wSize+1, clrmat(i,:));hold on
 end
 ax1.Box = 'off';
 ax1.XAxis.Visible = 'off';
@@ -144,8 +144,8 @@ legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
 ax2 = nexttile();
 ax2.Layout.Tile = 3;
 l = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [1 2 3])), ...
-                     squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-                     1:ntrials-wSize+1, [0 0 0]);
+    squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
+    1:ntrials-wSize+1, [0 0 0]);
 yline(0.05, ":")
 yline(0);
 legend(l, ["F+C_{tied}-F"])
@@ -177,7 +177,7 @@ for m = 1:length(all_model_names)
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
                 attn_where = 1;
-            elseif strcmp(attn_modes(a,2), 'L')  
+            elseif strcmp(attn_modes(a,2), 'L')
                 attn_where = 2;
             elseif strcmp(attn_modes(a,2), 'CL')
                 attn_where = 2;
@@ -187,14 +187,14 @@ for m = 1:length(all_model_names)
             if m~=3
                 all_model_ents(m, a, cnt_sbj, :) = squeeze(entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
                 all_model_kls(m, a, cnt_sbj, :) = squeeze(symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), ...
-                                                                      all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 2));
+                    all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 2));
             else
                 all_model_ents(m, a, cnt_sbj, :) = squeeze((entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,:)) ...
-                                                           +entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:)))/2);
+                    +entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:)))/2);
                 all_model_kls(m, a, cnt_sbj, :) = squeeze((symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,2:end), ...
-                                                                       all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,1:end-1), 2) ...
-                                                           +symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,2:end), ...
-                                                                       all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,1:end-1), 2))/2);
+                    all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,1:end-1), 2) ...
+                    +symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,2:end), ...
+                    all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,1:end-1), 2))/2);
             end
         end
     end
@@ -216,9 +216,9 @@ end
 %     end
 % end
 
-% lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1)); 
+% lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1));
 % lg.Layout.Tile = 'East';
-% fax=axes(fig,'visible','off'); 
+% fax=axes(fig,'visible','off');
 % fax.XLabel.Visible='on';
 % fax.YLabel.Visible='on';
 % ylabel(fax,'Attn Type');
@@ -250,7 +250,7 @@ for m = 1:length(all_model_names)
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
                 attn_where = 1;
-            elseif strcmp(attn_modes(a,2), 'L')  
+            elseif strcmp(attn_modes(a,2), 'L')
                 attn_where = 2;
             elseif strcmp(attn_modes(a,2), 'CL')
                 attn_where = 2;
@@ -258,13 +258,13 @@ for m = 1:length(all_model_names)
                 attn_where = 1;
             end
             for d = 1:3
-                if m~=3 
+                if m~=3
                     all_model_ces(m, a, cnt_sbj, :, d) = squeeze(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:));
                 else
                     conj_d = [2, 1, 3];
                     conj_d = conj_d(d);
                     all_model_ces(m, a, cnt_sbj, :, d) = squeeze((all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:) ...
-                                                               +all_attns{m, a, idxperf(cnt_sbj)}(attn_where,3+conj_d,:))/2);
+                        +all_attns{m, a, idxperf(cnt_sbj)}(attn_where,3+conj_d,:))/2);
                 end
             end
         end
@@ -286,8 +286,8 @@ end
 %         end
 %     end
 % end
-% 
-% lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1)); 
+%
+% lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1));
 % lg.Layout.Tile = 'East';
 
 figure
@@ -299,10 +299,10 @@ wSize = 20;
 smth_ces = movmean(squeeze(all_model_ces(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
 for d=[2 1 3]
     plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', ...
-                         squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
-                         wSize, clrmat(d,:));hold on;
+        squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
+        wSize, clrmat(d,:));hold on;
 end
-legend(["", "inf", "", "noninf1", "", "noninf2"]); 
+legend(["", "inf", "", "noninf1", "", "noninf2"]);
 ylim([0.15, 0.6])
 xlim([wSize, ntrials+10])
 xlabel('Trial')
@@ -321,10 +321,9 @@ axis([0 1 0 1 0 1])
 view(120,30)
 %plot A
 scatter3(squeeze(mean(all_model_ces(5,3,:,:,1),4)), ...
-         squeeze(mean(all_model_ces(5,3,:,:,2),4)), ...
-         squeeze(mean(all_model_ces(5,3,:,:,3),4)), ...
-         40, squeeze(mean(all_model_kls(5,3,:,:),4)), 'filled')
-colormap cool
+    squeeze(mean(all_model_ces(5,3,:,:,2),4)), ...
+    squeeze(mean(all_model_ces(5,3,:,:,3),4)), ...
+    40, squeeze(mean(all_model_kls(5,3,:,:),4)), 'filled')
 colorbar
 text(1.05, 0.0, -0.1, 'Noninf1', 'FontSize',15)
 text(-0.1, -0.1, 1., 'Noninf2', 'FontSize',15)
@@ -346,34 +345,51 @@ ylim([-0.1, 1.1])
 xlabel("Performance")
 ylabel("Average attentional weights")
 
+figure;
+for d=[2 1 3]
+    plt(d) = plot(g_BIC(43,:), squeeze(mean(all_model_ces(5,3,:,:,d),4)), '.', ...
+        'MarkerSize', 20, 'Color', clrmat(d,:));hold on;
+    lsls = lsline();
+end
+
+legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"])
+for i=1:3
+    lsls(i).LineWidth = 1;
+end
+xlim([0, 1])
+ylim([-0.1, 1.1])
+xlabel("Posterior Prob of F+C_{tied} DiffXL")
+ylabel("Average attentional weights")
+
 
 %% differential signals in value (pairwise difference in values in different dimensions)
 %% significance of "complementary" attention
 
 channel_groups = {[0 3 6 9], ...
-                  [0 3 6 9 36], ...
-                  [0 3 6 9 18 27 36], ...
-                  [0 3 6 9 18 27 36], ...
-                  [0 3 6 9 18 27 36]};
+    [0 3 6 9 36], ...
+    [0 3 6 9 18 27 36], ...
+    [0 3 6 9 18 27 36], ...
+    [0 3 6 9 18 27 36]};
 
-marginals{1} = reshape(squeeze(mean(expr.prob{1}, [1, 3])), 3, 1);
-marginals{2} = reshape(squeeze(mean(expr.prob{1}, [2, 3])), 3, 1);
-marginals{3} = reshape(squeeze(mean(expr.prob{1}, [1, 2])), 3, 1);
-marginals{4} = squeeze(mean(expr.prob{1}, 1));
+rew_probs = 0.05*round(expr.prob{1}/0.05);
+marginals{1} = reshape(squeeze(mean(rew_probs, [1, 3])), 3, 1);
+marginals{2} = reshape(squeeze(mean(rew_probs, [2, 3])), 3, 1);
+marginals{3} = reshape(squeeze(mean(rew_probs, [1, 2])), 3, 1);
+marginals{4} = squeeze(mean(rew_probs, 1));
 marginals{4} = marginals{4}(:);
-marginals{5} = squeeze(mean(expr.prob{1}, 2));
+marginals{5} = squeeze(mean(rew_probs, 2));
 marginals{5} = marginals{5}(:);
-marginals{6} = squeeze(mean(expr.prob{1}, 3));
+marginals{6} = squeeze(mean(rew_probs, 3));
 marginals{6} = marginals{6}(:);
 marginals{7} = expr.prob{1}(:);
 
 marginals_by_cg = {[1 2 3], ...
-                   [1 2 3 7], ...
-                   [1 2 3 4 5 6], ...
-                   [1 2 3 4 5 6], ...
-                   [1 2 3 4 5 6]};
+    [1 2 3 7], ...
+    [1 2 3 4 5 6], ...
+    [1 2 3 4 5 6], ...
+    [1 2 3 4 5 6]};
 
-
+%%
 for m = 1:length(all_model_names)
     disp(m);
     for a = 1:length(attn_modes)
@@ -401,8 +417,8 @@ figure;
 clrmat=colormap('lines(6)');
 clrmat = clrmat([2 1 3 4 5 6], :);
 for i=[2 1 3 4 5 6]
-subplot(1, 2, floor((i-1)/3)+1);
-plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3:5,1,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3:5,1,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+    subplot(1, 2, floor((i-1)/3)+1);
+    plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3:5,1,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3:5,1,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
 end
 subplot(1,2,1);
 ylim([0 0.2]);
@@ -423,8 +439,8 @@ figure;
 clrmat=colormap('lines(6)');
 clrmat = clrmat([2 1 3 4 5 6], :);
 for i=[2 1 3 4 5 6]
-subplot(1, 2, floor((i-1)/3)+1);
-plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+    subplot(1, 2, floor((i-1)/3)+1);
+    plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
 end
 subplot(1,2,1);
 ylim([0 0.2]);
@@ -444,8 +460,8 @@ figure;
 clrmat=colormap('lines(6)');
 clrmat = clrmat([2 1 3 4 5 6], :);
 for i=[2 1 3 4 5 6]
-subplot(1, 2, floor((i-1)/3)+1);
-plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(5,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(5,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+    subplot(1, 2, floor((i-1)/3)+1);
+    plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(5,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(5,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
 end
 subplot(1,2,1);
 ylim([0 0.2]);
@@ -461,13 +477,79 @@ han.Title.Visible='on';
 han.XLabel.Visible='on';
 xlabel(han,'Trial');
 
-%%
+%% effect of reward and no-reward on value differential
 
-
+all_attn_logits = zeros(length(all_model_names), length(attn_modes), length(idxperf), 1+ntrials, length(cg));
+for m = 5
+    disp(m);
+    cg = channel_groups{m};
+    for a = 2:length(attn_modes)
+        % find out in which array the attetion is stored
+        if strcmp(attn_modes(a,2), 'C')
+            attn_where = 1;
+        elseif strcmp(attn_modes(a,2), 'L')
+            attn_where = 2;
+        elseif strcmp(attn_modes(a,2), 'CL')
+            attn_where = 2;
+        else
+            attn_where = 1;
+        end
+        % loop over subjects
+        for cnt_sbj = 1:length(idxperf)
+            resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
+            results_struct = load(resultsname);
+            %             curr_subj_C = results_struct.results.choice;
+            curr_subj_R = results_struct.results.reward; % 1-ntrials
+            % loop over trials
+            for l = 1:ntrials
+                % for each trial, find the winning dimension
+                for cg_idx = 1:length(cg)-1
+                    curr_vals = all_values{m, a, idxperf(cnt_sbj)}(cg(cg_idx)+1:cg(cg_idx+1), l);
+                    if a==1
+                        all_attn_logits(m, a, cnt_sbj, l, cg_idx) = 0;
+                    elseif 2<=a && a<=4
+                        all_attn_logits(m, a, cnt_sbj, l, cg_idx) = mean(pdist(curr_vals));
+                    elseif 5<=a && a<=7
+                        all_attn_logits(m, a, cnt_sbj, l, cg_idx) = mean(curr_vals);
+                    elseif 8<=a && a<=10
+                        all_attn_logits(m, a, cnt_sbj, l, cg_idx) = mean(squareform(...
+                            bsxfun(@(x,y) max(x,y), curr_vals, curr_vals').*(1-eye(length(curr_vals)))));
+                    end
+                end
+                if m==1 || m==2 || m==4
+                    [~, curr_attn_I] = sort(squeeze(all_attns{m, a}(attn_where,:,l)), 'descend');
+                    all_attn_logits_diff(m, a, cnt_sbj, l-1, 1:3) = ...
+                        all_attn_logits(m, a, cnt_sbj, l, curr_attn_I) ...
+                        - all_attn_logits(m, a, cnt_sbj, l-1, curr_attn_I);
+                elseif m==3
+                    [~, curr_attn_I] = sort(squeeze(all_attns{m, a}(attn_where,1:3,l)), 'descend');
+                    all_attn_logits_diff(m, a, cnt_sbj, l-1, 1:3) = ...
+                        all_attn_logits(m, a, cnt_sbj, l, curr_attn_I) ...
+                        - all_attn_logits(m, a, cnt_sbj, l-1, curr_attn_I);
+                    [~, curr_attn_I] = sort(squeeze(all_attns{m, a}(attn_where,4:6,l)), 'descend');
+                    all_attn_logits_diff(m, a, cnt_sbj, l-1, 4:6) = ...
+                        all_attn_logits(m, a, cnt_sbj, l, curr_attn_I) ...
+                        - all_attn_logits(m, a, cnt_sbj, l-1, curr_attn_I);
+                elseif m==5
+                    [~, curr_attn_I] = sort(squeeze(all_attns{m, a}(attn_where,[2 1 3],l)), 'descend');
+                    all_attn_logits_diff(m, a, cnt_sbj, l-1, 1:3) = ...
+                        all_attn_logits(m, a, cnt_sbj, l, curr_attn_I) ...
+                        - all_attn_logits(m, a, cnt_sbj, l-1, curr_attn_I);
+                    [~, curr_attn_I] = sort(squeeze(all_attns{m, a}(attn_where,[1 2 3],l)), 'descend');
+                    all_attn_logits_diff(m, a, cnt_sbj, l-1, 4:6) = ...
+                        all_attn_logits(m, a, cnt_sbj, l, curr_attn_I) ...
+                        - all_attn_logits(m, a, cnt_sbj, l-1, curr_attn_I);
+                end
+            end
+            all_attn_logits_diff_rew(m, a, cnt_sbj) = ...
+                mean(all_attn_logits_diff(m, a, cnt_sbj, curr_subj_R==1, :));
+            all_attn_logits_diff_unr(m, a, cnt_sbj) = ...
+                mean(all_attn_logits_diff(m, a, cnt_sbj, curr_subj_R==0, :));
+        end
+    end
+end
 
 %% model ablation to force attention on informative feature/conj pair
-
-%% look at parameter, confirmation bias?
 
 %% differential response focus more informative conjunction
 %% correlate differential signal with attention weights
@@ -485,86 +567,4 @@ xlabel(han,'Trial');
 
 
 %%
-for m = [1 5]
-    for a = [1 3]
-        for cnt_sbj = 1:length(idxperf)
-            mean_attns = zeros(ntrials, 3);
-            mean_ents = 0;
-            mean_kls = 0;
-            for cnt_rep = 1:nreps
-                if strcmp(attn_modes(a,2), 'C')
-                    attn_where = 1;
-                elseif strcmp(attn_modes(a,2), 'L')
-                    attn_where = 2;
-                elseif strcmp(attn_modes(a,2), 'CL')
-                    attn_where = 2;
-                else
-                    attn_where = 1;
-                end
-                 mean_ents = mean_ents + 1/nreps*squeeze(entropy(all_sim_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
-                 mean_kls = mean_kls + 1/nreps*squeeze(symm_kl_div(all_sim_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), ...
-                    all_sim_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 2));
-
-                for d = 1:3
-                    mean_attns(:,d) = mean_attns(:,d) + squeeze(all_sim_attns{m, a, idxperf(cnt_sbj), cnt_rep}(attn_where,d,:))/nreps;
-                end
-            end
-            all_sim_model_ents(m, a, cnt_sbj, :) = mean_ents;
-            all_sim_model_kls(m, a, cnt_sbj, :) = mean_kls;
-            all_sim_model_ces(m, a, cnt_sbj, :, :) = mean_attns;
-        end
-    end
-end
-
-figure
-clrmat = colormap('winter(3)');
-wSize = 1;
-smth_ces = movmean(squeeze(all_sim_model_ces(1,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
-for d=[2 1 3]
-    plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), wSize, clrmat(d,:));hold on;
-end
-legend(["", "inf", "", "noninf1", "", "noninf2"]);
-ylim([0.15, 0.6])
-xlim([wSize, ntrials+10])
-xlabel('Trial')
-ylabel('Attention Weights')
-
-figure
-clrmat = colormap('winter(3)');
-wSize = 1;
-smth_ces = movmean(squeeze(all_sim_model_ces(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
-for d=[2 1 3]
-    plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), wSize, clrmat(d,:));hold on;
-end
-legend(["", "inf", "", "noninf1", "", "noninf2"]);
-ylim([0.15, 0.6])
-xlim([wSize, ntrials+10])
-xlabel('Trial')
-ylabel('Attention Weights')
-
-figure
-plot_shaded_errorbar(squeeze(mean(all_sim_model_ents(5,3,:,:,:), 3)), squeeze(std(all_sim_model_ents(5,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on;
-plot_shaded_errorbar(squeeze(mean(all_sim_model_kls(5,3,:,:,:), 3)), squeeze(std(all_sim_model_kls(5,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('coral'));hold on;
-legend(["", "Entropy", "", "KL_{symm}"])
-ylim([0, 15])
-xlim([0, ntrials+10])
-xlabel('Trial')
-figure
-plot_shaded_errorbar(squeeze(mean(all_sim_model_ents(1,3,:,:,:), 3)), squeeze(std(all_sim_model_ents(1,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on;
-plot_shaded_errorbar(squeeze(mean(all_sim_model_kls(1,3,:,:,:), 3)), squeeze(std(all_sim_model_kls(1,3,:,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('coral'));hold on;
-legend(["", "Entropy", "", "KL_{symm}"])
-ylim([0, 15])
-xlim([0, ntrials+10])
-xlabel('Trial')
-
-figure
-plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(1,1,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(1,1,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('deepskyblue'));hold on
-plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(1,3,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(1,3,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('blue'));hold on
-plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(5,1,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(5,1,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('limegreen'));hold on
-plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(5,3,idxperf,1:nreps,:), 20, 5), [3 4])), squeeze(std(movmean(all_sim_corrects(5,3,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), 1, rgb('green'));hold on
-plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
-xlabel('Trial')
-xlim([0 ntrials+10])
-ylabel('Percent Correct')
-legend(["", "F_{no attn}", "", "F_{diffXL}", "", "F+C_{no attn}", "", "F+C_{tied diffXL}", "", "Human"], 'location', 'southeast')
 

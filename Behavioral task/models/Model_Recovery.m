@@ -221,11 +221,11 @@ end
 %% model fitting
 disp('Simulation complete, now fitting')
 
-for m = 5
+for m = 1:length(all_model_names)
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
     basic_params = cell(nSamples, length(all_model_names), length(attn_modes)); % store the attention-less model's parameters for each model type
-    for a = 1:length(attn_modes)
+    for a = 3
         disp("-------------------------------------------------------");
         disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         for sim_m = 5

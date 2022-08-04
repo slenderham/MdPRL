@@ -67,7 +67,8 @@ vf              = (0.5*ones(9,1)) ; % 1-3 shape, 4-6 color, 7-9 pattern
 vc              = (0.5*ones(27,1)) ; % 1-9 pXs, 10-18 pXc, 19-27 sXc
 
 for cnt_trial=1:ntrials
-
+    latents.V(1:9,cnt_trial) = vf ;
+    latents.V(10:36,cnt_trial) = vc ;
     % current trial A and R
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ;
@@ -289,8 +290,6 @@ for cnt_trial=1:ntrials
             vf = update(vf, idxC, idxW, alpha_unrPattern*attn_w_learn(3)) ;
         end
     end
-    latents.V(1:9,cnt_trial) = vf ;
-    latents.V(10:36,cnt_trial) = vc ;
     latents.A(1,1:3,cnt_trial) = attn_w_choice;
     latents.A(2,1:3,cnt_trial) = attn_w_learn;
 end

@@ -48,7 +48,7 @@ attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
 ntrials = 432;
 
 clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns
-nreps = 100;
+nreps = 50;
 for m = [1 5]
     disp("=======================================================");
     disp(strcat("Simulating model ", all_model_names(m)));
@@ -109,8 +109,8 @@ for m = [1 5]
                 all_sim_lls(m, a, cnt_sbj, cnt_rep, :) = -logsigmoid(latents.logits'.*(sesdata.results.choice*2-3));
                 all_sim_values{m, a, cnt_sbj, cnt_rep} = latents.V;
                 all_sim_attns{m, a, cnt_sbj, cnt_rep} = latents.A;
-%                 sim_trial_BICs(m, a, cnt_sbj, :) = 2*all_sim_lls(m, a, cnt_sbj, cnt_rep)+log(ntrials)*length(best_pars)/ntrials;
             end
         end
     end
 end
+
