@@ -59,8 +59,8 @@ all_model_Nbetas = [1, 1, 1, 1, 1];
 bound_eps = 0;
 bias_bound = 10;
 p_bias_bound = 5;
-temp_bound = 1000;
-p_temp_bound = 200;
+temp_bound = 100;
+p_temp_bound = 100;
 
 all_lbs = {...
     [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...

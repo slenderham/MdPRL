@@ -158,33 +158,34 @@ cb.Layout.Tile = 'South';
 
 %% Plot All Parameters
 attn_results = [attns.fit_results{5, 3, :}];
-curr_params = reshape([attn_results.params], 6, [])';
+curr_params = reshape([attn_results.params], 7, [])';
 param_names = {'bias', '\beta', '\omega', 'decay', '\alpha_+', '\alpha_-', '\gamma'};
 [S,AX,BigAx,H,HAx] = plotmatrix(curr_params(idxperf, :));
-for i=1:6
+for i=1:7
 H(i).NumBins=20;
 end
 hold on;
-for i=1:6
-xlabel(AX(6,i), param_names{i}, 'FontSize', 18);
+for i=1:7
+xlabel(AX(7,i), param_names{i}, 'FontSize', 18);
 ylabel(AX(i,1), param_names{i}, 'FontSize', 18);
 end
 
 %% Focus on gamma and omega
 figure;
 subplot(121);
-hf = histfit(max(curr_params(idxperf, 7), 0), 10, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
+hf = histfit(max(curr_params(idxperf, 7), 0), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
 xlabel('\gamma', 'FontSize', 25)
 xlim([-50, 1050]);xticks(0:200:1000);
 ylabel('Density')
 subplot(122);
-hf = histfit(max(min(curr_params(idxperf, 3), 1-1e-4), 1e-4), 10, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
+hf = histfit(max(min(curr_params(idxperf, 3), 1-1e-4), 1e-4), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
 xlim([-0.05, 1.05]);xticks(0:0.2:1);
 xlabel('\omega', 'FontSize', 25)
 
 %% learning rate bias
-violinplot(curr_params(idxperf, 5:6), [], 'Width', 0.3, 'Bandwidth', 0.1)
+violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.3, 'Bandwidth', 0.05);
 ylim([0, 1.05]);
-xticklabels(["\alpha_+", "\alpha_-"]);
+xlim([0.5, 3.5]);
+xticklabels(["\alpha_+", "\alpha_-", "decay"]);
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'fontsize',25);

@@ -15,15 +15,21 @@ BiasL = xpar(1) ;
 mag = xpar(2) ;
 decay = xpar(3) ;
 
-alpha_rewColor      = xpar(NparamBasic+1);
-alpha_rewShape      = xpar(NparamBasic+1);
-alpha_rewPattern    = xpar(NparamBasic+1);
 
-alpha_unrColor      = xpar(NparamBasic+2);
-alpha_unrShape      = xpar(NparamBasic+2);
-alpha_unrPattern    = xpar(NparamBasic+2);
-
-NparamWithLR = NparamBasic+2;
+alpha_rewColor      = xpar(NparamBasic+1) ;
+alpha_rewShape      = xpar(NparamBasic+1) ;
+alpha_rewPattern    = xpar(NparamBasic+1) ;
+NparamWithLR = NparamBasic+1;
+if sesdata.flagUnr==1
+    alpha_unrColor      = xpar(NparamBasic+2) ;
+    alpha_unrShape      = xpar(NparamBasic+2) ;
+    alpha_unrPattern    = xpar(NparamBasic+2) ;
+    NparamWithLR = NparamBasic+2;
+else
+    alpha_unrColor      = alpha_rewColor ;
+    alpha_unrShape      = alpha_rewShape ;
+    alpha_unrPattern    = alpha_rewPattern ;
+end
 
 if strcmp(sesdata.attn_time, "none")
     beta_attn = 1;

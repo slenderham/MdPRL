@@ -38,8 +38,8 @@ else
 end
 
 if strcmp(sesdata.attn_time, "none")
-    beta_attn_feat = 1;
-    beta_attn_conj = 1;
+    beta_attn_feat = 0;
+    beta_attn_conj = 0;
 else
     beta_attn_feat = xpar(NparamWithLR+1)*omega;
     beta_attn_conj = xpar(NparamWithLR+1)*(1-omega);
@@ -69,7 +69,7 @@ vc              = (0.5*ones(27,1)) ; % 1-9 pXs, 10-18 pXc, 19-27 sXc
 for cnt_trial=1:ntrials
     latents.V(1:9,cnt_trial) = vf ;
     latents.V(10:36,cnt_trial) = vc ;
-    % current trial A and R
+    % current trial C and R
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ;
     if ~isnan(choice) && ~isnan(correct)
@@ -330,7 +330,7 @@ if rl2_correct
     if flag_couple==0
         idxW = [] ;
     elseif flag_couple==1
-        if idxW==idxC                                                  % to avoid potentiating and depressing similar V in coupled cases
+        if idxW==idxC                   % to avoid potentiating and depressing similar V in coupled cases
             idxW= [] ;
             if ~flag_updatesim
                 idxC = [] ;
@@ -341,7 +341,7 @@ else
     if flag_couple==0
         idxC = [] ;
     elseif flag_couple==1
-        if idxW==idxC                                                  % to avoid potentiating and depressing similar V in coupled cases
+        if idxW==idxC               % to avoid potentiating and depressing similar V in coupled cases
             idxC= [] ;
             if ~flag_updatesim
                 idxW = [] ;
