@@ -9,3 +9,4 @@ A_{F/C}(O_1, O_2)\ &= \frac{\exp[\gamma\ H(V_{F_1/C_1}, V_{F_2/C_2})\ ]}{\sum_{\
 H_{\text{diff tied}}(V_{F_1/C_1}, V_{F_2/C_2}) &=\ \mid\omega\times (V_{F_1}-V_{F_2})+(1-\omega)\times (V_{C_1}-V_{C_2})\mid
 \end{align}
 $$
+
