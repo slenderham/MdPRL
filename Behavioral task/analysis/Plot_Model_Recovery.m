@@ -13,6 +13,7 @@ addpath("../../PRLexpv3_5v2/")
 load('../files/RPL2Analysis_Attention_model_recovery_by_attn.mat')
 
 nSample = 100;
+ntrials = 432;
 
 attn_ops = ["diff", "sum", "max"];
 attn_times = ["C", "L", "CL"];
