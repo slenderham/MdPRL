@@ -57,10 +57,10 @@ all_model_Nalphas = [2, 2, 2, 2, 2];
 all_model_Nbetas = [1, 1, 1, 1, 1];
 
 bound_eps = 0;
-bias_bound = 10;
+bias_bound = 5;
 p_bias_bound = 5;
-temp_bound = 100;
-p_temp_bound = 100;
+temp_bound = 50;
+p_temp_bound = 50;
 
 all_lbs = {...
     [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
@@ -90,7 +90,7 @@ all_pubs = {...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound]};
 
-nrep = 10;
+nrep = 40;
 % nrep = 2;
 
 op = optimset('Display', 'off');
@@ -100,7 +100,7 @@ poolobj = parpool('local', 16);
 for m = 1:length(all_model_names)
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
-    basic_params = cell(length(subjects_inputs)); % store the attention-less model's parameters for each model type
+    basic_params = cell(length(subjects_inputs), 1); % store the attention-less model's parameters for each model type
     for a = 1:length(attn_modes)
         disp("-------------------------------------------------------");
         disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));

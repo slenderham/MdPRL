@@ -24,6 +24,7 @@ alpha_rewShape      = xpar(NparamBasic+1) ;
 alpha_rewPattern    = xpar(NparamBasic+1) ;
 alpha_rew           = xpar(NparamBasic+1) ;
 NparamWithLR = NparamBasic+1;
+
 if sesdata.flagUnr==1
     alpha_unrColor      = xpar(NparamBasic+2) ;
     alpha_unrShape      = xpar(NparamBasic+2) ;
@@ -122,10 +123,10 @@ for cnt_trial=1:ntrials
            +attn_w_choice(3)*(magF*(vf(idx_pattern(2))-vf(idx_pattern(1)))+ ...
                               magC*(vc(idx_shapecolor(2))-vc(idx_shapecolor(1)))) ...
            -BiasL;
-
+ 
     if cnt_trial >= 1
         % if choice is nan then sample the choice
-        if isnan(choice) || isnan(correct)  
+        if isnan(choice) || isnan(correct)
             pChoiceR = 1./(1+exp(-logit));
         
             choice = binornd(1, pChoiceR)+1;
@@ -299,7 +300,7 @@ end
 %     v(unCh) = v(unCh)*(1-decay) ;
 % end
 function v = decayV(v, unCh, decay)
-v(unCh) = v(unCh) - (v(unCh)-0.5)*(decay) ;
+v(unCh) = v(unCh) - (v(unCh)-0.5)*decay;
 end
 
 function v = update(v, idxC, idxW, Q)
@@ -330,7 +331,7 @@ if rl2_correct
     if flag_couple==0
         idxW = [] ;
     elseif flag_couple==1
-        if idxW==idxC                   % to avoid potentiating and depressing similar V in coupled cases
+        if idxW==idxC               % to avoid potentiating and depressing similar V in coupled cases
             idxW= [] ;
             if ~flag_updatesim
                 idxC = [] ;
