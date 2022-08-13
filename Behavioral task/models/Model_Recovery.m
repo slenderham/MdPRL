@@ -101,7 +101,7 @@ op = optimset('Display', 'off');
 
 %%
 
-% poolobj = parpool('local', 16);
+poolobj = parpool('local', 16);
 
 for m = 1:length(all_model_names)
     disp("=======================================================");
@@ -237,7 +237,7 @@ for m = 5
         for sim_m = 5
             for sim_a = 3
                 tic
-                for cnt_samp = 5:nSamples
+                parfor cnt_samp = 1:nSamples
                     disp(strcat('Sample: ', num2str(cnt_samp), ...
                                 ', Model: ', all_model_names(sim_m), ...
                                 ', Attn: ', attn_modes(sim_a, 1), " X ", attn_modes(sim_a, 2)));
@@ -260,8 +260,8 @@ for m = 5
                     expr.patternMap(:,:,2) = 2*ones(3,3) ;
                     expr.patternMap(:,:,3) = 3*ones(3,3) ;
                     
-                    disp(sim_results{sim_m, sim_a, cnt_samp}.fval)
-                    disp(sim_results{sim_m, sim_a, cnt_samp}.params)
+%                     disp(sim_results{sim_m, sim_a, cnt_samp}.fval)
+%                     disp(sim_results{sim_m, sim_a, cnt_samp}.params)
                     minfval = 1000000;
                     for cnt_rep = 1:nrep
 
@@ -297,8 +297,7 @@ for m = 5
                         pubs = all_pubs{m};
                         plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                         pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
-%                         ipar = plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
-                        ipar = sim_results{sim_m, sim_a, cnt_samp}.params;
+                        ipar = plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
                         
                         lbs = all_lbs{m};
                         ubs = all_ubs{m};
@@ -311,8 +310,6 @@ for m = 5
                         ll = @(x)sum(ll(x, sesdata));
 
                         [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op) ;
-                        disp(fval)
-                        disp(xpar)
 
                         if fval <= minfval
                             minfval = fval ;

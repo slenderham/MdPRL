@@ -10,7 +10,7 @@ addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 addpath("../models/")
 addpath("../../PRLexpv3_5v2/")
 
-load('../files/RPL2Analysis_Attention_model_recovery_by_attn.mat')
+load('../files/RPL2Analysis_Attention_model_recovery0.mat')
 
 nSample = 100;
 ntrials = 432;
@@ -103,3 +103,6 @@ colorbar()
 title('Confusion Matrix')
 [txs, tys] = meshgrid(1:10, 1:10);
 text(txs(:)-0.2, tys(:), string(num2str(inv_mat(:), '%.2f')))
+
+%% 
+
