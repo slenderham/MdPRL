@@ -95,7 +95,7 @@ idxperf = find(idxperf);
 
 %% load results with attn and ML params
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
+attns = load('../files/RPL2Analysis_Attention_lim_temp_10.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -138,7 +138,7 @@ yticks([])
 nexttile
 axis off
 nexttile([4 6])
-imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
+% imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
 imagesc(reshape(pxp_BIC, 10, 5)');
 caxis([0 1])
 xticks(1:10)
@@ -173,9 +173,9 @@ end
 %% Focus on gamma and omega
 figure;
 subplot(121);
-hf = histfit(max(curr_params(idxperf, 7), 0), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
+hf = histfit(max(curr_params(idxperf, 2), 0), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
 xlabel('\gamma', 'FontSize', 25)
-xlim([-50, 1050]);xticks(0:200:1000);
+xlim([-5, 55]);xticks(0:10:50);
 ylabel('Density')
 subplot(122);
 hf = histfit(max(min(curr_params(idxperf, 3), 1-1e-4), 1e-4), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
