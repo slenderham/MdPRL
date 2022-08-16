@@ -59,8 +59,8 @@ all_model_Nbetas = [1, 1, 1, 1, 1];
 bound_eps = 0;
 bias_bound = 5;
 p_bias_bound = 5;
-temp_bound = 50;
-p_temp_bound = 50;
+temp_bound = 100;
+p_temp_bound = 100;
 
 all_lbs = {...
     [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
@@ -96,15 +96,15 @@ nrep = 40;
 op = optimset('Display', 'off');
 %% optimize
 
-poolobj = parpool('local', 16);
-for m = 1:length(all_model_names)
+% poolobj = parpool('local', 16);
+for m = 5
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
     basic_params = cell(length(subjects_inputs), 1); % store the attention-less model's parameters for each model type
-    for a = 1:length(attn_modes)
+    for a = 3
         disp("-------------------------------------------------------");
         disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
-        parfor cnt_sbj = 1:length(subjects_inputs)
+        for cnt_sbj = 1:length(subjects_inputs)
             disp(strcat("Fitting subject ", num2str(cnt_sbj)));
             inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
             resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
@@ -174,6 +174,8 @@ for m = 1:length(all_model_names)
                 ll = str2func(all_model_names(m));
                 ll = @(x)sum(ll(x, sesdata));
                 [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op) ;
+                disp(fval);
+                disp(xpar);
 
                 if fval <= minfval
                     minfval = fval ;
