@@ -59,8 +59,8 @@ all_model_Nbetas = [1, 1, 1, 1, 1];
 bound_eps = 0;
 bias_bound = 5;
 p_bias_bound = 5;
-temp_bound = 50;
-p_temp_bound = 50;
+temp_bound = 100;
+p_temp_bound = 100;
 
 all_lbs = {...
     [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
@@ -90,7 +90,7 @@ all_pubs = {...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound]};
 
-nrep = 40;
+nrep = 10;
 % nrep = 2;
 
 op = optimset('Display', 'off');

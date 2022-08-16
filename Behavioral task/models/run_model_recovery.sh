@@ -7,6 +7,7 @@
 #SBATCH --time=300:00:00          # total run time limit (HH:MM:SS)
 #SBATCH --mail-type=fail          # send email on job start, end and fault
 #SBATCH --mail-user=chong.wang.gr@dartmouth.edu
+#SBATCH --output=slurm_%j.txt
 
 module purge
 module load matlab/r2021b
