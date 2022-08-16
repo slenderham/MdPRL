@@ -90,7 +90,7 @@ all_pubs = {...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound]};
 
-nrep = 40;
+nrep = 10;
 % nrep = 2;
 
 op = optimset('Display', 'off');
