@@ -44,8 +44,10 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
 ntrials = 432;
+
+%%
 
 for m = 1:length(all_model_names)
     disp("=======================================================");
@@ -55,7 +57,7 @@ for m = 1:length(all_model_names)
         disp("-------------------------------------------------------");
         disp(strcat("Running attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         parfor cnt_sbj = 1:length(subjects_inputs)
-%             disp(strcat("Fitting subject ", num2str(cnt_sbj)));
+            disp(strcat("Re-running subject ", num2str(cnt_sbj)));
             inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
             resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
 
@@ -105,7 +107,7 @@ for m = 1:length(all_model_names)
             trial_lls(m, a, cnt_sbj, :) = trial_ll;
             trial_AICs(m, a, cnt_sbj, :) = 2*trial_lls(m, a, cnt_sbj, :)+2*length(best_pars)/ntrials;
             trial_BICs(m, a, cnt_sbj, :) = 2*trial_lls(m, a, cnt_sbj, :)+log(ntrials)*length(best_pars)/ntrials;
-            trial_R2s(m, a, cnt_sbj, :) = 1-trial_BICs(m, a, cnt_sbj, :)./(2*log(2)+log(ntrials)*length(best_pars)/ntrials)
+            trial_R2s(m, a, cnt_sbj, :) = 1-trial_BICs(m, a, cnt_sbj, :)./(2*log(2)+log(ntrials)*length(best_pars)/ntrials);
         end
     end
 end

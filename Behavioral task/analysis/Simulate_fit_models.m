@@ -44,7 +44,7 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
 ntrials = 432;
 
 clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns
@@ -54,7 +54,7 @@ for m = [1 5]
     disp(strcat("Simulating model ", all_model_names(m)));
     for a = [1 3]
         disp("-------------------------------------------------------");
-        disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
+        disp(strcat("Simulating attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         parfor cnt_sbj = 1:length(subjects_inputs)
             for cnt_rep = 1:nreps
                 inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
@@ -83,6 +83,8 @@ for m = [1 5]
                 sesdata.input   = input ;
                 sesdata.expr    = expr ;
                 sesdata.results = results ;
+                sesdata.results.choice = nan*zeros(ntrials, 1);
+                sesdata.results.reward = nan*zeros(ntrials, 1);
                 sesdata.NtrialsShort = expr.NtrialsShort ;
                 sesdata.flagUnr = 1 ;
     
@@ -97,14 +99,14 @@ for m = [1 5]
                 % load best params
                 best_pars = attns.fit_results{m, a, cnt_sbj}.params;
     
-                sim_model = str2func(all_sim_model_names(m));
+                sim_model = str2func(all_model_names(m));
                 
                 [~, latents] = sim_model(best_pars, sesdata);
 
                 all_sim_choices(m, a, cnt_sbj, cnt_rep, :) = latents.C;
                 all_sim_rewards(m, a, cnt_sbj, cnt_rep, :) = latents.R;
                 [~, idxMax] = max(expr.prob{1}(input.inputTarget)) ;
-                all_sim_corrects(m, a, cnt_sbj, cnt_rep, :) = sim_choices==idxMax;
+                all_sim_corrects(m, a, cnt_sbj, cnt_rep, :) = latents.C==idxMax;
                 all_sim_correct_behav(m, a, cnt_sbj, cnt_rep, :) = latents.C==results.choice';
                 all_sim_lls(m, a, cnt_sbj, cnt_rep, :) = -logsigmoid(latents.logits'.*(sesdata.results.choice*2-3));
                 all_sim_values{m, a, cnt_sbj, cnt_rep} = latents.V;

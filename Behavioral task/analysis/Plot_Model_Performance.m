@@ -69,10 +69,10 @@ cmap = lines(256);
 for cnt_sbj = 1:length(subjects_inputs)
     inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
     resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
-    
+
     load(inputname)
     load(resultsname)
-    
+
     rew(cnt_sbj,:)                = results.reward ;
     [~, idxMax]                   = max(expr.prob{1}(input.inputTarget)) ;
     choiceRew(cnt_sbj,:)          = results.choice' == idxMax ;
@@ -95,59 +95,88 @@ idxperf = find(idxperf);
 
 %% load results with attn and ML params
 
-attns = load('../files/RPL2Analysis_Attention_lim_temp_10.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
         for cnt_sbj = 1:length(idxperf)
-            lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;            
-            AICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+2*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
-            BICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+log(ntrials)*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
+            num_params = length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
+            lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;
+            AICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+2*num_params+(2*num_params*(num_params-1))/(ntrials-num_params-1);
+            BICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+log(ntrials)*num_params;
         end
     end
 end
 
 %% bayesian model selection
 
-[alpha_AIC,exp_r_AIC,xp_AIC,pxp_AIC,bor_AIC,g_AIC] = bms(reshape(-permute(AICs/2, [2 1 3]), [50, length(idxperf)])', ...
-                                mat2cell((1:50)', repmat([1], 1, 50)));
-disp(bor_AIC);
+% [alpha_AIC,exp_r_AIC,xp_AIC,pxp_AIC,bor_AIC,g_AIC] = bms(reshape(-permute(AICs/2, [2 1 3]), [50, length(idxperf)])', ...
+%     mat2cell((1:50)', repmat([1], 1, 50)));
+% disp(bor_AIC);
 
 [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
-                                mat2cell((1:50)', repmat([1], 1, 50)));
+    mat2cell((1:50)', repmat([1], 1, 50)));
 disp(bor_BIC);
 [~, best_model_inds] = max(g_BIC);
 
 
 [alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
-                                mat2cell(reshape(1:50, [10, 5])', repmat([1], 1, 5)));
+    mat2cell(reshape(1:50, [10, 5])', repmat([1], 1, 5)));
 disp(bor_input);
 
 
 [alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, [50, length(idxperf)])', ...
-                                mat2cell(reshape(1:50, [5, 10])', repmat([1], 1, 10)));
+    mat2cell(reshape(1:50, [5, 10])', repmat([1], 1, 10)));
 disp(bor_attn);
 
 t = tiledlayout(5, 7, 'TileSpacing','compact');
 nexttile([1 6])
-% imagesc(alpha_attn'/sum(alpha_attn));
-imagesc(pxp_attn)
+imagesc(alpha_attn'/sum(alpha_attn));
+txts = text((1:10)-0.3, ones(1, 10), string(num2str(pxp_attn(:), '%.2f')), 'FontSize',12);
+for i=1:10
+    if (alpha_attn(i)/sum(alpha_attn)>0.3)
+        txts(i).Color = [1 1 1];
+    end
+end
+% imagesc(pxp_attn)
 caxis([0 1])
 xticks([])
 yticks([])
 nexttile
 axis off
 nexttile([4 6])
-% imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
-imagesc(reshape(pxp_BIC, 10, 5)');
+imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
+[txs, tys] = meshgrid(1:10, 1:5);
+txs = txs';
+tys = tys';
+txts = text(txs(:)-0.3, tys(:), string(num2str(pxp_BIC(:), '%.2f')),'FontSize',12);
+for i=1:5
+    for j=1:10
+        if (alpha_BIC((i-1)*10+j)/sum(alpha_BIC)>0.3)
+            txts((i-1)*10+j).Color = [1 1 1];
+        end
+    end
+end
+% imagesc(reshape(pxp_BIC, 10, 5)');
 caxis([0 1])
 xticks(1:10)
 xticklabels(attn_modes_legend)
+h=gca; 
+h.XAxis.TickLength = [0 0];
+h.YAxis.TickLength = [0 0];
+xlabel('Attentional mechanisms')
 yticks(1:5)
 yticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
+ylabel('Learning strategies')
 nexttile([4 1])
-% imagesc(alpha_input/sum(alpha_input));
-imagesc(pxp_input')
+imagesc(alpha_input/sum(alpha_input));
+% imagesc(pxp_input')
+txts = text(ones(1, 5)-0.3, 1:5, string(num2str(pxp_input(:), '%.2f')), 'FontSize',12);
+for i=1:5
+    if (alpha_input(i)/sum(alpha_input)>0.3)
+        txts(i).Color = [1 1 1];
+    end
+end
 caxis([0 1])
 xticks([])
 yticks([])
@@ -155,35 +184,45 @@ colormap(flipud(bone))
 cb = colorbar;
 cb.Layout.Tile = 'South';
 
-
 %% Plot All Parameters
 attn_results = [attns.fit_results{5, 3, :}];
 curr_params = reshape([attn_results.params], 7, [])';
 param_names = {'bias', '\beta', '\omega', 'decay', '\alpha_+', '\alpha_-', '\gamma'};
+figure
 [S,AX,BigAx,H,HAx] = plotmatrix(curr_params(idxperf, :));
 for i=1:7
-H(i).NumBins=20;
+    H(i).NumBins=10;
 end
 hold on;
 for i=1:7
-xlabel(AX(7,i), param_names{i}, 'FontSize', 18);
-ylabel(AX(i,1), param_names{i}, 'FontSize', 18);
+    xlabel(AX(7,i), param_names{i}, 'FontSize', 18);
+    ylabel(AX(i,1), param_names{i}, 'FontSize', 18);
 end
 
 %% Focus on gamma and omega
 figure;
-subplot(121);
-hf = histfit(max(curr_params(idxperf, 2), 0), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
-xlabel('\gamma', 'FontSize', 25)
-xlim([-5, 55]);xticks(0:10:50);
+psuedolog = @(x) asinh(x/2)/log(exp(1));
+hf = histogram(psuedolog(min(max(curr_params(idxperf, 7), eps), 500-eps)), 'NumBins', 10, 'Normalization','pdf'); hold on;
+hf(1).FaceColor=rgb('grey');
+[f,xi] = ksdensity(psuedolog(min(max(curr_params(idxperf, 7), eps), 500-eps)));
+plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
+xlabel('\gamma', 'FontSize', 20)
+xlim([-2, 8]);xticks(-2:2:8);
 ylabel('Density')
-subplot(122);
-hf = histfit(max(min(curr_params(idxperf, 3), 1-1e-4), 1e-4), 20, 'kernel');hf(1).FaceColor=rgb('grey');hf(2).Color = [0 0 0]';
-xlim([-0.05, 1.05]);xticks(0:0.2:1);
-xlabel('\omega', 'FontSize', 25)
+
+figure
+inv_logit = @(x) log(x+1e-3)-log(1-x+1e-3);
+hf = histogram(inv_logit(max(min(curr_params(idxperf, 3), 1-eps), eps)), 'NumBins', 10, 'Normalization','pdf'); hold on;
+hf(1).FaceColor=rgb('grey');
+[f,xi] = ksdensity(inv_logit(max(min(curr_params(idxperf, 3), 1-eps), eps)));
+plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
+xlim([-8, 8.0]);xticks(-8:4:8);
+xlabel('\leftarrow Conjunction                  \omega                  Feature \rightarrow', 'FontSize', 20)
+ylabel('Density')
 
 %% learning rate bias
-violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.3, 'Bandwidth', 0.05);
+figure
+violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.25);
 ylim([0, 1.05]);
 xlim([0.5, 3.5]);
 xticklabels(["\alpha_+", "\alpha_-", "decay"]);

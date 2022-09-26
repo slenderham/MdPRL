@@ -85,7 +85,7 @@ idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
 %% load model fit
-attns = load('../files/RPL2Analysis_Attention_merged_rep50.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -99,7 +99,7 @@ end
 
 [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
     mat2cell((1:50)', repmat([1], 1, 50)));
-
+[~, best_model_inds] = max(g_BIC);
 
 %% Simulate model with best param
 load('../files/simulated_vars')
@@ -114,47 +114,55 @@ trial_lls=trial_lls(:,:,idxperf,:);
 
 %% Plot Model Evidence
 
-wSize = 50;
+wSize = 100;
 clrmat = colormap('lines(5)') ;
 
 smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_ll = movmean(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
 
-t = tiledlayout(3, 1,'TileSpacing','compact');
-ylabel(t, 'Trial-wise BIC', 'FontSize', 18)
-ax1 = nexttile([2 1]);
-for i=1:5
-    [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
-    if i==4
-        min_attn_type = 3;
-    end
-    disp(min_attn_type)
-    l(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
-        squeeze(std(smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
+figure
+ylabel('Trial-wise \Delta BIC', 'FontSize', 18)
+l_input = [];
+for i=1:4
+%     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
+%     if i==2
+    min_attn_type = 3;
+%     end
+    l_input(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
+        squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
         1:ntrials-wSize+1, clrmat(i,:));hold on
 end
-ax1.Box = 'off';
-ax1.XAxis.Visible = 'off';
-ylim([0.92, 1.35]);
-xlim([-10, 400]);
-yline(0.92, ":")
-legend(l, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}", "F+C_{tied}"])
-
-ax2 = nexttile();
-ax2.Layout.Tile = 3;
-l = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [1 2 3])), ...
-    squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(1,1,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-    1:ntrials-wSize+1, [0 0 0]);
-yline(0.05, ":")
-yline(0);
-legend(l, ["F+C_{tied}-F"])
-ax2.Box = 'off';
-ylim([-0.05, 0.05])
-linkaxes([ax1 ax2], 'x')
-
+yticks(-0.04:0.01:0.02)
+ylim([-0.04, 0.02]);
+xlim([-10, ntrials-wSize+11]);
+yline(0., ":")
+legend(l_input, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}"], "Location", "eastoutside")
 xlabel('Trial')
 
+
+figure
+% clrmat_pre = clrmat_pre(2:4,:);
+clrmat = [0 0 0; colormap('hsv(4)')];
+ylabel('Trial-wise \Delta BIC', 'FontSize', 18)
+models_to_comp = [1 2 4 6 9];
+l_attn = [];
+for i_model=1:length(models_to_comp)
+%     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
+%     if i==2
+    i = models_to_comp(i_model);
+    min_input_type = 5;
+%     end
+    l_attn(i_model) = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(min_input_type,i,:,:), [1 2 3])), ...
+        squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(min_input_type,i,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
+        1:ntrials-wSize+1, clrmat(i_model,:));hold on
+end
+yticks(-0.1:0.01:0.02)
+ylim([-0.06, 0.02]);
+xlim([-10, ntrials-wSize+11]);
+yline(0., ":")
+legend(l_attn, attn_modes_legend(models_to_comp), "Location", "eastoutside")
+xlabel('Trial')
 
 % figure
 % for i=1:5
@@ -186,14 +194,14 @@ for m = 1:length(all_model_names)
             end
             if m~=3
                 all_model_ents(m, a, cnt_sbj, :) = squeeze(entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
-                all_model_kls(m, a, cnt_sbj, :) = squeeze(symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), ...
+                all_model_jsds(m, a, cnt_sbj, :) = squeeze(js_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), ...
                     all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 2));
             else
                 all_model_ents(m, a, cnt_sbj, :) = squeeze((entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,:)) ...
                     +entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:)))/2);
-                all_model_kls(m, a, cnt_sbj, :) = squeeze((symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,2:end), ...
+                all_model_jsds(m, a, cnt_sbj, :) = squeeze((js_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,2:end), ...
                     all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,1:end-1), 2) ...
-                    +symm_kl_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,2:end), ...
+                    +js_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,2:end), ...
                     all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,1:end-1), 2))/2);
             end
         end
@@ -226,22 +234,22 @@ end
 
 figure;
 % posterior_model_ents = sum(all_model_ents.*permute(reshape(g_BIC, [10 5 length(idxperf)]), [2 1 3]), [1 2]);
-% posterior_model_kls = sum(all_model_kls.*permute(reshape(g_BIC, [10 5 length(idxperf)]), [2 1 3]), [1 2]);
+% posterior_model_jsds = sum(all_model_jsds.*permute(reshape(g_BIC, [10 5 length(idxperf)]), [2 1 3]), [1 2]);
 colororder([rgb('purple'); rgb('navy')])
 yyaxis left
 plot_shaded_errorbar(squeeze(mean(all_model_ents(5,3,:,:), 3)), squeeze(std(all_model_ents(5,3,:,:), [], 3))/sqrt(length(idxperf)), 1, rgb('purple'));hold on;
 ylabel('Entropy')
 yyaxis right
-plot_shaded_errorbar(squeeze(mean(all_model_kls(5,3,:,:), 3)), squeeze(std(all_model_kls(5,3,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('navy'));hold on;
-ylabel('KL_{symm}')
-ylim([0, 15])
+plot_shaded_errorbar(squeeze(mean(all_model_jsds(5,3,:,:), 3)), squeeze(std(all_model_jsds(5,3,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('navy'));hold on;
+ylabel('JSD')
+ylim([0, 0.4])
 xlim([0, ntrials+10])
 xlabel('Trial')
 
 % figure;
-% correlation between ents, kl, and model fit (sharper attention -> better
+% correlation between ents, jsd, and model fit (sharper attention -> better
 % fit for attentional model)
-% correlation between ents, kl, and accuracy (shouldn't be)
+% correlation between ents, jsd, and accuracy (shouldn't be)
 
 %% focus on the feature (avg attn weight)
 
@@ -271,24 +279,6 @@ for m = 1:length(all_model_names)
     end
 end
 
-% fig=  figure;
-% tiledlayout(3,3);
-% for a = 2:length(attn_modes)
-%     nexttile;
-%     for m = 1:length(all_model_names)
-%         plot_shaded_errorbar(squeeze(mean(all_model_ces(m,a,:,:), 3)), squeeze(std(all_model_ces(m,a,:,:), [], 3))/sqrt(length(idxperf)), 1, clrmat(m,:));hold on;
-%         ylim([0, 10])
-%         if mod(a, 3)==2
-%             ylabel(attn_modes(a, 1))
-%         end
-%         if (a-1)/3>2
-%             xlabel(attn_modes(a, 2))
-%         end
-%     end
-% end
-%
-% lg  = legend(reshape([repmat([""], 5, 1) all_model_names_legend(1,:)']', 10, 1));
-% lg.Layout.Tile = 'East';
 
 figure
 clrmat = colormap('lines(3)');
@@ -303,7 +293,8 @@ for d=[2 1 3]
         wSize, clrmat(d,:));hold on;
 end
 legend(["", "inf", "", "noninf1", "", "noninf2"]);
-ylim([0.15, 0.6])
+ylim([0.15, 0.55])
+yticks(0.2:0.1:0.6)
 xlim([wSize, ntrials+10])
 xlabel('Trial')
 ylabel('Attention Weights')
@@ -323,7 +314,7 @@ view(120,30)
 scatter3(squeeze(mean(all_model_ces(5,3,:,:,1),4)), ...
     squeeze(mean(all_model_ces(5,3,:,:,2),4)), ...
     squeeze(mean(all_model_ces(5,3,:,:,3),4)), ...
-    40, squeeze(mean(all_model_kls(5,3,:,:),4)), 'filled')
+    40, squeeze(mean(all_model_jsds(5,3,:,:),4)), 'filled')
 colorbar
 text(1.05, 0.0, -0.1, 'Noninf1', 'FontSize',15)
 text(-0.1, -0.1, 1., 'Noninf2', 'FontSize',15)
@@ -331,7 +322,7 @@ text(0.1, 1.05, -0.1, 'Inf', 'FontSize',15)
 
 figure;
 for d=[2 1 3]
-    plt(d) = plot(perfMean(idxperf), squeeze(mean(all_model_ces(5,3,:,:,d),4)), '.', ...
+    plt(d) = plot(squeeze(mean(all_model_ces(5,3,:,:,d),4)), perfMean(idxperf), '.', ...
         'MarkerSize', 20, 'Color', clrmat(d,:));hold on;
     lsls = lsline();
 end
@@ -340,26 +331,26 @@ legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"])
 for i=1:3
     lsls(i).LineWidth = 1;
 end
-xlim([0.49, 0.78])
-ylim([-0.1, 1.1])
-xlabel("Performance")
-ylabel("Average attentional weights")
+ylim([0.49, 0.78])
+xlim([-0.1, 1.1])
+ylabel("Performance")
+xlabel("Average attentional weights")
 
-figure;
-for d=[2 1 3]
-    plt(d) = plot(g_BIC(43,:), squeeze(mean(all_model_ces(5,3,:,:,d),4)), '.', ...
-        'MarkerSize', 20, 'Color', clrmat(d,:));hold on;
-    lsls = lsline();
-end
-
-legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"])
-for i=1:3
-    lsls(i).LineWidth = 1;
-end
-xlim([0, 1])
-ylim([-0.1, 1.1])
-xlabel("Posterior Prob of F+C_{tied} DiffXL")
-ylabel("Average attentional weights")
+% figure;
+% for d=[2 1 3]
+%     plt(d) = plot(g_BIC(43,:), squeeze(mean(all_model_ces(5,3,:,:,d),4)), '.', ...
+%         'MarkerSize', 20, 'Color', clrmat(d,:));hold on;
+%     lsls = lsline();
+% end
+% 
+% legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"])
+% for i=1:3
+%     lsls(i).LineWidth = 1;
+% end
+% xlim([0, 1])
+% ylim([-0.1, 1.1])
+% xlabel("Posterior Prob of F+C_{tied} DiffXL")
+% ylabel("Average attentional weights")
 
 
 %% differential signals in value (pairwise difference in values in different dimensions)

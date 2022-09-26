@@ -60,7 +60,7 @@ idxperf(29) = false;
 subjects_inputs = subjects_inputs(idxperf);
 subjects_prl = subjects_prl(idxperf);
 
-%%
+%% make design matrix
 
 probeTrialsAll = load(['../PRLexp/inputs_all/inputs/input_', 'aa' , '.mat']).expr.trialProbe;
 
@@ -140,7 +140,12 @@ for cnt_sbj = 1:length(subjects_inputs)
             Regconj3(expr.playcombinations); Regobj(expr.playcombinations); ...
             probEst(expr.playcombinations)]' ;
         XTEMP = round(XTEMP./0.05)*0.05 ;
-        XTEMP = log(XTEMP+1e-6) - log(1-XTEMP+1e-6);
+        if XTEMP<0.05
+            XTEMP = 0.05;
+        elseif XTEMP>0.95
+            XTEMP = 0.95;
+        end
+        XTEMP = log(XTEMP+1e-10) - log(1-XTEMP+1e-10);
 
         %         XALL(cnt_probe, cnt_sbj, :, :) = XTEMP;
 
@@ -204,19 +209,6 @@ end
 
 %% population level anova
 
-% for cnt_probe = 1:length(results.probEst)
-%     tbl = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1),...
-%                 nominal(repmat(expr.shapeMap(expr.playcombinations)', [sum(idxperf), 1])), ...
-%                 nominal(repmat(expr.colorMap(expr.playcombinations)', [sum(idxperf), 1])), ...
-%                 nominal(repmat(expr.patternMap(expr.playcombinations)', [sum(idxperf), 1])),...
-%                 nominal(repelem(1:sum(idxperf), 27)'), ...
-%                 'VariableNames', {'Y', 'Shape', 'Color', 'Pattern', 'Subject'});
-%     mdl = fitlme(tbl, 'Y~Shape*Color*Pattern');
-%     anova(mdl)
-% %     anova_ps(cnt_probe, :) = p;
-% %     eta2(cnt_probe, :) = ([tbl{2:end-2,2}]-[tbl{2:end-2,3}].*[tbl{end-1,5}])./([tbl{end,2}]+[tbl{end-1,5}]);
-% end
-
 for cnt_probe = 1:length(results.probEst)
     [p,tbl,stats,terms] = anovan(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), 1, []), ...
         {nominal(repmat(expr.shapeMap(expr.playcombinations), [1, sum(idxperf)])), ...
@@ -225,6 +217,49 @@ for cnt_probe = 1:length(results.probEst)
          "model",3, "varnames",["shape", "color", "pattern"],'display','off');
     anova_ps(cnt_probe, :) = p;
     eta2(cnt_probe, :) = ([tbl{2:end-2,2}]-[tbl{2:end-2,3}].*[tbl{end-1,5}])./([tbl{end,2}]+[tbl{end-1,5}]);
+end
+
+
+%% plot different levels of different strategy
+
+omega_steps = 100;
+
+for i=0:omega_steps
+    omega = (1-i/omega_steps)*1;
+
+    expr.prob{1} = round(expr.prob{1}/0.05)*0.05;
+    expr.prob{1}(expr.prob{1}>0.95) = 0.95;
+    expr.prob{1}(expr.prob{1}<0.05) = 0.05;
+
+    Regft1 = mean(expr.prob{1}, [2 3]);
+    Regft1 = repmat(Regft1, [1 3 3]);
+%     Regft1 = log(Regft1+1e-10) - log(1-Regft1+1e-10);
+    Regft2 = mean(expr.prob{1}, [1 3]);
+    Regft2 = repmat(Regft2, [3 1 3]);
+%     Regft2 = log(Regft2+1e-10) - log(1-Regft2+1e-10);
+    Regft3 = mean(expr.prob{1}, [1 2]);
+    Regft3 = repmat(Regft3, [3 3 1]);
+%     Regft3 = log(Regft3+1e-10) - log(1-Regft3+1e-10);
+
+    Regconj1 = mean(expr.prob{1}, 1);
+    Regconj1 = repmat(Regconj1, [3 1 1]);
+%     Regconj1 = log(Regconj1+1e-10) - log(1-Regconj1+1e-10);
+    Regconj2 = mean(expr.prob{1}, 2);
+    Regconj2 = repmat(Regconj2, [1 3 1]);
+%     Regconj2 = log(Regconj2+1e-10) - log(1-Regconj2+1e-10);
+    Regconj3 = mean(expr.prob{1}, 3);
+    Regconj3 = repmat(Regconj3, [1 1 3]);
+%     Regconj3 = log(Regconj3+1e-10) - log(1-Regconj3+1e-10);
+
+%     approx = 1./(1+exp(-omega*Regft1 - (1-omega)*Regconj1));
+    approx = omega*Regft1 + (1-omega)*Regconj1;
+    strats_err(1, i+1) = mean((approx-expr.prob{1}).^2, 'all');
+%     approx = 1./(1+exp(-omega*Regft2 - (1-omega)*Regconj2));
+    approx = omega*Regft2 + (1-omega)*Regconj2;
+    strats_err(2, i+1) = mean((approx-expr.prob{1}).^2, 'all');
+%     approx = 1./(1+exp(-omega*Regft3 - (1-omega)*Regconj3));
+    approx = omega*Regft3 + (1-omega)*Regconj3;
+    strats_err(3, i+1) = mean((approx-expr.prob{1}).^2, 'all');
 end
 
 %%
@@ -270,3 +305,28 @@ legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{n
 
 % SS = SS(:,:,1:7)./SS(:,:,9);
 
+figure;
+plot(0:100,strats_err', 'LineWidth', 2);
+yline(mean((expr.prob{1}-0.5).^2,'all'), "--")
+legend(["F_{inf}+C_{inf}", "F_{noninf1}+C_{noninf1}", "F_{noninf2}+C_{noninf2}", ""]);
+xticks(0:25:100);
+xticklabels((0:25:100)/omega_steps)
+xlim([-0, 100])
+yticks(0.02:0.01:0.06)
+xlabel('\leftarrow Feature                Weight         Conjunction \rightarrow')
+ylabel('E[(P_{True}-P_{Approx})^2]')
+
+[p,tbl,stats,terms] = anovan(expr.prob{1}(:), ...
+    {nominal(expr.shapeMap(expr.playcombinations)), ...
+    nominal(expr.colorMap(expr.playcombinations)), ...
+    nominal(expr.patternMap(expr.playcombinations))},...
+    "model",2, "varnames",["shape", "color", "pattern"],'display','off');
+clrmats = colormap('lines(7)');
+figure;
+b = bar([tbl{[3 2 4 6 5 7 8],2}]');
+b.FaceColor = 'flat';
+b.CData = clrmats;
+xticklabels(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"]);
+ylabel('Sum Sq.')
+xlim([0.4, 7.6])
+set(gca, "fontsize", 18)

@@ -153,7 +153,6 @@ for cnt_sbj = 1:length(idxperf)
         idx_shapecolor(2) = (idx_shape(2)-1)*3 + (idx_color(2)-4)+19 ; % 19-27
         assert(19<=idx_shapecolor(1) & idx_shapecolor(1)<=27 & 19<=idx_shapecolor(2) & idx_shapecolor(2)<=27);
 
-
         diff_vals(cnt_trial,:) = [vf(idx_shape(2))-vf(idx_shape(1)) ...
                                   vf(idx_color(2))-vf(idx_color(1)) ...
                                   vf(idx_pattern(2))-vf(idx_pattern(1)) ...
@@ -171,8 +170,8 @@ tbl = array2table([all_choicetrials all_diff_vals], ...
 mdl = fitglme(tbl, "Choice ~ S+C+P+PC+PS+SC+(S+C+P+PC+PS+SC|subject)", 'Distribution','binomial');
 
 figure
-errorbar(mdl.Coefficients.Estimate([3 2 4 6 5 7]), mdl.Coefficients.SE([3 2 4 6 5 7]), 'o')
-ylim([0, 15])
+errorbar(mdl.Coefficients.Estimate([3 2 4 6 5 7]), mdl.Coefficients.SE([3 2 4 6 5 7]), 'ko');
+ylim([0, 10])
 xlim([0, 7])
 xticks(1:6)
 xticklabels(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}"])
