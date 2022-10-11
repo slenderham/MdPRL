@@ -1,6 +1,8 @@
 clc
 clear
 close all
+rng('shuffle')
+randstate = clock ;
 addpath("../PRLexp/inputs_all/")
 addpath("../PRLexp/SubjectData_all/")
 addpath("../files")
@@ -44,7 +46,7 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
 ntrials = 432;
 
 clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns

@@ -95,7 +95,7 @@ idxperf = find(idxperf);
 
 %% load results with attn and ML params
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -108,6 +108,8 @@ for m = 1:length(all_model_names)
     end
 end
 
+disp(mean(BICs, 3))
+
 %% bayesian model selection
 
 % [alpha_AIC,exp_r_AIC,xp_AIC,pxp_AIC,bor_AIC,g_AIC] = bms(reshape(-permute(AICs/2, [2 1 3]), [50, length(idxperf)])', ...
@@ -116,19 +118,20 @@ end
 
 [alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
     mat2cell((1:50)', repmat([1], 1, 50)));
-disp(bor_BIC);
+% disp(bor_BIC);
 [~, best_model_inds] = max(g_BIC);
 
 
 [alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
     mat2cell(reshape(1:50, [10, 5])', repmat([1], 1, 5)));
-disp(bor_input);
+% disp(bor_input);
 
 
 [alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, [50, length(idxperf)])', ...
     mat2cell(reshape(1:50, [5, 10])', repmat([1], 1, 10)));
-disp(bor_attn);
+% disp(bor_attn);
 
+%% 
 t = tiledlayout(5, 7, 'TileSpacing','compact');
 nexttile([1 6])
 imagesc(alpha_attn'/sum(alpha_attn));
@@ -161,12 +164,13 @@ end
 caxis([0 1])
 xticks(1:10)
 xticklabels(attn_modes_legend)
-h=gca; 
+h=gca;
 h.XAxis.TickLength = [0 0];
 h.YAxis.TickLength = [0 0];
 xlabel('Attentional mechanisms')
 yticks(1:5)
 yticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
+xtickangle(30)
 ylabel('Learning strategies')
 nexttile([4 1])
 imagesc(alpha_input/sum(alpha_input));
@@ -185,46 +189,98 @@ cb = colorbar;
 cb.Layout.Tile = 'South';
 
 %% Plot All Parameters
-attn_results = [attns.fit_results{5, 3, :}];
+set(0,'defaultAxesFontSize',14)
+attn_results = [attns.fit_results{5, 3, idxperf}];
+% attn_results_no_attn = [attns.fit_results{5, 1, :}];
 curr_params = reshape([attn_results.params], 7, [])';
-param_names = {'bias', '\beta', '\omega', 'decay', '\alpha_+', '\alpha_-', '\gamma'};
+% curr_params_no_attn = reshape([attn_results_no_attn.params], 6, [])';
+param_names = {'bias', '\beta', '\omega', 'd', '\alpha_+', '\alpha_-', '\gamma'};
 figure
-[S,AX,BigAx,H,HAx] = plotmatrix(curr_params(idxperf, :));
+[S,AX,BigAx,H,HAx] = plotmatrix(curr_params);
 for i=1:7
     H(i).NumBins=10;
 end
 hold on;
 for i=1:7
-    xlabel(AX(7,i), param_names{i}, 'FontSize', 18);
-    ylabel(AX(i,1), param_names{i}, 'FontSize', 18);
+    xlabel(AX(7,i), param_names{i}, 'FontSize', 14);
+    ylabel(AX(i,1), param_names{i}, 'FontSize', 14);
 end
+set(0,'defaultAxesFontSize',18)
 
 %% Focus on gamma and omega
 figure;
-psuedolog = @(x) asinh(x/2)/log(exp(1));
-hf = histogram(psuedolog(min(max(curr_params(idxperf, 7), eps), 500-eps)), 'NumBins', 10, 'Normalization','pdf'); hold on;
+temp_bound = 250;
+% psuedolog = @(x) asinh(x/2)/log(exp(1));
+hf = histogram((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'NumBins', 10, 'Normalization','pdf'); hold on;
 hf(1).FaceColor=rgb('grey');
-[f,xi] = ksdensity(psuedolog(min(max(curr_params(idxperf, 7), eps), 500-eps)));
+[f,xi] = ksdensity((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'Support', [0, temp_bound], 'BoundaryCorrection', 'Reflection');
 plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
 xlabel('\gamma', 'FontSize', 20)
-xlim([-2, 8]);xticks(-2:2:8);
+xlim([0, temp_bound]);xticks(0:50:temp_bound);
 ylabel('Density')
 
 figure
-inv_logit = @(x) log(x+1e-3)-log(1-x+1e-3);
-hf = histogram(inv_logit(max(min(curr_params(idxperf, 3), 1-eps), eps)), 'NumBins', 10, 'Normalization','pdf'); hold on;
+% inv_logit = @(x) log(x+1e-3)-log(1-x+1e-3);
+hf = histogram((max(min(curr_params(idxperf, 3), 1-eps), eps)), 'NumBins', 10, 'Normalization','pdf'); hold on;
 hf(1).FaceColor=rgb('grey');
-[f,xi] = ksdensity(inv_logit(max(min(curr_params(idxperf, 3), 1-eps), eps)));
+[f,xi] = ksdensity((max(min(curr_params(idxperf, 3), 1-eps), eps)), 'Support', [0, 1], 'BoundaryCorrection', 'Reflection');
 plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
-xlim([-8, 8.0]);xticks(-8:4:8);
+xlim([0, 1]);xticks(0:0.2:1);
 xlabel('\leftarrow Conjunction                  \omega                  Feature \rightarrow', 'FontSize', 20)
 ylabel('Density')
 
 %% learning rate bias
 figure
-violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.25);
+clrmats = [[0.4660 0.6740 0.1880]; [0.6350 0.0780 0.1840]; rgb('grey')];
+violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.25, 'ViolinColor', clrmats);
 ylim([0, 1.05]);
 xlim([0.5, 3.5]);
-xticklabels(["\alpha_+", "\alpha_-", "decay"]);
+xticklabels(["\alpha_+", "\alpha_-", "d"]);
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'fontsize',25);
+% title('DiffXL', 'fontsize', 20)
+
+% figure
+% clrmats = [[0.4660 0.6740 0.1880]; [0.6350 0.0780 0.1840]; rgb('grey')];
+% violinplot(curr_params_no_attn(idxperf, [5 6 4]), [], 'Width', 0.25, 'ViolinColor', clrmats);
+% ylim([0, 1.05]);
+% xlim([0.5, 3.5]);
+% xticklabels(["\alpha_+", "\alpha_-", "d"]);
+% a = get(gca,'XTickLabel');
+% set(gca,'XTickLabel',a,'fontsize',25);
+% % title('No Attn', 'fontsize', 20)
+
+%%
+figure
+pbaspect([2 1 1])
+inds = [5,6,4];
+t = tiledlayout(1,3,'TileSpacing','compact');
+for i=1:3
+    nexttile
+    scatter(curr_params(idxperf, inds(i)), curr_params_no_attn(idxperf, inds(i)), ...
+        40, clrmats(i,:));hold on;
+    max_lim = max(max(curr_params(idxperf, inds(i)), curr_params_no_attn(idxperf, inds(i))));
+    xlim([0, max_lim]);
+    ylim([0, max_lim]);
+    plot([0,1],[0,1],'--k')
+    xticks(0:floor(max_lim*2.5)*0.2:1);
+    yticks(0:floor(max_lim*2.5)*0.2:1);
+    title(param_names{inds(i)})
+end
+xlabel(t, 'diffXL', 'FontSize', 18)
+ylabel(t, 'no attn', 'FontSize', 18)
+
+figure
+t = tiledlayout(1,3,'TileSpacing','compact');
+for i=1:3
+    nexttile
+    histogram(curr_params(idxperf, inds(i))-curr_params_no_attn(idxperf, inds(i)), ...
+        'FaceColor', clrmats(i,:), 'BinEdges', -1:0.2:1, 'Normalization', 'probability');
+    ylim([0, 1])
+    if i>1
+        yticklabels([])
+    end
+    xlabel("\Delta"+string(param_names{inds(i)}))
+end
+
+ylabel(t, 'Frequency', 'FontSize', 18)

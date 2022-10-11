@@ -56,7 +56,7 @@ end
 
 idxperf = perfMean>=perfTH;
 idxperf(29) = false;
-% idxperf(36) = false;
+% idxperf(39) = false;
 subjects_inputs = subjects_inputs(idxperf);
 subjects_prl = subjects_prl(idxperf);
 
@@ -187,30 +187,54 @@ for cnt_probe=1:5
         repmat(Y3, [sum(idxperf), 1]), ...
         repelem(1:sum(idxperf), 27)', ...
         'VariableNames', {'Y', 'O', 'Subject'});
+    tblall = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
+        repmat(Y21(:,1), [sum(idxperf), 1]), ...
+        repmat(Y21(:,2), [sum(idxperf), 1]), ...
+        repmat(Y22, [sum(idxperf), 1]), ...
+        repmat(Y23, [sum(idxperf), 1]), ...
+        repmat(Y3, [sum(idxperf), 1]), ...
+        repelem(1:sum(idxperf), 27)', ...
+        'VariableNames', {'Y', 'Finf', 'Cinf', 'Cnoninf1', 'Cnoninf2', 'O', 'Subject'});
 
-    mdl1 = fitlme(tbl1, 'Y~1+Finf+(Finf|Subject)');
-    mdl21 = fitlme(tbl21, 'Y~1+Finf+Cinf+(Finf|Subject)+(Cinf-1|Subject)');
-    mdl22 = fitlme(tbl22, 'Y~1+Cnoninf1+(Cnoninf1|Subject)');
-    mdl23 = fitlme(tbl23, 'Y~1+Cnoninf2+(Cnoninf2|Subject)');
-    mdl3 = fitlme(tbl3, 'Y~1+O+(O|Subject)');
+    mdl1 = fitlme(tbl1, 'Y~Finf+(Finf|Subject)');
+    mdl21 = fitlme(tbl21, 'Y~Finf+Cinf+(Finf+Cinf|Subject)');
+    mdl22 = fitlme(tbl22, 'Y~Cnoninf1+(Cnoninf1|Subject)');
+    mdl23 = fitlme(tbl23, 'Y~Cnoninf2+(Cnoninf2|Subject)');
+    mdl3 = fitlme(tbl3, 'Y~O+(O|Subject)');
+    mdlall = fitlme(tblall, 'Y~Finf+Cinf+Cnoninf1+Cnoninf2+O+(Finf+Cinf+Cnoninf1+Cnoninf2+O|Subject)');
+
+    mdls{1, cnt_probe} = mdl1;
+    mdls{2, cnt_probe} = mdl21;
+    mdls{3, cnt_probe} = mdl22;
+    mdls{4, cnt_probe} = mdl23;
+    mdls{5, cnt_probe} = mdl3;
+    mdls{6, cnt_probe} = mdlall;
 
     RsqS(1, cnt_probe) = mdl1.Rsquared.Adjusted;
     RsqS(2, cnt_probe) = mdl21.Rsquared.Adjusted;
     RsqS(3, cnt_probe) = mdl22.Rsquared.Adjusted;
     RsqS(4, cnt_probe) = mdl23.Rsquared.Adjusted;
     RsqS(5, cnt_probe) = mdl3.Rsquared.Adjusted;
+    RsqS(6, cnt_probe) = mdlall.Rsquared.Adjusted;
 
     betas(cnt_probe, 1, :) = [mdl21.Coefficients.Estimate(2), mdl21.Coefficients.SE(2)]';
     betas(cnt_probe, 2, :) = [mdl21.Coefficients.Estimate(3), mdl21.Coefficients.SE(3)]';
-    betas(cnt_probe, 3, :) = [mdl3.Coefficients.Estimate(2), mdl3.Coefficients.SE(2)]';
+    betas(cnt_probe, 3, :) = [mdl22.Coefficients.Estimate(2), mdl22.Coefficients.SE(2)]';
+    betas(cnt_probe, 4, :) = [mdl23.Coefficients.Estimate(2), mdl23.Coefficients.SE(2)]';
+    betas(cnt_probe, 5, :) = [mdl3.Coefficients.Estimate(2), mdl3.Coefficients.SE(2)]';
+    betasall(cnt_probe, :, :) = [mdlall.Coefficients.Estimate(2:end), mdlall.Coefficients.SE(2:end)]';
 end
 
-
+cd ../files/
+save("prob_est_models", "mdls")
+cd ../analysis/
 
 %% population level anova
 
+%          nominal(repelem(1:sum(idxperf), 3^3))},...
+
 for cnt_probe = 1:length(results.probEst)
-    [p,tbl,stats,terms] = anovan(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), 1, []), ...
+    [p,tbl,~,~] = anovan(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), 1, []), ...
         {nominal(repmat(expr.shapeMap(expr.playcombinations), [1, sum(idxperf)])), ...
          nominal(repmat(expr.colorMap(expr.playcombinations), [1, sum(idxperf)])), ...
          nominal(repmat(expr.patternMap(expr.playcombinations), [1, sum(idxperf)]))},...
@@ -218,6 +242,8 @@ for cnt_probe = 1:length(results.probEst)
     anova_ps(cnt_probe, :) = p;
     eta2(cnt_probe, :) = ([tbl{2:end-2,2}]-[tbl{2:end-2,3}].*[tbl{end-1,5}])./([tbl{end,2}]+[tbl{end-1,5}]);
 end
+
+% eta2_fixed = eta2(:, [1 2 3 5 6 8 11]);
 
 
 %% plot different levels of different strategy
@@ -279,7 +305,7 @@ ylabel('R^2')
 xlim([0.5, 5.5])
 
 figure
-eb = errorbar(betas(:,:,1), betas(:,:,2), '-o', 'LineWidth', 1);
+eb = errorbar(betas(:,[1 2 5],1), betas(:,[1 2 5],2), '-o', 'LineWidth', 1);
 eb(1).Color = clrmats(1,:);
 eb(2).Color = clrmats(2,:);
 eb(3).Color = clrmats(5,:);
@@ -294,7 +320,7 @@ ylabel('Regression Weights')
 % plot_shared_errorbar(nanmean(prob_est_rmses, [2 3]), nanstd(prob_est_rmses, [], [2 3])/sqrt(size(XALL, 2)));
 
 figure;
-plot(eta2(:,[2 1 3 5 6 4 7]), '-o', 'LineWidth', 1); hold on;
+plot(eta2_fixed(:,[2 1 3 5 6 4 7]), '-o', 'LineWidth', 1); hold on;
 xlim([0.5, 5.5])
 ylim([-0.01, 0.15])
 xticks(1:5)
@@ -303,8 +329,7 @@ ylabel('\omega^2')
 legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], ...
     "Location", "eastoutside", 'Orientation', 'vertical');
 
-% SS = SS(:,:,1:7)./SS(:,:,9);
-
+%%
 figure;
 plot(0:100,strats_err', 'LineWidth', 2);
 yline(mean((expr.prob{1}-0.5).^2,'all'), "--")

@@ -85,7 +85,7 @@ idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
 %% load model fit
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_500.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -114,8 +114,8 @@ trial_lls=trial_lls(:,:,idxperf,:);
 
 %% Plot Model Evidence
 
-wSize = 100;
-clrmat = colormap('lines(5)') ;
+wSize = 80;
+clrmat = colormap('lines(5)');
 
 smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
@@ -133,36 +133,36 @@ for i=1:4
         squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
         1:ntrials-wSize+1, clrmat(i,:));hold on
 end
-yticks(-0.04:0.01:0.02)
-ylim([-0.04, 0.02]);
+yticks(-0.06:0.02:0.06)
+ylim([-0.04, 0.04]);
 xlim([-10, ntrials-wSize+11]);
 yline(0., ":")
-legend(l_input, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}"], "Location", "eastoutside")
+legend(l_input, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}"], "Location", "northeast")
 xlabel('Trial')
 
-
-figure
-% clrmat_pre = clrmat_pre(2:4,:);
-clrmat = [0 0 0; colormap('hsv(4)')];
-ylabel('Trial-wise \Delta BIC', 'FontSize', 18)
-models_to_comp = [1 2 4 6 9];
-l_attn = [];
-for i_model=1:length(models_to_comp)
-%     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
-%     if i==2
-    i = models_to_comp(i_model);
-    min_input_type = 5;
-%     end
-    l_attn(i_model) = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(min_input_type,i,:,:), [1 2 3])), ...
-        squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(min_input_type,i,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-        1:ntrials-wSize+1, clrmat(i_model,:));hold on
-end
-yticks(-0.1:0.01:0.02)
-ylim([-0.06, 0.02]);
-xlim([-10, ntrials-wSize+11]);
-yline(0., ":")
-legend(l_attn, attn_modes_legend(models_to_comp), "Location", "eastoutside")
-xlabel('Trial')
+% 
+% figure
+% % clrmat_pre = clrmat_pre(2:4,:);
+% clrmat = [0 0 0; colormap('hsv(4)')];
+% ylabel('Trial-wise \Delta BIC', 'FontSize', 18)
+% models_to_comp = [1 2 4 6 9];
+% l_attn = [];
+% for i_model=1:length(models_to_comp)
+% %     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
+% %     if i==2
+%     i = models_to_comp(i_model);
+%     min_input_type = 5;
+% %     end
+%     l_attn(i_model) = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(min_input_type,i,:,:), [1 2 3])), ...
+%         squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(min_input_type,i,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
+%         1:ntrials-wSize+1, clrmat(i_model,:));hold on
+% end
+% yticks(-0.1:0.01:0.02)
+% ylim([-0.06, 0.02]);
+% xlim([-10, ntrials-wSize+11]);
+% yline(0., ":")
+% legend(l_attn, attn_modes_legend(models_to_comp), "Location", "eastoutside")
+% xlabel('Trial')
 
 % figure
 % for i=1:5
@@ -180,8 +180,8 @@ xlabel('Trial')
 %% quantify effect of attention
 %% sharpness of attention (entropy)?
 
-for m = 1:length(all_model_names)
-    for a = 1:length(attn_modes)
+for m = 5
+    for a = 3
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
                 attn_where = 1;
@@ -237,13 +237,16 @@ figure;
 % posterior_model_jsds = sum(all_model_jsds.*permute(reshape(g_BIC, [10 5 length(idxperf)]), [2 1 3]), [1 2]);
 colororder([rgb('purple'); rgb('navy')])
 yyaxis left
-plot_shaded_errorbar(squeeze(mean(all_model_ents(5,3,:,:), 3)), squeeze(std(all_model_ents(5,3,:,:), [], 3))/sqrt(length(idxperf)), 1, rgb('purple'));hold on;
+wSize = 20;
+smth_ents = movmean(squeeze(all_model_ents(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+plot_shaded_errorbar(squeeze(mean(smth_ents, 1))', squeeze(std(smth_ents, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize+1, rgb('purple'));hold on;
 ylabel('Entropy')
 yyaxis right
-plot_shaded_errorbar(squeeze(mean(all_model_jsds(5,3,:,:), 3)), squeeze(std(all_model_jsds(5,3,:,:), [], 3))/sqrt(length(idxperf)), 1:ntrials-1, rgb('navy'));hold on;
+smth_jsds = movmean(squeeze(all_model_jsds(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+plot_shaded_errorbar(squeeze(mean(smth_jsds, 1))', squeeze(std(smth_jsds, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize, rgb('navy'));hold on;
 ylabel('JSD')
-ylim([0, 0.4])
-xlim([0, ntrials+10])
+ylim([0, 0.3])
+xlim([0, ntrials-wSize])
 xlabel('Trial')
 
 % figure;
@@ -253,8 +256,8 @@ xlabel('Trial')
 
 %% focus on the feature (avg attn weight)
 
-for m = 1:length(all_model_names)
-    for a = 1:length(attn_modes)
+for m = 5
+    for a = 3
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
                 attn_where = 1;
@@ -267,11 +270,11 @@ for m = 1:length(all_model_names)
             end
             for d = 1:3
                 if m~=3
-                    all_model_ces(m, a, cnt_sbj, :, d) = squeeze(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:));
+                    all_model_attn_ws(m, a, cnt_sbj, :, d) = squeeze(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:));
                 else
                     conj_d = [2, 1, 3];
                     conj_d = conj_d(d);
-                    all_model_ces(m, a, cnt_sbj, :, d) = squeeze((all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:) ...
+                    all_model_attn_ws(m, a, cnt_sbj, :, d) = squeeze((all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:) ...
                         +all_attns{m, a, idxperf(cnt_sbj)}(attn_where,3+conj_d,:))/2);
                 end
             end
@@ -283,19 +286,19 @@ end
 figure
 clrmat = colormap('lines(3)');
 clrmat = clrmat([2, 1, 3], :);
-% posterior_model_ces = sum(all_model_ces.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1]), [2 1 3 4 5]), [1 2]);
+% posterior_model_ces = sum(all_model_attn_ws.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1]), [2 1 3 4 5]), [1 2]);
 % posterior_model_ces = squeeze(posterior_model_ces);
 wSize = 20;
-smth_ces = movmean(squeeze(all_model_ces(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+smth_attn_ws = movmean(squeeze(all_model_attn_ws(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
 for d=[2 1 3]
-    plot_shaded_errorbar(squeeze(mean(smth_ces(:,:,d), 1))', ...
-        squeeze(std(smth_ces(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
+    plot_shaded_errorbar(squeeze(mean(smth_attn_ws(:,:,d), 1))', ...
+        squeeze(std(smth_attn_ws(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
         wSize, clrmat(d,:));hold on;
 end
-legend(["", "inf", "", "noninf1", "", "noninf2"]);
+legend(["", "Inf", "", "Noninf1", "", "Noninf2"]);
 ylim([0.15, 0.55])
 yticks(0.2:0.1:0.6)
-xlim([wSize, ntrials+10])
+xlim([wSize, ntrials])
 xlabel('Trial')
 ylabel('Attention Weights')
 
@@ -308,37 +311,49 @@ xticks([])
 yticks([])
 zticks([])
 axis equal
+colormap viridis
 axis([0 1 0 1 0 1])
 view(120,30)
 %plot A
-scatter3(squeeze(mean(all_model_ces(5,3,:,:,1),4)), ...
-    squeeze(mean(all_model_ces(5,3,:,:,2),4)), ...
-    squeeze(mean(all_model_ces(5,3,:,:,3),4)), ...
+scatter3(squeeze(mean(all_model_attn_ws(5,3,:,:,1),4)), ...
+    squeeze(mean(all_model_attn_ws(5,3,:,:,3),4)), ...
+    squeeze(mean(all_model_attn_ws(5,3,:,:,2),4)), ...
     40, squeeze(mean(all_model_jsds(5,3,:,:),4)), 'filled')
 colorbar
-text(1.05, 0.0, -0.1, 'Noninf1', 'FontSize',15)
-text(-0.1, -0.1, 1., 'Noninf2', 'FontSize',15)
-text(0.1, 1.05, -0.1, 'Inf', 'FontSize',15)
+text(1.1, 0.0, -0.1, 'Noninf1', 'FontSize',18)
+text(-0.1, -0.1, 1., 'Inf', 'FontSize',18)
+text(0.1, 1.0, -0.1, 'Noninf2', 'FontSize',18)
 
+%%
 figure;
+wSize = 432;
 for d=[2 1 3]
-    plt(d) = plot(squeeze(mean(all_model_ces(5,3,:,:,d),4)), perfMean(idxperf), '.', ...
-        'MarkerSize', 20, 'Color', clrmat(d,:));hold on;
-    lsls = lsline();
+%     plt(d) = scatter(reshape(squeeze(movmean(all_model_attn_ws(5,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
+%                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'filled', ...
+%                     'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
+    plt(d) = scatter(squeeze(mean(all_model_attn_ws(5,3,:,:,d), 4)), perfMean(idxperf)', 'filled', ...
+                    'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
+    [r, p] = corr(reshape(squeeze(movmean(all_model_attn_ws(5,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
+                  reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'type', 'spearman');
+    disp([r, p])
 end
+lsls = lsline();
+lsls(1).Color = clrmat(3,:);
+lsls(2).Color = clrmat(1,:);
+lsls(3).Color = clrmat(2,:);
 
 legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"])
 for i=1:3
-    lsls(i).LineWidth = 1;
+    lsls(i).LineWidth = 2;
 end
-ylim([0.49, 0.78])
+ylim([0.49, 0.77])
 xlim([-0.1, 1.1])
 ylabel("Performance")
 xlabel("Average attentional weights")
 
 % figure;
 % for d=[2 1 3]
-%     plt(d) = plot(g_BIC(43,:), squeeze(mean(all_model_ces(5,3,:,:,d),4)), '.', ...
+%     plt(d) = plot(g_BIC(43,:), squeeze(mean(all_model_attn_ws(5,3,:,:,d),4)), '.', ...
 %         'MarkerSize', 20, 'Color', clrmat(d,:));hold on;
 %     lsls = lsline();
 % end
