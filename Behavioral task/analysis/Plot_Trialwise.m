@@ -9,7 +9,7 @@ addpath("../utils")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',18)
+set(0,'defaultAxesFontSize',22)
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -50,6 +50,7 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2ftobjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
+    "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
 % make names for plotting
@@ -102,7 +103,7 @@ end
 [~, best_model_inds] = max(g_BIC);
 
 %% Simulate model with best param
-load('../files/simulated_vars')
+% load('../files/simulated_vars')
 
 unfilt_AICs = trial_AICs;
 unfilt_BICs = trial_BICs;
@@ -114,7 +115,7 @@ trial_lls=trial_lls(:,:,idxperf,:);
 
 %% Plot Model Evidence
 
-wSize = 80;
+wSize = 100;
 clrmat = colormap('lines(5)');
 
 smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
@@ -135,7 +136,7 @@ for i=1:4
 end
 yticks(-0.06:0.02:0.06)
 ylim([-0.04, 0.04]);
-xlim([-10, ntrials-wSize+11]);
+xlim([0, ntrials-wSize+1]);
 yline(0., ":")
 legend(l_input, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}"], "Location", "northeast")
 xlabel('Trial')
@@ -180,7 +181,7 @@ xlabel('Trial')
 %% quantify effect of attention
 %% sharpness of attention (entropy)?
 
-for m = 5
+for m = 6
     for a = 3
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
@@ -194,8 +195,9 @@ for m = 5
             end
             if m~=3
                 all_model_ents(m, a, cnt_sbj, :) = squeeze(entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
-                all_model_jsds(m, a, cnt_sbj, :) = squeeze(js_div(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), ...
-                    all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 2));
+                all_model_jsds(m, a, cnt_sbj, :) = squeeze(js_div( ...
+                    movmean(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), 1, 3), ...
+                    movmean(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 1, 3), 2));
             else
                 all_model_ents(m, a, cnt_sbj, :) = squeeze((entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,:)) ...
                     +entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:)))/2);
@@ -238,14 +240,14 @@ figure;
 colororder([rgb('purple'); rgb('navy')])
 yyaxis left
 wSize = 20;
-smth_ents = movmean(squeeze(all_model_ents(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+smth_ents = movmean(squeeze(all_model_ents(6,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
 plot_shaded_errorbar(squeeze(mean(smth_ents, 1))', squeeze(std(smth_ents, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize+1, rgb('purple'));hold on;
 ylabel('Entropy')
 yyaxis right
-smth_jsds = movmean(squeeze(all_model_jsds(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+smth_jsds = movmean(squeeze(all_model_jsds(6,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
 plot_shaded_errorbar(squeeze(mean(smth_jsds, 1))', squeeze(std(smth_jsds, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize, rgb('navy'));hold on;
 ylabel('JSD')
-ylim([0, 0.3])
+% ylim([0, 0.3])
 xlim([0, ntrials-wSize])
 xlabel('Trial')
 
@@ -256,7 +258,7 @@ xlabel('Trial')
 
 %% focus on the feature (avg attn weight)
 
-for m = 5
+for m = 6
     for a = 3
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
@@ -289,7 +291,8 @@ clrmat = clrmat([2, 1, 3], :);
 % posterior_model_ces = sum(all_model_attn_ws.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1]), [2 1 3 4 5]), [1 2]);
 % posterior_model_ces = squeeze(posterior_model_ces);
 wSize = 20;
-smth_attn_ws = movmean(squeeze(all_model_attn_ws(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+smth_attn_ws = movmean(squeeze(all_model_attn_ws(6,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+% smth_attn_ws = smoothdata(squeeze(all_model_attn_ws(5,3,:,:,:)), 2, 'movmean', [0 wSize-1]);
 for d=[2 1 3]
     plot_shaded_errorbar(squeeze(mean(smth_attn_ws(:,:,d), 1))', ...
         squeeze(std(smth_attn_ws(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
@@ -315,14 +318,15 @@ colormap viridis
 axis([0 1 0 1 0 1])
 view(120,30)
 %plot A
-scatter3(squeeze(mean(all_model_attn_ws(5,3,:,:,1),4)), ...
-    squeeze(mean(all_model_attn_ws(5,3,:,:,3),4)), ...
-    squeeze(mean(all_model_attn_ws(5,3,:,:,2),4)), ...
-    40, squeeze(mean(all_model_jsds(5,3,:,:),4)), 'filled')
-colorbar
-text(1.1, 0.0, -0.1, 'Noninf1', 'FontSize',18)
-text(-0.1, -0.1, 1., 'Inf', 'FontSize',18)
-text(0.1, 1.0, -0.1, 'Noninf2', 'FontSize',18)
+scatter3(squeeze(mean(all_model_attn_ws(6,3,:,:,1),4)), ...
+    squeeze(mean(all_model_attn_ws(6,3,:,:,3),4)), ...
+    squeeze(mean(all_model_attn_ws(6,3,:,:,2),4)), ...
+    40, squeeze(mean(all_model_jsds(6,3,:,:),4)), 'filled')
+cb = colorbar;
+cb.Label.String = 'JSD';
+text(1.1, 0.0, -0.1, 'Noninf1', 'FontSize',22)
+text(-0.1, -0.1, 1., 'Inf', 'FontSize',22)
+text(0.1, 1.0, -0.1, 'Noninf2', 'FontSize',22)
 
 %%
 figure;
@@ -331,9 +335,9 @@ for d=[2 1 3]
 %     plt(d) = scatter(reshape(squeeze(movmean(all_model_attn_ws(5,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
 %                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'filled', ...
 %                     'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
-    plt(d) = scatter(squeeze(mean(all_model_attn_ws(5,3,:,:,d), 4)), perfMean(idxperf)', 'filled', ...
+    plt(d) = scatter(squeeze(mean(all_model_attn_ws(6,3,:,:,d), 4)), perfMean(idxperf)', 'filled', ...
                     'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
-    [r, p] = corr(reshape(squeeze(movmean(all_model_attn_ws(5,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
+    [r, p] = corr(reshape(squeeze(movmean(all_model_attn_ws(6,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'type', 'spearman');
     disp([r, p])
 end

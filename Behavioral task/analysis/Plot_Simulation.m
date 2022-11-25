@@ -9,7 +9,7 @@ addpath("../utils")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',18)
+set(0,'defaultAxesFontSize',22)
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -141,9 +141,10 @@ t = tiledlayout(2,2);
 for i=1:length(sim_m)
     for j=1:length(sim_a)
         ax = nexttile;
-        plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(1,1,idxperf,1:nreps,:), 20, 5), [3 4])), ...
-                             squeeze(std(movmean(all_sim_corrects(1,1,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), ...
+        hline = plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(sim_m(i),sim_a(j),idxperf,1:nreps,:), 20, 5), [3 4])), ...
+                             squeeze(std(movmean(all_sim_corrects(sim_m(i),sim_a(j),idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), ...
                              1, clrmat((i-1)*2+j,:));hold on
+        hline.LineWidth = 2;
         plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', ...
                              std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), ...
                              1, [0.5 0.5 0.5]);
@@ -263,7 +264,7 @@ for i=2
         xlim([-0.05, 1.1])
     end
 end
-legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"], 'location', 'best')
+legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"], 'location', 'best', 'Orientation','horizontal')
 
 % legend(["", all_legends((sim_m(1)-1)*10+sim_a(2)), "", all_legends((sim_m(2)-1)*10+sim_a(2))], 'location', 'southeast', 'FontSize', 20)
 xlabel('Average Attention', 'FontSize', 20);
@@ -271,8 +272,8 @@ ylabel('Performance', 'FontSize', 20);
 
 
 %%
-for m = [1 5]
-    for a = [1 3]
+for m = 5
+    for a = 3
         for cnt_sbj = 1:length(idxperf)
             mean_attns = zeros(ntrials, 3);
             mean_ents = 0;
@@ -316,7 +317,7 @@ xlabel('Trial')
 ylabel('Attention Weights')
 
 figure
-clrmat = colormap('winter(3)');
+clrmat = colormap('lines(3)');
 wSize = 1;
 smth_ces = movmean(squeeze(all_sim_model_ces(5,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
 for d=[2 1 3]

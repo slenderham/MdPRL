@@ -44,18 +44,19 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2ftobjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
+    "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
+attns = load('../files/RPL2Analysis_Attention_lim_temp_500_6models_40.mat') ;
 ntrials = 432;
 
 %%
 
-for m = 1:length(all_model_names)
+for m = 6
     disp("=======================================================");
     disp(strcat("Running model ", all_model_names(m)));
     basic_params = cell(length(subjects_inputs)); % store the attention-less model's parameters for each model type
-    for a = 1:length(attn_modes)
+    for a = 3
         disp("-------------------------------------------------------");
         disp(strcat("Running attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         parfor cnt_sbj = 1:length(subjects_inputs)
@@ -89,6 +90,8 @@ for m = 1:length(all_model_names)
             sesdata.NtrialsShort = expr.NtrialsShort ;
             sesdata.flagUnr = 1 ;
 
+            sesdata.use_rpe = false;
+
             sesdata.flag_couple = 0 ;
             sesdata.flag_updatesim = 0 ;
 
@@ -114,6 +117,6 @@ for m = 1:length(all_model_names)
     end
 end
 
-cd ../files/
-save("simulated_vars", "all_values", "all_attns", "trial_lls", "trial_AICs", "trial_BICs");
-cd ../analysis
+% cd ../files/
+% save("simulated_vars_500", "all_values", "all_attns", "trial_lls", "trial_AICs", "trial_BICs");
+% cd ../analysis

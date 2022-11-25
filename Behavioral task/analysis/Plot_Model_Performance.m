@@ -9,7 +9,7 @@ addpath("../utils")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',18)
+set(0,'defaultAxesFontSize',22)
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -50,6 +50,7 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2ftobjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
+    "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
 % make names for plotting
@@ -95,7 +96,7 @@ idxperf = find(idxperf);
 
 %% load results with attn and ML params
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat') ;
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -116,23 +117,23 @@ disp(mean(BICs, 3))
 %     mat2cell((1:50)', repmat([1], 1, 50)));
 % disp(bor_AIC);
 
-[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
-    mat2cell((1:50)', repmat([1], 1, 50)));
-% disp(bor_BIC);
+[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [60, length(idxperf)])', ...
+    mat2cell((1:60)', repmat([1], 1, 60)));
+disp(bor_BIC);
 [~, best_model_inds] = max(g_BIC);
 
 
-[alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
-    mat2cell(reshape(1:50, [10, 5])', repmat([1], 1, 5)));
-% disp(bor_input);
+[alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), [60, length(idxperf)])', ...
+    mat2cell(reshape(1:60, [10, 6])', repmat([1], 1, 6)));
+disp(bor_input);
 
 
-[alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, [50, length(idxperf)])', ...
-    mat2cell(reshape(1:50, [5, 10])', repmat([1], 1, 10)));
-% disp(bor_attn);
+[alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, [60, length(idxperf)])', ...
+    mat2cell(reshape(1:60, [6, 10])', repmat([1], 1, 10)));
+disp(bor_attn);
 
 %% 
-t = tiledlayout(5, 7, 'TileSpacing','compact');
+t = tiledlayout(5, 7, 'TileSpacing','tight');
 nexttile([1 6])
 imagesc(alpha_attn'/sum(alpha_attn));
 txts = text((1:10)-0.3, ones(1, 10), string(num2str(pxp_attn(:), '%.2f')), 'FontSize',12);
@@ -148,12 +149,12 @@ yticks([])
 nexttile
 axis off
 nexttile([4 6])
-imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
-[txs, tys] = meshgrid(1:10, 1:5);
+imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 6)');
+[txs, tys] = meshgrid(1:10, 1:6);
 txs = txs';
 tys = tys';
 txts = text(txs(:)-0.3, tys(:), string(num2str(pxp_BIC(:), '%.2f')),'FontSize',12);
-for i=1:5
+for i=1:6
     for j=1:10
         if (alpha_BIC((i-1)*10+j)/sum(alpha_BIC)>0.3)
             txts((i-1)*10+j).Color = [1 1 1];
@@ -168,15 +169,15 @@ h=gca;
 h.XAxis.TickLength = [0 0];
 h.YAxis.TickLength = [0 0];
 xlabel('Attentional mechanisms')
-yticks(1:5)
-yticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{tied}'}')
+yticks(1:6)
+yticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{spread}', 'F+C_{tied}'}')
 xtickangle(30)
 ylabel('Learning strategies')
 nexttile([4 1])
 imagesc(alpha_input/sum(alpha_input));
 % imagesc(pxp_input')
-txts = text(ones(1, 5)-0.3, 1:5, string(num2str(pxp_input(:), '%.2f')), 'FontSize',12);
-for i=1:5
+txts = text(ones(1, 6)-0.3, 1:6, string(num2str(pxp_input(:), '%.2f')), 'FontSize',12);
+for i=1:6
     if (alpha_input(i)/sum(alpha_input)>0.3)
         txts(i).Color = [1 1 1];
     end
@@ -187,16 +188,18 @@ yticks([])
 colormap(flipud(bone))
 cb = colorbar;
 cb.Layout.Tile = 'South';
+cb.Label.String = 'Posterior Model Probability';
+cb.Label.FontSize = 16;
 
 %% Plot All Parameters
 set(0,'defaultAxesFontSize',14)
-attn_results = [attns.fit_results{5, 3, idxperf}];
+attn_results = [attns.fit_results{5, 4, :}];
 % attn_results_no_attn = [attns.fit_results{5, 1, :}];
 curr_params = reshape([attn_results.params], 7, [])';
 % curr_params_no_attn = reshape([attn_results_no_attn.params], 6, [])';
 param_names = {'bias', '\beta', '\omega', 'd', '\alpha_+', '\alpha_-', '\gamma'};
 figure
-[S,AX,BigAx,H,HAx] = plotmatrix(curr_params);
+[S,AX,BigAx,H,HAx] = plotmatrix(curr_params(idxperf,:));
 for i=1:7
     H(i).NumBins=10;
 end
@@ -209,7 +212,7 @@ set(0,'defaultAxesFontSize',18)
 
 %% Focus on gamma and omega
 figure;
-temp_bound = 250;
+temp_bound = 500;
 % psuedolog = @(x) asinh(x/2)/log(exp(1));
 hf = histogram((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'NumBins', 10, 'Normalization','pdf'); hold on;
 hf(1).FaceColor=rgb('grey');

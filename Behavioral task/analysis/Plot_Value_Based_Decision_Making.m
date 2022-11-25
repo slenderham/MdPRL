@@ -169,9 +169,10 @@ tbl = array2table([all_choicetrials all_diff_vals], ...
     'VariableNames', ["Choice", "S", "C", "P", "PC", "PS", "SC", "subject"]);
 mdl = fitglme(tbl, "Choice ~ S+C+P+PC+PS+SC+(S+C+P+PC+PS+SC|subject)", 'Distribution','binomial');
 
+%% 
 figure
 errorbar(mdl.Coefficients.Estimate([3 2 4 6 5 7]), mdl.Coefficients.SE([3 2 4 6 5 7]), 'ko');
-ylim([0, 10])
+ylim([3, 11])
 xlim([0, 7])
 xticks(1:6)
 xticklabels(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}"])

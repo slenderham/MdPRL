@@ -10,8 +10,10 @@ addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 addpath("../models/")
 addpath("../../PRLexpv3_5v2/")
 
-recovery_results_by_input = load('../files/RPL2Analysis_Attention_model_recovery_by_input_thresh_both.mat');
-recovery_results_by_attn = load('../files/RPL2Analysis_Attention_model_recovery_by_attn.mat');
+recovery_results_by_input = load('../files/RPL2Analysis_Attention_model_recovery_by_input_thresh_both_5_250.mat');
+recovery_results_by_attn = load('../files/RPL2Analysis_Attention_model_recovery_by_attn_thresh_both_5_250.mat');
+parameter_recovery_results = load('../files/RPL2Analysis_Attention_param_recovery_5_500.mat');
+% parameter_recovery_results2 = load('../files/RPL2Analysis_Attention_param_recovery_5_250_2.mat');
 
 nSample = 100;
 ntrials = 432;
@@ -57,15 +59,27 @@ for m_fit=1:5
     end
 end
 
+% true_pars = [];
+% fit_pars = [];
+% for cnt_samp=1:100
+%     true_pars = [true_pars; parameter_recovery_results.sim_results{5, 3, cnt_samp}.params];
+%     fit_pars = [fit_pars; parameter_recovery_results.fit_results{5, 3, cnt_samp, 5, 3}.params];
+% end
+% 
+% for cnt_samp=1:100
+%     true_pars = [true_pars; parameter_recovery_results2.sim_results{5, 3, cnt_samp}.params];
+%     fit_pars = [fit_pars; parameter_recovery_results2.fit_results{5, 3, cnt_samp, 5, 3}.params];
+% end
+
 for cnt_samp=1:100
-    true_pars(cnt_samp,:) = recovery_results_by_input.sim_results{5, 3, cnt_samp}.params;
-    fit_pars(cnt_samp,:) = recovery_results_by_input.fit_results{5, 3, cnt_samp, 5, 3}.params;
+    true_pars = [true_pars; recovery_results_by_input.sim_results{5, 3, cnt_samp}.params];
+    fit_pars = [fit_pars; recovery_results_by_input.fit_results{5, 3, cnt_samp, 5, 3}.params];
 end
 
-% for cnt_samp=1:100
-%     true_pars(cnt_samp+100,:) = recovery_results_by_attn.sim_results{5, 3, cnt_samp}.params;
-%     fit_pars(cnt_samp+100,:) = recovery_results_by_attn.fit_results{5, 3, cnt_samp, 5, 3}.params;
-% end
+for cnt_samp=1:100
+    true_pars = [true_pars; recovery_results_by_attn.sim_results{5, 3, cnt_samp}.params];
+    fit_pars = [fit_pars; recovery_results_by_attn.fit_results{5, 3, cnt_samp, 5, 3}.params];
+end
 
 
 %%
@@ -122,7 +136,7 @@ colormap(flipud(bone))
 txts = text(txs(:)-0.4, tys(:), string(num2str(conf_mat_pxp(:), '%.2f')), 'FontSize', 14);
 for i=1:10
     for j=1:10
-        if (conf_mat_alpha(i,j)>0.5)
+        if (conf_mat_alpha(i,j)>0.4)
             txts((j-1)*10+i).Color = [1 1 1];
         end
     end
@@ -131,12 +145,12 @@ end
 %% parameter recovery
 figure
 imagesc(corr(true_pars, fit_pars, 'type', 'spearman'))
-% caxis([-0.1, 1])
+caxis([-1, 1])
 colorbar
 param_names = {'bias', '\beta', '\omega', 'd', '\alpha_+', '\alpha_-', '\gamma'};
 xticklabels(param_names);
 yticklabels(param_names);
-colormap viridis
+colormap bluewhitered
 xlabel('True Parameters')
 ylabel('Fit Parameters')
 [txs, tys] = meshgrid(1:7, 1:7);
@@ -144,8 +158,8 @@ ylabel('Fit Parameters')
 txts = text(txs(:)-0.4, tys(:), string(num2str(param_corr_mat(:), '%.2f')), 'FontSize', 18);
 for i=1:7
     for j=1:7
-        if (param_corr_mat(i,j)<0.4)
-            txts((i-1)*7+j).Color = [1 1 1];
+        if (param_corr_mat(i,j)>0.39)
+            txts((j-1)*7+i).Color = [1 1 1];
         end
     end
 end
@@ -153,9 +167,9 @@ end
 figure
 for i=1:7
     subplot(3,3,i)
-    if (i==200 || i==700)
+    if (i==2 || i==7)
         pseudo_log10 = @(x) asinh(x/2)/log(10);
-        scatter(pseudo_log10(true_pars(:,i)), pseudo_log10(fit_pars(:,i)+1e-6),[],[0.5, 0.5, 0.5]); hold on
+        scatter(pseudo_log10(true_pars(:,i)), pseudo_log10(fit_pars(:,i)+1e-6),[],[0.4, 0.4, 0.4]); hold on
         xlim(max([xlim; ylim]))
         ylim(max([xlim; ylim]))
         plot(xlim, ylim, 'Color', [0.5 0.5 0.5]', 'LineWidth', 1, 'LineStyle', '--')
@@ -166,7 +180,7 @@ for i=1:7
         xticklabels("10^"+xticks);
         yticklabels("10^"+yticks);
     else
-        scatter(true_pars(:,i), fit_pars(:,i),[],[0.5, 0.5, 0.5]); hold on
+        scatter(true_pars(:,i), fit_pars(:,i),[],[0.4, 0.4, 0.4]); hold on
         xlim(max([xlim; ylim]))
         ylim(max([xlim; ylim]))
         plot(xlim, ylim, 'Color', [0.5 0.5 0.5]', 'LineWidth', 1, 'LineStyle', '--')

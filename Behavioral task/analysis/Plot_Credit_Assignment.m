@@ -93,7 +93,7 @@ clear all_Xs_for_lr all_Ys_for_lr lr_weights_mean
 all_var_names = ["S", "C", "P", "PC", "PS", "SC"]';
 all_var_names = all_var_names';
 all_var_names = all_var_names(:);
-all_var_names = all_var_names + ["xR", "xNR"];
+all_var_names = all_var_names + ["_Rw", "_Ch"];
 all_var_names = all_var_names';
 all_var_names = all_var_names(:);
 
@@ -101,106 +101,191 @@ all_probes = [0, 86, 173, 259, 346, 432];
 
 
 %%
+
+% poolobj = parpool('local', 5);
+
 parfor cnt_probe = 1:length(all_probes)-1
     disp(num2str(cnt_probe));
     all_Xs_for_lr = [];
     all_Ys_for_lr = [];
-    for cnt_O = 1:27    
-        for cnt_sbj = 1:length(subjects_inputs)
-            inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
-            resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
-    
-            inputs_struct = load(inputname);
-            results_struct = load(resultsname);
-    
-            inputTarget   = inputs_struct.input.inputTarget;
-            Ntrials      = length(results_struct.results.reward);
-            rewards      = results_struct.results.reward;
-            choices      = results_struct.results.choice;
-    
-            % the object chosen and unchosen
-            targCh = inputs_struct.input.inputTarget(...
-                results_struct.results.choice'+2*(0:(results_struct.expr.Ntrials-1))) ;
-            targUnch = inputs_struct.input.inputTarget(...
-                (3-results_struct.results.choice)'+2*(0:(results_struct.expr.Ntrials-1))) ;
-    
-            % reward
-            idx_rew = rewards==1;
-            idx_unr = rewards==0;
-    
-            % choice
-            Ct = targCh==cnt_O;
-            uCt = targUnch==cnt_O;
-            
-            % for each subject, initialize array for recording previous rewards
-            % and later choices
-            Xs_for_lr = []; 
-            Ys_for_lr = [];
-    
-            % for each time O_ch is an option
-            % look back to find the last time O_fb is an option
-            for l = all_probes(cnt_probe)+lags_to_fit+1:all_probes(cnt_probe+1)
-                if (Ct(l) || uCt(l))  % if the object can be chosen at that trial
-                    Xs_all_maps = [];
-                    for i_dim=1:6
-                        switch i_dim
-                            case 1
-                                obj2dim_map = shapeMap;
-                            case 2
-                                obj2dim_map = colorMap;
-                            case 3
-                                obj2dim_map = patternMap;
-                            case 4
-                                obj2dim_map = patterncolorMap;
-                            case 5
-                                obj2dim_map = patternshapeMap;
-                            case 6
-                                obj2dim_map = shapecolorMap;
-                            otherwise
-                        end
-                        Xs_curr_map = [];
-                        for k = l-1:-1:l-lags_to_fit % start from the previous trial and go back
-                            if obj2dim_map(cnt_O)==obj2dim_map(targCh(k))
-                                Xs_curr_map = [Xs_curr_map idx_rew(k) idx_unr(k)];
-                            else
-                                Xs_curr_map = [Xs_curr_map zeros(1,2)];
-                            end
-                        end
-                        Xs_all_maps = [Xs_all_maps Xs_curr_map];
-                    end
-                    if true %sum(abs(Xs_all_maps))>0
-                        Xs_for_lr = [Xs_for_lr; Xs_all_maps];
-                        Ys_for_lr = [Ys_for_lr; Ct(l)];
+    for cnt_sbj = 1:length(subjects_inputs)
+        inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
+        resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
+
+        inputs_struct = load(inputname);
+        results_struct = load(resultsname);
+
+        inputTarget   = inputs_struct.input.inputTarget;
+        Ntrials      = length(results_struct.results.reward);
+        rewards      = results_struct.results.reward;
+        choices      = results_struct.results.choice;
+
+        targets = inputs_struct.input.inputTarget;
+        % the object chosen and unchosen
+        targCh = inputs_struct.input.inputTarget(...
+            results_struct.results.choice'+2*(0:(results_struct.expr.Ntrials-1))) ;
+        targUnch = inputs_struct.input.inputTarget(...
+            (3-results_struct.results.choice)'+2*(0:(results_struct.expr.Ntrials-1))) ;
+
+        % reward
+        idx_rew = rewards==1;
+        idx_unr = rewards==0;
+        
+        % for each subject, initialize array for recording previous rewards
+        % and later choices
+        Xs_for_lr = []; 
+        Ys_for_lr = [];
+
+        % for each time O_ch is an option
+        % look back to find the last time O_fb is an option
+        for l = all_probes(cnt_probe)+lags_to_fit+1:all_probes(cnt_probe+1)
+            Xs_all_maps = [];
+            for i_dim=1:6
+                switch i_dim
+                    case 1
+                        obj2dim_map = shapeMap;
+                    case 2
+                        obj2dim_map = colorMap;
+                    case 3
+                        obj2dim_map = patternMap;
+                    case 4
+                        obj2dim_map = patterncolorMap;
+                    case 5
+                        obj2dim_map = patternshapeMap;
+                    case 6
+                        obj2dim_map = shapecolorMap;
+                    otherwise
+                end
+                Xs_curr_map = [];
+                for k = l-1:-1:l-lags_to_fit % start from the previous trial and go back
+                    if obj2dim_map(targCh(k))==obj2dim_map(targets(1,l))
+                        Xs_curr_map = [Xs_curr_map ...
+                                        -(idx_rew(k)-idx_unr(k))...
+                                        -(idx_rew(k)+idx_unr(k))];
+                    elseif obj2dim_map(targCh(k))==obj2dim_map(targets(2,l))
+                        Xs_curr_map = [Xs_curr_map ...
+                                        idx_rew(k)-idx_unr(k)...
+                                        idx_rew(k)+idx_unr(k)];
+                    else
+                        Xs_curr_map = [Xs_curr_map zeros(1,2)];
                     end
                 end
+                Xs_all_maps = [Xs_all_maps Xs_curr_map];
             end
-            all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
-            all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
+            if true %sum(abs(Xs_all_maps))>0
+                Xs_for_lr = [Xs_for_lr; Xs_all_maps];
+                Ys_for_lr = [Ys_for_lr; choices(l)-1];
+            end
         end
+        all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
+        all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
     end
     tbl_to_fit = array2table( ...
         [all_Ys_for_lr, all_Xs_for_lr], ...
-        "VariableNames", ["repeat", all_var_names', "subject"]);
-    mdl = fitglme(tbl_to_fit, "repeat~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ...
-                  'Distribution','Binomial', 'CovariancePattern', 'Diagonal', 'FitMethod', 'Laplace');
+        "VariableNames", ["choice", all_var_names', "subject"]);
+    mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ...
+                  'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
+                  'FitMethod', 'Laplace', 'InitPLIterations', 10, 'Verbose', 1);
     mdls{cnt_probe} = mdl;
 end
 
+%% 
+all_var_names = ["S", "C", "P", "PC", "PS", "SC"]';
+all_var_names = all_var_names';
+all_var_names = all_var_names(:);
+all_Xs_for_lr = [];
+all_Ys_for_lr = [];
+for cnt_sbj = 1:length(subjects_inputs)
+    inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
+    resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
+
+    inputs_struct = load(inputname);
+    results_struct = load(resultsname);
+
+    inputTarget   = inputs_struct.input.inputTarget;
+    Ntrials      = length(results_struct.results.reward);
+    rewards      = results_struct.results.reward;
+    choices      = results_struct.results.choice;
+
+    targets = inputs_struct.input.inputTarget;
+    % the object chosen and unchosen
+    targCh = inputs_struct.input.inputTarget(...
+        results_struct.results.choice'+2*(0:(results_struct.expr.Ntrials-1))) ;
+    targUnch = inputs_struct.input.inputTarget(...
+        (3-results_struct.results.choice)'+2*(0:(results_struct.expr.Ntrials-1))) ;
+
+    % reward
+    idx_rew = rewards==1;
+    idx_unr = rewards==0;
+    
+    % for each subject, initialize array for recording previous rewards
+    % and later choices
+    Xs_for_lr = []; 
+    Ys_for_lr = [];
+
+    % for each time O_ch is an option
+    % look back to find the last time O_fb is an option
+    for l = 2:100
+        Xs_all_maps = [];
+        for i_dim=1:6
+            switch i_dim
+                case 1
+                    obj2dim_map = shapeMap;
+                case 2
+                    obj2dim_map = colorMap;
+                case 3
+                    obj2dim_map = patternMap;
+                case 4
+                    obj2dim_map = patterncolorMap;
+                case 5
+                    obj2dim_map = patternshapeMap;
+                case 6
+                    obj2dim_map = shapecolorMap;
+                otherwise
+            end
+            Xs_curr_map = [];
+            for k = l-1:-1:l-lags_to_fit % start from the previous trial and go back
+                if obj2dim_map(targCh(k))==obj2dim_map(targets(1,l))
+                    Xs_curr_map = [Xs_curr_map -(idx_rew(k)-idx_unr(k))];
+                elseif obj2dim_map(targCh(k))==obj2dim_map(targets(2,l))
+                    Xs_curr_map = [Xs_curr_map idx_rew(k)-idx_unr(k)];
+                else
+                    Xs_curr_map = [Xs_curr_map zeros(1,1)];
+                end
+            end
+            Xs_all_maps = [Xs_all_maps Xs_curr_map];
+        end
+        if true %sum(abs(Xs_all_maps))>0
+            Xs_for_lr = [Xs_for_lr; Xs_all_maps];
+            Ys_for_lr = [Ys_for_lr; choices(l)-1];
+        end
+    end
+    all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
+    all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
+end
+
+tbl_to_fit = array2table( ...
+    [all_Ys_for_lr, all_Xs_for_lr], ...
+    "VariableNames", ["choice", all_var_names', "subject"]);
+mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ...
+              'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
+              'FitMethod', 'Laplace', 'InitPLIterations', 10, 'Verbose', 1);
+mdls{6} = mdl;
+
 cd ../files/
-save("credit_assignment_models", "mdls")
+save("credit_assignment_models_diag_RwCh_full_all", "mdls")
 cd ../analysis/
 
 %%
 
-
-all_var_names = ["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf1}"]';
+all_var_names = ["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}"]';
 all_var_names = all_var_names';
 all_var_names = all_var_names(:);
-all_var_names = all_var_names + ["xR", "xNR"];
+all_var_names = all_var_names + ["+", "-"];
 all_var_names = all_var_names';
 all_var_names = all_var_names(:);
 
-for j=1:length(all_probes)-1
+for j=1:length(all_probes)
     bs(j,:) = mdls{j}.Coefficients.Estimate(2:end);
     bse(j,:) = mdls{j}.Coefficients.SE(2:end);
 end
@@ -215,7 +300,7 @@ cmap = [];
 for i=1:6
     cmap = [cmap; cmap_r(i,:); cmap_d(i,:)];
 end
-b = bar(bs');
+b = bar(bs(1:length(all_probes)-1,:)');
 hold on;
 for i=1:5
 b(i).FaceColor = 'flat';
@@ -229,18 +314,30 @@ ylabel('Regression Weight')
 pbaspect([4 1 1])
 
 
-[ngroups, nbars] = size(bs');
+[ngroups, nbars] = size(bs(1:length(all_probes)-1,:)');
 bx = nan(nbars, ngroups);
 for i = 1:nbars
     bx(i,:) = b(i).XEndPoints;
 end
 % Plot the errorbars
-e = errorbar(bx',bs',bse','k','linestyle','none','linewidth',0.01);
+e = errorbar(bx',bs(1:length(all_probes)-1,:)',bse(1:length(all_probes)-1,:)','k','linestyle','none','linewidth',0.01);
 for i = 1:nbars
     e(i).CapSize = 1;
 end
 hold off
 
+
+figure
+b = bar(bs(length(all_probes),:));
+hold on;
+b.FaceColor = 'flat';
+b.CData = cmap;
+xticks(1:12)
+xticklabels(all_var_names)
+xlim([0.5, 12.5])
+xlabel('Variable')
+ylabel('Regression Weight')
+e = errorbar(1:12,bs(length(all_probes),:)',bse(length(all_probes),:)','k','linestyle','none','linewidth',0.01);
 
 % all_maps_sim = { ...
 %     (colorMap(:)'==colorMap(:))-eye(27),...

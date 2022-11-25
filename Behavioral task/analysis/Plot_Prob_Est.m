@@ -2,7 +2,7 @@ clc
 close all
 clear
 
-set(0,'defaultAxesFontSize',18)
+set(0,'defaultAxesFontSize',22)
 %%
 
 addpath("../files")
@@ -41,7 +41,6 @@ idxSubject       = 1:length(subjects_inputs);
 wSize  = 20 ;
 
 for cnt_sbj = 1:length(subjects_inputs)
-    disp(cnt_sbj)
     inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj}, '.mat'] ;
     resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj}, '.mat'] ;
 
@@ -146,6 +145,7 @@ for cnt_sbj = 1:length(subjects_inputs)
             XTEMP = 0.95;
         end
         XTEMP = log(XTEMP+1e-10) - log(1-XTEMP+1e-10);
+        XTEMP(isnan(XTEMP)) = 0;
 
         %         XALL(cnt_probe, cnt_sbj, :, :) = XTEMP;
 
@@ -187,64 +187,58 @@ for cnt_probe=1:5
         repmat(Y3, [sum(idxperf), 1]), ...
         repelem(1:sum(idxperf), 27)', ...
         'VariableNames', {'Y', 'O', 'Subject'});
-    tblall = table(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), [], 1), ...
-        repmat(Y21(:,1), [sum(idxperf), 1]), ...
-        repmat(Y21(:,2), [sum(idxperf), 1]), ...
-        repmat(Y22, [sum(idxperf), 1]), ...
-        repmat(Y23, [sum(idxperf), 1]), ...
-        repmat(Y3, [sum(idxperf), 1]), ...
-        repelem(1:sum(idxperf), 27)', ...
-        'VariableNames', {'Y', 'Finf', 'Cinf', 'Cnoninf1', 'Cnoninf2', 'O', 'Subject'});
 
     mdl1 = fitlme(tbl1, 'Y~Finf+(Finf|Subject)');
     mdl21 = fitlme(tbl21, 'Y~Finf+Cinf+(Finf+Cinf|Subject)');
     mdl22 = fitlme(tbl22, 'Y~Cnoninf1+(Cnoninf1|Subject)');
     mdl23 = fitlme(tbl23, 'Y~Cnoninf2+(Cnoninf2|Subject)');
     mdl3 = fitlme(tbl3, 'Y~O+(O|Subject)');
-    mdlall = fitlme(tblall, 'Y~Finf+Cinf+Cnoninf1+Cnoninf2+O+(Finf+Cinf+Cnoninf1+Cnoninf2+O|Subject)');
 
     mdls{1, cnt_probe} = mdl1;
     mdls{2, cnt_probe} = mdl21;
     mdls{3, cnt_probe} = mdl22;
     mdls{4, cnt_probe} = mdl23;
     mdls{5, cnt_probe} = mdl3;
-    mdls{6, cnt_probe} = mdlall;
 
     RsqS(1, cnt_probe) = mdl1.Rsquared.Adjusted;
     RsqS(2, cnt_probe) = mdl21.Rsquared.Adjusted;
     RsqS(3, cnt_probe) = mdl22.Rsquared.Adjusted;
     RsqS(4, cnt_probe) = mdl23.Rsquared.Adjusted;
     RsqS(5, cnt_probe) = mdl3.Rsquared.Adjusted;
-    RsqS(6, cnt_probe) = mdlall.Rsquared.Adjusted;
 
     betas(cnt_probe, 1, :) = [mdl21.Coefficients.Estimate(2), mdl21.Coefficients.SE(2)]';
     betas(cnt_probe, 2, :) = [mdl21.Coefficients.Estimate(3), mdl21.Coefficients.SE(3)]';
     betas(cnt_probe, 3, :) = [mdl22.Coefficients.Estimate(2), mdl22.Coefficients.SE(2)]';
     betas(cnt_probe, 4, :) = [mdl23.Coefficients.Estimate(2), mdl23.Coefficients.SE(2)]';
     betas(cnt_probe, 5, :) = [mdl3.Coefficients.Estimate(2), mdl3.Coefficients.SE(2)]';
-    betasall(cnt_probe, :, :) = [mdlall.Coefficients.Estimate(2:end), mdlall.Coefficients.SE(2:end)]';
 end
 
-cd ../files/
-save("prob_est_models", "mdls")
-cd ../analysis/
+
 
 %% population level anova
 
 %          nominal(repelem(1:sum(idxperf), 3^3))},...
 
-for cnt_probe = 1:length(results.probEst)
-    [p,tbl,~,~] = anovan(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), 1, []), ...
+
+parfor cnt_probe = 1:length(results.probEst)
+    [p,tbl,stats,~] = anovan(reshape(squeeze(all_prob_ests(:,cnt_probe,:)), 1, []), ...
         {nominal(repmat(expr.shapeMap(expr.playcombinations), [1, sum(idxperf)])), ...
-         nominal(repmat(expr.colorMap(expr.playcombinations), [1, sum(idxperf)])), ...
-         nominal(repmat(expr.patternMap(expr.playcombinations), [1, sum(idxperf)]))},...
-         "model",3, "varnames",["shape", "color", "pattern"],'display','off');
+        nominal(repmat(expr.colorMap(expr.playcombinations), [1, sum(idxperf)])), ...
+        nominal(repmat(expr.patternMap(expr.playcombinations), [1, sum(idxperf)])), ...
+        nominal(repelem(1:sum(idxperf), 3^3))},...
+        "model",3,"varnames",["shape", "color", "pattern", "subject"],'display','on','random',4);
+    anova_mdls{cnt_probe}.tbl = tbl;
+    anova_mdls{cnt_probe}.stats = stats;
+    anova_mdls{cnt_probe}.p = p;
     anova_ps(cnt_probe, :) = p;
     eta2(cnt_probe, :) = ([tbl{2:end-2,2}]-[tbl{2:end-2,3}].*[tbl{end-1,5}])./([tbl{end,2}]+[tbl{end-1,5}]);
 end
 
-% eta2_fixed = eta2(:, [1 2 3 5 6 8 11]);
+eta2_fixed = eta2(:, [1 2 3 5 6 8 11]);
 
+cd ../files/
+save("prob_est_models", "mdls", "anova_mdls")
+cd ../analysis/
 
 %% plot different levels of different strategy
 
@@ -259,31 +253,31 @@ for i=0:omega_steps
 
     Regft1 = mean(expr.prob{1}, [2 3]);
     Regft1 = repmat(Regft1, [1 3 3]);
-%     Regft1 = log(Regft1+1e-10) - log(1-Regft1+1e-10);
+    %     Regft1 = log(Regft1+1e-10) - log(1-Regft1+1e-10);
     Regft2 = mean(expr.prob{1}, [1 3]);
     Regft2 = repmat(Regft2, [3 1 3]);
-%     Regft2 = log(Regft2+1e-10) - log(1-Regft2+1e-10);
+    %     Regft2 = log(Regft2+1e-10) - log(1-Regft2+1e-10);
     Regft3 = mean(expr.prob{1}, [1 2]);
     Regft3 = repmat(Regft3, [3 3 1]);
-%     Regft3 = log(Regft3+1e-10) - log(1-Regft3+1e-10);
+    %     Regft3 = log(Regft3+1e-10) - log(1-Regft3+1e-10);
 
     Regconj1 = mean(expr.prob{1}, 1);
     Regconj1 = repmat(Regconj1, [3 1 1]);
-%     Regconj1 = log(Regconj1+1e-10) - log(1-Regconj1+1e-10);
+    %     Regconj1 = log(Regconj1+1e-10) - log(1-Regconj1+1e-10);
     Regconj2 = mean(expr.prob{1}, 2);
     Regconj2 = repmat(Regconj2, [1 3 1]);
-%     Regconj2 = log(Regconj2+1e-10) - log(1-Regconj2+1e-10);
+    %     Regconj2 = log(Regconj2+1e-10) - log(1-Regconj2+1e-10);
     Regconj3 = mean(expr.prob{1}, 3);
     Regconj3 = repmat(Regconj3, [1 1 3]);
-%     Regconj3 = log(Regconj3+1e-10) - log(1-Regconj3+1e-10);
+    %     Regconj3 = log(Regconj3+1e-10) - log(1-Regconj3+1e-10);
 
-%     approx = 1./(1+exp(-omega*Regft1 - (1-omega)*Regconj1));
+    %     approx = 1./(1+exp(-omega*Regft1 - (1-omega)*Regconj1));
     approx = omega*Regft1 + (1-omega)*Regconj1;
     strats_err(1, i+1) = mean((approx-expr.prob{1}).^2, 'all');
-%     approx = 1./(1+exp(-omega*Regft2 - (1-omega)*Regconj2));
+    %     approx = 1./(1+exp(-omega*Regft2 - (1-omega)*Regconj2));
     approx = omega*Regft2 + (1-omega)*Regconj2;
     strats_err(2, i+1) = mean((approx-expr.prob{1}).^2, 'all');
-%     approx = 1./(1+exp(-omega*Regft3 - (1-omega)*Regconj3));
+    %     approx = 1./(1+exp(-omega*Regft3 - (1-omega)*Regconj3));
     approx = omega*Regft3 + (1-omega)*Regconj3;
     strats_err(3, i+1) = mean((approx-expr.prob{1}).^2, 'all');
 end
@@ -325,7 +319,7 @@ xlim([0.5, 5.5])
 ylim([-0.01, 0.15])
 xticks(1:5)
 xlabel('Value Estimation Trial')
-ylabel('\omega^2')
+ylabel('\omega^2', 'FontSize', 25)
 legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], ...
     "Location", "eastoutside", 'Orientation', 'vertical');
 
@@ -346,7 +340,7 @@ ylabel('E[(P_{True}-P_{Approx})^2]')
     nominal(expr.colorMap(expr.playcombinations)), ...
     nominal(expr.patternMap(expr.playcombinations))},...
     "model",2, "varnames",["shape", "color", "pattern"],'display','off');
-clrmats = colormap('lines(7)');
+clrmats = brighten(colormap('lines(7)'), 0);
 figure;
 b = bar([tbl{[3 2 4 6 5 7 8],2}]');
 b.FaceColor = 'flat';
@@ -354,4 +348,4 @@ b.CData = clrmats;
 xticklabels(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"]);
 ylabel('Sum Sq.')
 xlim([0.4, 7.6])
-set(gca, "fontsize", 18)
+set(gca, "fontsize", 22)

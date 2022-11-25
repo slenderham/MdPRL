@@ -46,7 +46,7 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat') ;
 ntrials = 432;
 
 clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns
@@ -89,9 +89,12 @@ for m = [1 5]
                 sesdata.results.reward = nan*zeros(ntrials, 1);
                 sesdata.NtrialsShort = expr.NtrialsShort ;
                 sesdata.flagUnr = 1 ;
+
+                sesdata.use_rpe = false;
     
                 sesdata.flag_couple = 0 ;
                 sesdata.flag_updatesim = 0 ;
+
     
                 % load attn type (const, diff, sum, max) and attn
                 % time(none, choice, learning, both)
