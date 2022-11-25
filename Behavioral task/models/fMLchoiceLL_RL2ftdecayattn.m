@@ -15,7 +15,6 @@ BiasL = xpar(1) ;
 mag = xpar(2) ;
 decay = xpar(3) ;
 
-
 alpha_rewColor      = xpar(NparamBasic+1) ;
 alpha_rewShape      = xpar(NparamBasic+1) ;
 alpha_rewPattern    = xpar(NparamBasic+1) ;
@@ -83,10 +82,14 @@ for cnt_trial=1:ntrials
         attn_w_learn = ones(1, 3)/3;
     end
 
-    logit = mag*(attn_w_choice(1)*(v(idx_shape(2))-v(idx_shape(1))) ...
-               + attn_w_choice(2)*(v(idx_color(2))-v(idx_color(1))) ...
-               + attn_w_choice(3)*(v(idx_pattern(2))-v(idx_pattern(1))))...
-          - BiasL;
+    vsum(1) = attn_w_choice(1)*v(idx_shape(1)) ...
+            + attn_w_choice(2)*v(idx_color(1)) ...
+            + attn_w_choice(3)*v(idx_pattern(1));
+    vsum(2) = attn_w_choice(1)*v(idx_shape(2)) ...
+            + attn_w_choice(2)*v(idx_color(2)) ...
+            + attn_w_choice(3)*v(idx_pattern(2));
+
+    logit = mag*(vsum(2)-vsum(1))-BiasL;
 
     if cnt_trial >= 1
         if isnan(choice) || isnan(correct)  
@@ -106,6 +109,11 @@ for cnt_trial=1:ntrials
         else
             loglikehood(cnt_trial) =  - logsigmoid(-logit) ;
         end
+        if sesdata.use_rpe
+            rpe = abs(correct - vsum(choice));
+        else
+            rpe = 1;
+        end
     end
 
     if correct
@@ -113,69 +121,69 @@ for cnt_trial=1:ntrials
         idxW = idx_color(3-choice) ;
         v = decayV(v, 3+find(3+[1:3]~=idx_color(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_rewColor*attn_w_learn(2)) ;
+        v = update(v, idxC, idxW, alpha_rewColor*attn_w_learn(2)*rpe) ;
 
         idxC = idx_shape(choice) ;
         idxW = idx_shape(3-choice) ;
         v = decayV(v, find([1:3]~=idx_shape(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_rewShape*attn_w_learn(1)) ;
+        v = update(v, idxC, idxW, alpha_rewShape*attn_w_learn(1)*rpe) ;
 
         idxC = idx_pattern(choice) ;
         idxW = idx_pattern(3-choice) ;
         v = decayV(v, 6+find(6+[1:3]~=idx_pattern(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_rewPattern*attn_w_learn(3)) ;
+        v = update(v, idxC, idxW, alpha_rewPattern*attn_w_learn(3)*rpe) ;
     else
         idxW = idx_color(choice) ;
         idxC = idx_color(3-choice) ;
         v = decayV(v, 3+find([4:6]~=idx_color(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_unrColor*attn_w_learn(2)) ;
+        v = update(v, idxC, idxW, alpha_unrColor*attn_w_learn(2)*rpe) ;
 
         idxW = idx_shape(choice) ;
         idxC = idx_shape(3-choice) ;
         v = decayV(v, find([1:3]~=idx_shape(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_unrShape*attn_w_learn(1)) ;
+        v = update(v, idxC, idxW, alpha_unrShape*attn_w_learn(1)*rpe) ;
 
         idxW = idx_pattern(choice) ;
         idxC = idx_pattern(3-choice) ;
         v = decayV(v, 6+find([7:9]~=idx_pattern(choice)), decay) ;
         [idxW, idxC] = idxcouple(idxW, idxC, correct, 0, flag_updatesim) ;
-        v = update(v, idxC, idxW, alpha_unrPattern*attn_w_learn(3)) ;
+        v = update(v, idxC, idxW, alpha_unrPattern*attn_w_learn(3)*rpe) ;
     end
     if flag_couple
         if correctunCh
             idxC = idx_color(choiceunCh) ;
             idxW = idx_color(3-choiceunCh) ;
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            v = update(v, idxC, idxW, alpha_rewColor*attn_w_learn(2)) ;
+            v = update(v, idxC, idxW, alpha_rewColor*attn_w_learn(2)*rpe) ;
 
             idxC = idx_shape(choiceunCh) ;
             idxW = idx_shape(3-choiceunCh) ;
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            v = update(v, idxC, idxW, alpha_rewShape*attn_w_learn(1)) ;
+            v = update(v, idxC, idxW, alpha_rewShape*attn_w_learn(1)*rpe) ;
 
             idxC = idx_pattern(choiceunCh) ;
             idxW = idx_pattern(3-choiceunCh) ;
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            v = update(v, idxC, idxW, alpha_rewPattern*attn_w_learn(3)) ;
+            v = update(v, idxC, idxW, alpha_rewPattern*attn_w_learn(3)*rpe) ;
         else
             idxW = idx_color(choiceunCh) ;
             idxC = idx_color(3-choiceunCh) ;
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            v = update(v, idxC, idxW, alpha_unrColor*attn_w_learn(2)) ;
+            v = update(v, idxC, idxW, alpha_unrColor*attn_w_learn(2)*rpe) ;
 
             idxW = idx_shape(choiceunCh) ;
             idxC = idx_shape(3-choiceunCh) ;
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            v = update(v, idxC, idxW, alpha_unrShape*attn_w_learn(1)) ;
+            v = update(v, idxC, idxW, alpha_unrShape*attn_w_learn(1)*rpe) ;
 
             idxW = idx_pattern(choiceunCh) ;
             idxC = idx_pattern(3-choiceunCh) ;
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0, flag_updatesim) ;
-            v = update(v, idxC, idxW, alpha_unrPattern*attn_w_learn(3)) ;
+            v = update(v, idxC, idxW, alpha_unrPattern*attn_w_learn(3)*rpe) ;
         end
     end
     latents.V(:,cnt_trial) = v ;

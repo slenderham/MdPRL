@@ -50,61 +50,68 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2ftobjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
+    "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-all_model_Nparambasic = [3, 4, 4, 4, 4];
-all_model_Nalphas = [2, 2, 2, 2, 2];
-all_model_Nbetas = [1, 1, 1, 1, 1];
+all_model_Nparambasic = [3, 4, 4, 4, 4, 4];
+all_model_Nalphas = [2, 2, 2, 2, 2, 2];
+all_model_Nbetas = [1, 1, 1, 1, 1, 1];
 
 bound_eps = 0;
+temp_bound_eps = 0;
 bias_bound = 5;
 p_bias_bound = 5;
-temp_bound = 100;
-p_temp_bound = 100;
+temp_bound = 500;
+p_temp_bound = 500;
 
 all_lbs = {...
-    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps]};
+    [-bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps]};
 
 all_ubs = {...
     [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
     [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
     [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
     [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
+    [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound], ...
     [bias_bound, temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, temp_bound]};
 
 all_plbs = {...
-    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps], ...
-    [-p_bias_bound, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, bound_eps]};
+    [-p_bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-p_bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-p_bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-p_bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-p_bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps], ...
+    [-p_bias_bound, temp_bound_eps, bound_eps, bound_eps, bound_eps, bound_eps, temp_bound_eps]};
 
 all_pubs = {...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
+    [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound], ...
     [p_bias_bound, p_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps, 1-bound_eps, p_temp_bound]};
 
-nrep = 10;
+nrep = 40;
 % nrep = 2;
 
 op = optimset('Display', 'off');
 %% optimize
 
-% poolobj = parpool('local', 16);
-for m = 5
+poolobj = parpool('local', 16);
+for m = [5 6]
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
     basic_params = cell(length(subjects_inputs), 1); % store the attention-less model's parameters for each model type
-    for a = 3
+    for a = 1:length(attn_modes)
+        tic
         disp("-------------------------------------------------------");
         disp(strcat("Fitting attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
-        for cnt_sbj = 1:length(subjects_inputs)
+        parfor cnt_sbj = 1:length(subjects_inputs)
             disp(strcat("Fitting subject ", num2str(cnt_sbj)));
             inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
             resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
@@ -141,6 +148,8 @@ for m = 5
                 sesdata.flag_couple = 0 ;
                 sesdata.flag_updatesim = 0 ;
 
+                sesdata.use_rpe = false;
+
                 % load parameter numbers
                 NparamBasic = all_model_Nparambasic(m);
                 sesdata.Nalpha = all_model_Nalphas(m);
@@ -162,6 +171,8 @@ for m = 5
                 plbs = plbs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 pubs = pubs(1:NparamBasic+sesdata.Nalpha+sesdata.Nbeta);
                 ipar = plbs+rand(1,NparamBasic+sesdata.Nalpha+sesdata.Nbeta).*(pubs-plbs);
+                ipar(pubs>20) = exp(log(plbs(pubs>20)+1)+ ...
+                    rand(size(plbs(pubs>20))).*(log(pubs(pubs>20))-log(plbs(pubs>20)+1)));
                 if a>1 && cnt_rep==1 % initialize with the no-attn model's parameters for one trial
                     ipar(1:length(basic_params{cnt_sbj})) = basic_params{cnt_sbj};
                 end
@@ -174,8 +185,6 @@ for m = 5
                 ll = str2func(all_model_names(m));
                 ll = @(x)sum(ll(x, sesdata));
                 [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op) ;
-                disp(fval);
-                disp(xpar);
 
                 if fval <= minfval
                     minfval = fval ;
@@ -192,9 +201,10 @@ for m = 5
                 end
             end
         end
+        toc
     end
 end
 
 cd ../files
-save RPL2Analysis_Attention
+save RPL2Analysis_Attention_lim_temp_500_6models_40
 cd ../models
