@@ -134,7 +134,8 @@ for cnt_trial=1:ntrials
                     +(attn_w_choice(1)+attn_w_choice(2))/2*vc(idx_shapecolor(2)));
 
     logit = mag*(vsum(2)-vsum(1))-BiasL;
- 
+    pure_logit = mag*(vsum(2)-vsum(1));
+
     if cnt_trial >= 1
         % if choice is nan then sample the choice
         if isnan(choice) || isnan(correct)
@@ -151,8 +152,10 @@ for cnt_trial=1:ntrials
         latents.logits(cnt_trial) = logit;
         if choice == 2
             loglikehood(cnt_trial) =  - logsigmoid(logit) ;
+            latents.pure_ll(cnt_trial) = - logsigmoid(pure_logit);
         else
             loglikehood(cnt_trial) =  - logsigmoid(-logit) ;
+            latents.pure_ll(cnt_trial) = - logsigmoid(-pure_logit);
         end
         if sesdata.use_rpe
             rpe = abs(correct - vsum(choice));

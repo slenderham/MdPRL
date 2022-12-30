@@ -131,7 +131,8 @@ for cnt_trial=1:ntrials
                     +attn_w_conj_choice(3)*vc(idx_shapecolor(2)));
 
     logit = mag*(vsum(2)-vsum(1))-BiasL;
-
+    pure_logit = mag*(vsum(2)-vsum(1));
+    
     if cnt_trial >= 1
         if isnan(choice) || isnan(correct)
             pChoiceR = 1./(1+exp(-logit));
@@ -147,8 +148,10 @@ for cnt_trial=1:ntrials
         latents.logits(cnt_trial) = logit;
         if choice == 2
             loglikehood(cnt_trial) =  - logsigmoid(logit) ;
+            latents.pure_ll(cnt_trial) = - logsigmoid(pure_logit);
         else
             loglikehood(cnt_trial) =  - logsigmoid(-logit) ;
+            latents.pure_ll(cnt_trial) = - logsigmoid(-pure_logit);
         end
         if strcmp(sesdata.use_rpe, "true")
             rpe = abs(correct - vsum(choice));
