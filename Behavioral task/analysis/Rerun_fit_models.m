@@ -9,6 +9,7 @@ addpath("../files")
 addpath("../models")
 addpath("../utils")
 
+%%
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
     "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
@@ -47,16 +48,19 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
 
-attns = load('../files/RPL2Analysis_Attention_lim_temp_500_6models_40.mat') ;
+all_model_names = all_model_names([1 2 3 4 6]);
+
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat') ;
+% attns = load('../files/RPL2Analysis_Attention_lim_temp_500_6models_40_rpe.mat') ;
 ntrials = 432;
 
 %%
 
-for m = 6
+for m = 1:5
     disp("=======================================================");
     disp(strcat("Running model ", all_model_names(m)));
     basic_params = cell(length(subjects_inputs)); % store the attention-less model's parameters for each model type
-    for a = 3
+    for a = 2:3
         disp("-------------------------------------------------------");
         disp(strcat("Running attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         parfor cnt_sbj = 1:length(subjects_inputs)

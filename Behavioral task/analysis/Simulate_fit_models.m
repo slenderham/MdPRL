@@ -1,7 +1,7 @@
 clc
 clear
 close all
-rng('shuffle')
+rng(181) % for reproducibility
 randstate = clock ;
 addpath("../PRLexp/inputs_all/")
 addpath("../PRLexp/SubjectData_all/")
@@ -51,10 +51,10 @@ ntrials = 432;
 
 clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns
 nreps = 50;
-for m = [1 5]
+for m = 5
     disp("=======================================================");
     disp(strcat("Simulating model ", all_model_names(m)));
-    for a = [1 3]
+    for a = 3
         disp("-------------------------------------------------------");
         disp(strcat("Simulating attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         parfor cnt_sbj = 1:length(subjects_inputs)
@@ -112,7 +112,7 @@ for m = [1 5]
                 all_sim_rewards(m, a, cnt_sbj, cnt_rep, :) = latents.R;
                 [~, idxMax] = max(expr.prob{1}(input.inputTarget)) ;
                 all_sim_corrects(m, a, cnt_sbj, cnt_rep, :) = latents.C==idxMax;
-                all_sim_correct_behav(m, a, cnt_sbj, cnt_rep, :) = latents.C==results.choice';
+%                 all_sim_correct_behav(m, a, cnt_sbj, cnt_rep, :) = latents.C==results.choice';
                 all_sim_lls(m, a, cnt_sbj, cnt_rep, :) = -logsigmoid(latents.logits'.*(sesdata.results.choice*2-3));
                 all_sim_values{m, a, cnt_sbj, cnt_rep} = latents.V;
                 all_sim_attns{m, a, cnt_sbj, cnt_rep} = latents.A;

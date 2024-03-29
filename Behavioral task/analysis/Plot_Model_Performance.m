@@ -9,7 +9,7 @@ addpath("../utils")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',22)
+set(0,'defaultAxesFontSize',30)
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -52,9 +52,10 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
     "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
+all_model_names = all_model_names([1 2 3 4 6]);
 
 % make names for plotting
-all_model_names_legend = ["F", "F+O", "F+C_{untied}", "F+C_{feat attn}", "F+C_{tied}"];
+all_model_names_legend = ["F", "F+O", "F+C_{separate}", "F+C_{feat attn}", "F+C_{joint}"];
 attn_modes_legend = strcat(attn_modes(:,1),"X",attn_modes(:,2));
 [all_model_names_legend, attn_modes_legend] = meshgrid(all_model_names_legend, attn_modes_legend);
 all_legends = strcat(all_model_names_legend(:), "X", attn_modes_legend(:));
@@ -85,18 +86,27 @@ idxperf(29) = 0;
 idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
-% figure
-% plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, 'k');
-% plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
-% xlabel('Trial Number')
-% ylabel('Performance')
-% legend({'', 'Reward', '', 'Proportion Better'})
-% xlim([0, 432])
+%%
+figure
+plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, 'k');
+plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
+ylim([0.47, 0.7])
+quiver([86, 173, 259, 346, 432], ones(1,5)*0.47, zeros(1,5), ones(1,5)*0.01, "off", ...
+    'Color','black', 'LineWidth', 2)
+scatter([86, 173, 259, 346, 432], ones(1,5)*0.48, 40, 'k', 'filled', ...
+    'Marker', '^')
+xlabel('Trial')
+ylabel('Performance')
+legend({'', 'Reward', '', 'Proportion better'})
+xlim([0, 432])
 
 
 %% load results with attn and ML params
 
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat') ;
+% attns = load('../files/RPL2Analysis_Attention_lim_temp_500_6models_40_pl_bounds.mat') ;
+% attns = load('../files/RPL2Analysis_Attention_lim_temp_500_6models_40_merged.mat') ;
+% attns = load('../files/RPL2Analysis_Attention_lim_temp_500_6models_40_rpe.mat') ;
+attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat');
 
 for m = 1:length(all_model_names)
     for a = 1:length(attn_modes)
@@ -105,11 +115,43 @@ for m = 1:length(all_model_names)
             lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;
             AICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+2*num_params+(2*num_params*(num_params-1))/(ntrials-num_params-1);
             BICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+log(ntrials)*num_params;
+            Rsqs(m, a, cnt_sbj) = 1-BICs(m, a, cnt_sbj)./(-2*logsigmoid(0)*ntrials+log(ntrials)*num_params);
         end
     end
 end
 
-disp(mean(BICs, 3))
+% disp(mean(Rsqs, 3))
+
+
+% learning_strat = categorical(1:5)';
+% attn_where = categorical([1 2 3 4 2 3 4 2 3 4]);
+% attn_func = categorical([1 2 2 2 3 3 3 4 4 4]);
+% 
+% flat_BICs = reshape(BICs, [], 1);
+% learning_strat = reshape(repmat(learning_strat, 1, 10, length(idxperf)), [], 1);
+% attn_where = reshape(repmat(attn_where, 5, 1, length(idxperf)), [], 1);
+% attn_func = reshape(repmat(attn_func, 5, 1, length(idxperf)), [], 1);
+% 
+% [ps, tbl] = anovan(flat_BICs, {learning_strat, attn_where}, "Varnames",["learning_strat","attn_where"], 'model',2);
+
+
+%% plot differences in BICs
+cmap = colormap('turbo(11)');
+cmap(1,:) = 0.5;
+bb = bar(mean(BICs-BICs(1,1,:), 3), 'FaceColor','flat'); hold on
+xlim([0.5 5.5]);
+yticks(-100:4:100);
+for k = 1:10
+    bb(k).CData = cmap(k,:);
+end
+xticklabels(all_model_names_legend(1,:)');
+ylabel('\Delta BIC');
+bbx = nan(length(attn_modes), length(all_model_names));
+for i = 1:10
+    bbx(i,:) = bb(i).XEndPoints;
+end
+errorbar(bbx',mean(BICs-BICs(1,1,:), 3),std(BICs-BICs(1,1,:), [], 3)./sqrt(numel(idxperf)),'k','linestyle','none');
+legend(attn_modes_legend(:,1), 'location', 'eastoutside');
 
 %% bayesian model selection
 
@@ -117,26 +159,29 @@ disp(mean(BICs, 3))
 %     mat2cell((1:50)', repmat([1], 1, 50)));
 % disp(bor_AIC);
 
-[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [60, length(idxperf)])', ...
-    mat2cell((1:60)', repmat([1], 1, 60)));
+[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), ...
+    [length(all_model_names)*length(attn_modes), length(idxperf)])', ...
+    mat2cell((1:length(all_model_names)*length(attn_modes))', repmat([1], 1, length(all_model_names)*length(attn_modes))));
 disp(bor_BIC);
 [~, best_model_inds] = max(g_BIC);
 
 
-[alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), [60, length(idxperf)])', ...
-    mat2cell(reshape(1:60, [10, 6])', repmat([1], 1, 6)));
+[alpha_input,exp_r_input,xp_input,pxp_input,bor_input,g_input] = bms(reshape(-permute(BICs/2, [2 1 3]), ...
+    [length(all_model_names)*length(attn_modes), length(idxperf)])', ...
+    mat2cell(reshape(1:length(all_model_names)*length(attn_modes), [length(attn_modes), length(all_model_names)])', repmat([1], 1, length(all_model_names))));
 disp(bor_input);
 
 
-[alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, [60, length(idxperf)])', ...
-    mat2cell(reshape(1:60, [6, 10])', repmat([1], 1, 10)));
+[alpha_attn,exp_r_attn,xp_attn,pxp_attn,bor_attn,g_attn] = bms(reshape(-BICs/2, ...
+    [length(all_model_names)*length(attn_modes), length(idxperf)])', ...
+    mat2cell(reshape(1:length(all_model_names)*length(attn_modes), [length(all_model_names), length(attn_modes)])', repmat([1], 1, length(attn_modes))));
 disp(bor_attn);
 
-%% 
-t = tiledlayout(5, 7, 'TileSpacing','tight');
-nexttile([1 6])
+%% plot results
+t = tiledlayout(50, 100, 'TileSpacing','tight');
+nexttile([11 86])
 imagesc(alpha_attn'/sum(alpha_attn));
-txts = text((1:10)-0.3, ones(1, 10), string(num2str(pxp_attn(:), '%.2f')), 'FontSize',12);
+txts = text((1:10)-0.35, ones(1, 10), string(num2str(pxp_attn(:), '%.2f')), 'FontSize',14);
 for i=1:10
     if (alpha_attn(i)/sum(alpha_attn)>0.3)
         txts(i).Color = [1 1 1];
@@ -146,15 +191,15 @@ end
 caxis([0 1])
 xticks([])
 yticks([])
-nexttile
+nexttile([11 14])
 axis off
-nexttile([4 6])
-imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 6)');
-[txs, tys] = meshgrid(1:10, 1:6);
+nexttile([39 86])
+imagesc(reshape(alpha_BIC/sum(alpha_BIC), 10, 5)');
+[txs, tys] = meshgrid(1:10, 1:length(all_model_names));
 txs = txs';
 tys = tys';
-txts = text(txs(:)-0.3, tys(:), string(num2str(pxp_BIC(:), '%.2f')),'FontSize',12);
-for i=1:6
+txts = text(txs(:)-0.35, tys(:), string(num2str(pxp_BIC(:), '%.2f')),'FontSize',14);
+for i=1:length(all_model_names)
     for j=1:10
         if (alpha_BIC((i-1)*10+j)/sum(alpha_BIC)>0.3)
             txts((i-1)*10+j).Color = [1 1 1];
@@ -168,16 +213,16 @@ xticklabels(attn_modes_legend)
 h=gca;
 h.XAxis.TickLength = [0 0];
 h.YAxis.TickLength = [0 0];
-xlabel('Attentional mechanisms')
-yticks(1:6)
-yticklabels({'F', 'F+O', 'F+C_{untied}', 'F+C_{feat attn}', 'F+C_{spread}', 'F+C_{tied}'}')
+xlabel('Attentional mechanisms', 'Fontsize', 20)
+yticks(1:length(all_model_names))
+yticklabels({'F', 'F+O', 'F+C_{separate}', 'F+C_{feat attn}', 'F+C_{joint}'}')
 xtickangle(30)
-ylabel('Learning strategies')
-nexttile([4 1])
+ylabel('Learning strategies', 'Fontsize', 20)
+nexttile([39 14])
 imagesc(alpha_input/sum(alpha_input));
 % imagesc(pxp_input')
-txts = text(ones(1, 6)-0.3, 1:6, string(num2str(pxp_input(:), '%.2f')), 'FontSize',12);
-for i=1:6
+txts = text(ones(1, 5)-0.35, 1:length(all_model_names), string(num2str(pxp_input(:), '%.2f')), 'FontSize',14);
+for i=1:length(all_model_names)
     if (alpha_input(i)/sum(alpha_input)>0.3)
         txts(i).Color = [1 1 1];
     end
@@ -188,17 +233,22 @@ yticks([])
 colormap(flipud(bone))
 cb = colorbar;
 cb.Layout.Tile = 'South';
-cb.Label.String = 'Posterior Model Probability';
+cb.Label.String = 'Posterior model probability';
 cb.Label.FontSize = 16;
+t.TileSpacing = 'tight';
+t.Padding = 'tight';
 
 %% Plot All Parameters
 set(0,'defaultAxesFontSize',14)
-attn_results = [attns.fit_results{5, 4, :}];
+attn_results = [attns.fit_results{5, 2, :}];
 % attn_results_no_attn = [attns.fit_results{5, 1, :}];
 curr_params = reshape([attn_results.params], 7, [])';
 % curr_params_no_attn = reshape([attn_results_no_attn.params], 6, [])';
-param_names = {'bias', '\beta', '\omega', 'd', '\alpha_+', '\alpha_-', '\gamma'};
-figure
+param_names = ["bias", "\beta", "\omega", "d", "\alpha_+", "\alpha_-", "\gamma"];
+% figure
+% curr_params(:,[2 7]) = log(curr_params(:,[2 7])+1e-4);
+% curr_params(:,[3 4 5 6]) = log(curr_params(:,[3 4 5 6])+1e-4) ...
+%                          - log(1-curr_params(:,[3 4 5 6])+1e-4);
 [S,AX,BigAx,H,HAx] = plotmatrix(curr_params(idxperf,:));
 for i=1:7
     H(i).NumBins=10;
@@ -208,39 +258,63 @@ for i=1:7
     xlabel(AX(7,i), param_names{i}, 'FontSize', 14);
     ylabel(AX(i,1), param_names{i}, 'FontSize', 14);
 end
-set(0,'defaultAxesFontSize',18)
 
+% tukey_hi = quantile(curr_params(idxperf,:), 0.75)+1.5*iqr(curr_params(idxperf,:));
+% tukey_lo = quantile(curr_params(idxperf,:), 0.25)-1.5*iqr(curr_params(idxperf,:));
+% tukey_hi([2 7]) = exp(tukey_hi([2 7]));
+% tukey_lo([2 7]) = exp(tukey_lo([2 7]));
+% tukey_hi([3 4 5 6]) = 1./(1+exp(-tukey_hi([3 4 5 6])));
+% tukey_lo([3 4 5 6]) = 1./(1+exp(-tukey_lo([3 4 5 6])));
+% format short g
+% disp(tukey_hi);
+% disp(tukey_lo);
+% format short
+
+%% make parameter distribution table
+param_distribution_tbl = table("$"+param_names'+"$", round(quantile(curr_params(idxperf,:),0.25)', 2), round(median(curr_params(idxperf,:))', 2), round(quantile(curr_params(idxperf,:), 0.75)', 2),...
+                               'VariableNames', ["Name", "$25%$ Percentile", "Median", "$75%$ Percentile"]);
+table2latex(param_distribution_tbl, '../tables/param_distribution_tbl')
 %% Focus on gamma and omega
 figure;
+% subplot(121)
 temp_bound = 500;
 % psuedolog = @(x) asinh(x/2)/log(exp(1));
-hf = histogram((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'NumBins', 10, 'Normalization','pdf'); hold on;
+hf = histogram(curr_params(idxperf, 7), 'BinEdges', 0:50:500, 'Normalization','probability'); hold on;
 hf(1).FaceColor=rgb('grey');
-[f,xi] = ksdensity((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'Support', [0, temp_bound], 'BoundaryCorrection', 'Reflection');
-plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
-xlabel('\gamma', 'FontSize', 20)
-xlim([0, temp_bound]);xticks(0:50:temp_bound);
-ylabel('Density')
+% [f,xi] = ksdensity((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'Support', [0, temp_bound], 'BoundaryCorrection', 'Reflection');
+% plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
+xlabel('\gamma', 'FontSize', 30)
+xlim([0, temp_bound]);xticks(0:temp_bound/5:temp_bound);
+ylabel('Prop. of participants')
+ylim([0, 0.23])
+yticks(0:0.1:1)
+box off
 
+% subplot(122)
 figure
 % inv_logit = @(x) log(x+1e-3)-log(1-x+1e-3);
-hf = histogram((max(min(curr_params(idxperf, 3), 1-eps), eps)), 'NumBins', 10, 'Normalization','pdf'); hold on;
+hf = histogram(curr_params(idxperf, 3), 'BinEdges', 0:0.1:1, 'Normalization','probability'); hold on;
 hf(1).FaceColor=rgb('grey');
-[f,xi] = ksdensity((max(min(curr_params(idxperf, 3), 1-eps), eps)), 'Support', [0, 1], 'BoundaryCorrection', 'Reflection');
-plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
+% [f,xi] = ksdensity((max(min(curr_params(idxperf, 3), 1-eps), eps)), 'Support', [0, 1], 'BoundaryCorrection', 'Reflection');
+% plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
 xlim([0, 1]);xticks(0:0.2:1);
-xlabel('\leftarrow Conjunction                  \omega                  Feature \rightarrow', 'FontSize', 20)
-ylabel('Density')
+xlabel('\leftarrow Conj.           \omega             Feat. \rightarrow', 'FontSize', 30)
+ylabel('Prop. of participants')
+ylim([0, 0.23])
+yticks(0:0.1:1)
+box off
 
 %% learning rate bias
 figure
 clrmats = [[0.4660 0.6740 0.1880]; [0.6350 0.0780 0.1840]; rgb('grey')];
-violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.25, 'ViolinColor', clrmats);
+violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.2, 'ViolinColor', clrmats, 'Bandwidth', 0.1);
 ylim([0, 1.05]);
 xlim([0.5, 3.5]);
 xticklabels(["\alpha_+", "\alpha_-", "d"]);
+xlabel("Parameter")
 a = get(gca,'XTickLabel');
-set(gca,'XTickLabel',a,'fontsize',25);
+set(gca,'XTickLabel',a,'fontsize',30);
+box off
 % title('DiffXL', 'fontsize', 20)
 
 % figure

@@ -9,11 +9,13 @@ addpath("../utils")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',22)
+
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
 % conj  = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
+
+set(0,'defaultAxesFontSize',25)
 
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
@@ -50,8 +52,9 @@ all_model_names = ["fMLchoiceLL_RL2ftdecayattn", ...
     "fMLchoiceLL_RL2ftobjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn", ...
     "fMLchoiceLL_RL2conjdecayattn_onlyfattn", ...
-    "fMLchoiceLL_RL2conjdecayattn_spread", ...
     "fMLchoiceLL_RL2conjdecayattn_constrained"];
+
+    % "fMLchoiceLL_RL2conjdecayattn_spread", ...
 
 % make names for plotting
 all_model_names_legend = ["F", "F+O", "F+C_{untied}", "F+C_{feat attn}", "F+C_{tied}"];
@@ -78,11 +81,13 @@ for cnt_sbj = 1:length(subjects_inputs)
     [~, idxMax]                   = max(expr.prob{1}(input.inputTarget)) ;
     choiceRew(cnt_sbj,:)          = results.choice' == idxMax ;
     perfMean(cnt_sbj)             = nanmean(choiceRew(cnt_sbj,ntrialPerf)) ;
+    flaginfs(cnt_sbj) = expr.flaginf;
 end
 
 idxperf = perfMean>=perfTH;
 idxperf(29) = 0;
 idxperf = find(idxperf);
+flaginfs = flaginfs(idxperf);
 % idxperf = 1:length(subjects);
 
 %% load model fit
@@ -120,10 +125,11 @@ clrmat = colormap('lines(5)');
 
 smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
+% smth_BIC = smoothdata(trial_BICs, 4, "gaussian", wSize);
 smth_ll = movmean(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
 
 figure
-ylabel('Trial-wise \Delta BIC', 'FontSize', 18)
+ylabel('Trial-wise \Delta BIC', 'FontSize', 27)
 l_input = [];
 for i=1:4
 %     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
@@ -132,14 +138,27 @@ for i=1:4
 %     end
     l_input(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
         squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-        1:ntrials-wSize+1, clrmat(i,:));hold on
+        wSize, clrmat(i,:));hold on
 end
 yticks(-0.06:0.02:0.06)
+axis tight
 ylim([-0.04, 0.04]);
-xlim([0, ntrials-wSize+1]);
+% xlim([0, ntrials-wSize+1]);
 yline(0., ":")
-legend(l_input, ["F", "F+O", "F+C_{feat attn}", "F+C_{untied}"], "Location", "northeast")
+legend(l_input, ["F", "F+O", "F+C_{separate}", "F+C_{feat attn}"], "Location", "northeast")
 xlabel('Trial')
+
+
+%%
+model_diff_bics = squeeze(trial_BICs(5,3,:,:)-trial_BICs(2,3,:,:));
+all_data = [reshape(model_diff_bics', [], 1), ...
+            repmat((1:ntrials)'./ntrials, length(idxperf), 1), ...
+            repelem((1:length(idxperf))', ntrials)];
+all_data = array2table(all_data, "VariableNames", ["diff_bics", "trial", "subj"]);
+% mdl = fitlme(all_data, 'diff_bics~trial+(trial-1|subj)' ...
+%     ,'CheckHessian', true); 
+% does not converge
+mdl = fitlm(all_data, 'diff_bics~trial')
 
 % 
 % figure
@@ -181,8 +200,15 @@ xlabel('Trial')
 %% quantify effect of attention
 %% sharpness of attention (entropy)?
 
-for m = 6
-    for a = 3
+m_to_plot = 5;
+a_to_plot = 2;
+
+pre_smth_wsize = 1;
+
+clear all_model_ents
+clear all_model_jsds
+for m = m_to_plot
+    for a = a_to_plot
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
                 attn_where = 1;
@@ -196,8 +222,8 @@ for m = 6
             if m~=3
                 all_model_ents(m, a, cnt_sbj, :) = squeeze(entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,:)));
                 all_model_jsds(m, a, cnt_sbj, :) = squeeze(js_div( ...
-                    movmean(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), 1, 3), ...
-                    movmean(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), 1, 3), 2));
+                    movmean(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,2:end), pre_smth_wsize, 3, 'Endpoints','discard'), ...
+                    movmean(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,:,1:end-1), pre_smth_wsize, 3, 'Endpoints','discard'), 2));
             else
                 all_model_ents(m, a, cnt_sbj, :) = squeeze((entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,1:3,:)) ...
                     +entropy(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,4:6,:)))/2);
@@ -240,26 +266,45 @@ figure;
 colororder([rgb('purple'); rgb('navy')])
 yyaxis left
 wSize = 20;
-smth_ents = movmean(squeeze(all_model_ents(6,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+smth_ents = movmean(squeeze(all_model_ents(m_to_plot,a_to_plot,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
 plot_shaded_errorbar(squeeze(mean(smth_ents, 1))', squeeze(std(smth_ents, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize+1, rgb('purple'));hold on;
 ylabel('Entropy')
 yyaxis right
-smth_jsds = movmean(squeeze(all_model_jsds(6,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
-plot_shaded_errorbar(squeeze(mean(smth_jsds, 1))', squeeze(std(smth_jsds, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize, rgb('navy'));hold on;
+smth_jsds = movmean(squeeze(all_model_jsds(m_to_plot,a_to_plot,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
+plot_shaded_errorbar(squeeze(mean(smth_jsds, 1))', squeeze(std(smth_jsds, [], 1))'/sqrt(length(idxperf)), 1:ntrials-wSize-pre_smth_wsize+1, rgb('navy'));hold on;
 ylabel('JSD')
 % ylim([0, 0.3])
 xlim([0, ntrials-wSize])
 xlabel('Trial')
+
+%%
+model_ents = squeeze(all_model_ents(m_to_plot,a_to_plot,:,:));
+all_data = [reshape(model_ents', [], 1), ...
+            repmat((1:ntrials)'./ntrials, length(idxperf), 1), ...
+            repelem((1:length(idxperf))', ntrials)];
+all_data = array2table(all_data, "VariableNames", ["ents", "trial", "subj"]);
+mdl = fitlme(all_data, 'ents~trial+(trial|subj)', 'CheckHessian',true)
+[~,~,stats] = fixedEffects(mdl, 'DFMethod','Satterthwaite')
+
+%%
+model_jsds = squeeze(all_model_jsds(m_to_plot,a_to_plot,:,:));
+all_data = [reshape(model_jsds', [], 1), ...
+            repmat((1:ntrials-1)'./(ntrials-1), length(idxperf), 1), ...
+            repelem((1:length(idxperf))', ntrials-1)];
+all_data = array2table(all_data, "VariableNames", ["jsds", "trial", "subj"]);
+mdl = fitlme(all_data, 'jsds~trial+(trial|subj)', 'CheckHessian',true)
+[~,~,stats] = fixedEffects(mdl, 'DFMethod','Satterthwaite')
 
 % figure;
 % correlation between ents, jsd, and model fit (sharper attention -> better
 % fit for attentional model)
 % correlation between ents, jsd, and accuracy (shouldn't be)
 
+
 %% focus on the feature (avg attn weight)
 
-for m = 6
-    for a = 3
+for m = m_to_plot
+    for a = a_to_plot
         for cnt_sbj = 1:length(idxperf)
             if strcmp(attn_modes(a,2), 'C')
                 attn_where = 1;
@@ -270,6 +315,10 @@ for m = 6
             else
                 attn_where = 1;
             end
+            avg_weights(cnt_sbj,:) = ...
+                (attns.fit_results{m, a, idxperf(cnt_sbj)}.params(2)).*...
+                (attns.fit_results{m, a, idxperf(cnt_sbj)}.params(5)+attns.fit_results{m, a, idxperf(cnt_sbj)}.params(6));
+%             avg_weights(cnt_sbj,:) = 1;
             for d = 1:3
                 if m~=3
                     all_model_attn_ws(m, a, cnt_sbj, :, d) = squeeze(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:));
@@ -281,30 +330,92 @@ for m = 6
                 end
             end
         end
+        norm_avg_weights = avg_weights./sum(avg_weights, 1);
     end
 end
 
-
+%% plot average by subject
 figure
 clrmat = colormap('lines(3)');
 clrmat = clrmat([2, 1, 3], :);
 % posterior_model_ces = sum(all_model_attn_ws.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1]), [2 1 3 4 5]), [1 2]);
 % posterior_model_ces = squeeze(posterior_model_ces);
-wSize = 20;
-smth_attn_ws = movmean(squeeze(all_model_attn_ws(6,3,:,:,:)), [0 wSize-1], 2, 'Endpoints', 'discard');
-% smth_attn_ws = smoothdata(squeeze(all_model_attn_ws(5,3,:,:,:)), 2, 'movmean', [0 wSize-1]);
+attn_ws = squeeze(all_model_attn_ws(m_to_plot,a_to_plot,:,:,:));
+wSize = 30;
+smth_attn_ws = movmean(attn_ws, [0 wSize-1], 2, 'Endpoints', 'discard');
+% smth_attn_ws = smoothdata(squeeze(all_model_attn_ws(5,3,:,:,:)), 2,"gaussian",wSize);
 for d=[2 1 3]
-    plot_shaded_errorbar(squeeze(mean(smth_attn_ws(:,:,d), 1))', ...
-        squeeze(std(smth_attn_ws(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
+%     plot_shaded_errorbar(squeeze(mean(smth_attn_ws(:,:,d), 1))', ...
+%         squeeze(std(smth_attn_ws(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
+%         wSize, clrmat(d,:));hold on;
+
+    plot_shaded_errorbar(squeeze(sum(smth_attn_ws(:,:,d).*norm_avg_weights(:,1), 1))', ...
+        std(bootstrp(1000, @(x, w) [sum(x.*w)./sum(w)], ...
+            (smth_attn_ws(:,:,d)), norm_avg_weights(:,1)),[],1)', ...
         wSize, clrmat(d,:));hold on;
 end
-legend(["", "Inf", "", "Noninf1", "", "Noninf2"]);
-ylim([0.15, 0.55])
-yticks(0.2:0.1:0.6)
+
+ylim([0.2, 0.5])
+yticks(0.:0.1:1.0)
 xlim([wSize, ntrials])
 xlabel('Trial')
-ylabel('Attention Weights')
+ylabel('Effective attention weights')
 
+[clusters, p_values, t_sums, permutation_distribution ] = permutest(squeeze(smth_attn_ws(:,:,2))',...
+squeeze(smth_attn_ws(:,:,3))',false,0.05,10^3,true,inf);
+
+disp(clusters)
+disp(p_values)
+
+for num_cluster = 1:length(clusters)
+    if p_values(num_cluster)>0.05
+        continue
+    end
+    plot(clusters{num_cluster}+wSize-1, 0.21*ones(size(clusters{num_cluster})), ...
+        'MarkerSize', 10, 'MarkerEdgeColor',cmap(1,:), 'LineStyle', 'none', 'marker','.')
+end
+
+[clusters, p_values, t_sums, permutation_distribution ] = permutest(squeeze(smth_attn_ws(:,:,1))',...
+squeeze(smth_attn_ws(:,:,3))',false,0.05,10^3,true,inf);
+
+disp(clusters)
+disp(p_values)
+for num_cluster = 1:length(clusters)
+    if p_values(num_cluster)>0.05
+        continue
+    end
+    plot(clusters{num_cluster}+wSize-1, 0.22*ones(size(clusters{num_cluster})), ...
+        'MarkerSize', 10, 'MarkerEdgeColor',cmap(2,:), 'LineStyle', 'none', 'Marker','.')
+end
+
+
+legend(["", "Inf", "", "Noninf1", "", "Noninf2"],'Orientation','horizontal');
+
+%% plot single subject
+
+figure
+clrmat = colormap('lines(3)');
+clrmat = clrmat([2, 1, 3], :);
+
+attn_ws = squeeze(all_model_attn_ws(m_to_plot,a_to_plot,:,:,:));
+
+subj_to_plot = randi(67);
+for d=[2 1 3]
+    plot(squeeze(all_model_attn_ws(5, 3, subj_to_plot, :, d)), ...
+        'Color', clrmat(d,:), 'linewidth', 1);
+    hold on
+end
+xlim([0, 432])
+ylim([-0.05, 1.05])
+
+xlabel('Trial')
+ylabel('Attention weights')
+
+box off
+
+
+
+%% plot average by time
 figure
 plot3([0 0 1 0],[0 1 0 0],[1 0 0 1],'k', 'LineWidth', 1); hold on;
 plot3([1/3 0], [1/3 0.5], [1/3 0.5], '--k');
@@ -315,18 +426,18 @@ yticks([])
 zticks([])
 axis equal
 colormap viridis
-axis([0 1 0 1 0 1])
+% axis([0 1 0 1 0 1])
 view(120,30)
 %plot A
-scatter3(squeeze(mean(all_model_attn_ws(6,3,:,:,1),4)), ...
-    squeeze(mean(all_model_attn_ws(6,3,:,:,3),4)), ...
-    squeeze(mean(all_model_attn_ws(6,3,:,:,2),4)), ...
-    40, squeeze(mean(all_model_jsds(6,3,:,:),4)), 'filled')
+scatter3(squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,1),4)), ...
+    squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,3),4)), ...
+    squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,2),4)), ...
+    40, squeeze(mean(all_model_jsds(m_to_plot,a_to_plot,:,:),4)), 'filled')
 cb = colorbar;
-cb.Label.String = 'JSD';
-text(1.1, 0.0, -0.1, 'Noninf1', 'FontSize',22)
-text(-0.1, -0.1, 1., 'Inf', 'FontSize',22)
-text(0.1, 1.0, -0.1, 'Noninf2', 'FontSize',22)
+cb.Title.String = 'JSD';
+text(1.1, 0.0, -0.1, 'Noninf1', 'FontSize',25)
+text(-0.1, -0.1, 1., 'Inf', 'FontSize',25)
+text(0.2, 1.01, -0.05, 'Noninf2', 'FontSize',25)
 
 %%
 figure;
@@ -335,9 +446,9 @@ for d=[2 1 3]
 %     plt(d) = scatter(reshape(squeeze(movmean(all_model_attn_ws(5,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
 %                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'filled', ...
 %                     'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
-    plt(d) = scatter(squeeze(mean(all_model_attn_ws(6,3,:,:,d), 4)), perfMean(idxperf)', 'filled', ...
+    plt(d) = scatter(squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,d), 4)), perfMean(idxperf)', 'filled', ...
                     'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
-    [r, p] = corr(reshape(squeeze(movmean(all_model_attn_ws(6,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
+    [r, p] = corr(reshape(squeeze(movmean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'type', 'spearman');
     disp([r, p])
 end
@@ -346,14 +457,17 @@ lsls(1).Color = clrmat(3,:);
 lsls(2).Color = clrmat(1,:);
 lsls(3).Color = clrmat(2,:);
 
-legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"])
+legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"], 'Orientation','horizontal')
 for i=1:3
     lsls(i).LineWidth = 2;
 end
-ylim([0.49, 0.77])
-xlim([-0.1, 1.1])
+ylim([0.51, 0.77])
+xlim([-0.05, 1.1])
+
+text(1.02, 0.68, "*", "fontsize", 30, "Color", clrmat(2,:))
+text(1.02, 0.51, "*", "fontsize", 30, "Color", clrmat(1,:))
 ylabel("Performance")
-xlabel("Average attentional weights")
+xlabel("Average attention weights")
 
 % figure;
 % for d=[2 1 3]
@@ -370,6 +484,11 @@ xlabel("Average attentional weights")
 % ylim([-0.1, 1.1])
 % xlabel("Posterior Prob of F+C_{tied} DiffXL")
 % ylabel("Average attentional weights")
+
+
+
+%%
+
 
 
 %% differential signals in value (pairwise difference in values in different dimensions)
@@ -400,9 +519,9 @@ marginals_by_cg = {[1 2 3], ...
     [1 2 3 4 5 6]};
 
 %%
-for m = 1:length(all_model_names)
+for m = 5
     disp(m);
-    for a = 1:length(attn_modes)
+    for a = 3
         for cnt_sbj = 1:length(idxperf)
             for l = 1:ntrials
                 cg = channel_groups{m};
@@ -410,10 +529,10 @@ for m = 1:length(all_model_names)
                 for cg_idx = 1:length(cg)-1
                     curr_vals = all_values{m, a, idxperf(cnt_sbj)}(cg(cg_idx)+1:cg(cg_idx+1), l);
                     curr_marginals = marginals{marginals_by_cg{m}(cg_idx)};
-                    all_value_pdists(m, a, cnt_sbj, l, cg_idx) = mean(pdist(curr_vals));
-                    temp_corr = (curr_vals-curr_vals').*sign(curr_marginals-curr_marginals');
-                    all_values_differentials(m, a, cnt_sbj, l, cg_idx) = ...
-                        mean(temp_corr(triu(true(size(temp_corr)), 1)));
+                    all_value_pdists(m, a, cnt_sbj, l, cg_idx) = std(curr_vals);
+%                     temp_corr = (curr_vals-curr_vals').*sign(curr_marginals-curr_marginals');
+%                     all_values_differentials(m, a, cnt_sbj, l, cg_idx) = ...
+%                         mean(temp_corr(triu(true(size(temp_corr)), 1)));
                 end
             end
         end
@@ -423,69 +542,33 @@ end
 % posterior_model_pdists = nansum(all_value_pdists.*permute(reshape(g_BIC, [10 5 length(idxperf) 1 1 1]), [2 1 3 4 5]), [1 2]);
 % posterior_model_pdists = squeeze(posterior_model_pdists);
 
+%%
 figure;
 clrmat=colormap('lines(6)');
 clrmat = clrmat([2 1 3 4 5 6], :);
-for i=[2 1 3 4 5 6]
-    subplot(1, 2, floor((i-1)/3)+1);
-    plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3:5,1,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3:5,1,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
-end
-subplot(1,2,1);
-ylim([0 0.2]);
-yticks(0:0.025:0.2)
-ylabel('Value Separability')
-legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"]);
-subplot(1,2,2);
-ylim([0 0.15]);
-yticks(0:0.025:0.15)
-legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"]);
-han=axes(gcf,'visible','off');
-han.Title.Visible='on';
-han.XLabel.Visible='on';
-xlabel(han,'Trial');
 
+t = tiledlayout(2,1,'Padding','Compact', 'TileSpacing','compact');
 
-figure;
-clrmat=colormap('lines(6)');
-clrmat = clrmat([2 1 3 4 5 6], :);
-for i=[2 1 3 4 5 6]
-    subplot(1, 2, floor((i-1)/3)+1);
-    plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(3,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(3,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
-end
-subplot(1,2,1);
-ylim([0 0.2]);
-yticks(0:0.025:0.2)
-ylabel('Value Separability')
-legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"]);
-subplot(1,2,2);
-ylim([0 0.15]);
-yticks(0:0.025:0.15)
-legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"]);
-han=axes(gcf,'visible','off');
-han.Title.Visible='on';
-han.XLabel.Visible='on';
-xlabel(han,'Trial');
-
-figure;
-clrmat=colormap('lines(6)');
-clrmat = clrmat([2 1 3 4 5 6], :);
-for i=[2 1 3 4 5 6]
-    subplot(1, 2, floor((i-1)/3)+1);
+nexttile
+for i=[2 1 3]
     plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(5,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(5,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+    xlim([0, 432])
 end
-subplot(1,2,1);
-ylim([0 0.2]);
-yticks(0:0.025:0.2)
-ylabel('Value Separability')
-legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"]);
-subplot(1,2,2);
-ylim([0 0.15]);
-yticks(0:0.025:0.15)
-legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"]);
-han=axes(gcf,'visible','off');
-han.Title.Visible='on';
-han.XLabel.Visible='on';
-xlabel(han,'Trial');
+legend(["", "F_{inf}", "", "F_{noninf1}", "", "F_{noninf2}"], ...
+    'Location','southeast','Orientation','horizontal');
+xticklabels([])
+
+nexttile
+for i=[4 5 6]
+    plot_shaded_errorbar(squeeze(nanmean(all_value_pdists(5,3,:,:,i), [1 3])), squeeze(nanstd(all_value_pdists(5,3,:,:,i), [], [1 3]))/sqrt(length(idxperf)), 1:ntrials, clrmat(i,:));
+    xlim([0, 432])
+end
+ylim([0, 0.085])
+legend(["", "C_{inf}", "", "C_{noninf1}", "", "C_{noninf2}"], ...
+    'Location','southeast','Orientation','horizontal');
+
+ylabel(t, 'Value separability', 'fontsize', 25)
+xlabel(t, 'Trial', 'fontsize', 25)
 
 %% effect of reward and no-reward on value differential
 

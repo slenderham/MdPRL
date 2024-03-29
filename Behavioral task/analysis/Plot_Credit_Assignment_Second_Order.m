@@ -5,7 +5,7 @@ rng('shuffle')
 randstate = clock ;
 addpath('../utils')
 
-set(0,'defaultAxesFontSize',25)
+set(0,'defaultAxesFontSize',22)
 %%
 
 subjects1 = [...
@@ -91,9 +91,9 @@ clear all_Xs_for_lr all_Ys_for_lr lr_weights_mean
 all_var_names = ["S", "C", "P", "PC", "PS", "SC"]';
 all_var_names = all_var_names';
 all_var_names = all_var_names(:);
-all_var_names = all_var_names + ["_Rw", "_Ch"];
-all_var_names = all_var_names';
-all_var_names = all_var_names(:);
+% all_var_names = all_var_names + ["_Rw", "_Ch"];
+% all_var_names = all_var_names';
+% all_var_names = all_var_names(:);
 
 %% 
 
@@ -145,8 +145,6 @@ for cnt_sbj = 1:length(subjects_inputs)
                     obj2dim_map = patternshapeMap;
                 case 6
                     obj2dim_map = shapecolorMap;
-                case 7
-                    obj2dim_map = 1:27;
                 otherwise
             end
             Xs_curr_map = [];
@@ -170,6 +168,8 @@ for cnt_sbj = 1:length(subjects_inputs)
             Ys_for_lr = [Ys_for_lr; choices(l)-1];
         end
     end
+    Xs_for_lr = [repelem(Xs_for_lr(2:end,1:2:end),1,1).*Xs_for_lr(1:end-1,1:2:end)];
+    Ys_for_lr = Ys_for_lr(2:end,:);
     all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
     all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
 end
@@ -177,12 +177,10 @@ end
 tbl_to_fit = array2table( ...
     [all_Ys_for_lr, all_Xs_for_lr], ...
     "VariableNames", ["choice", all_var_names', "subject"]);
-mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ... 
+mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ...
               'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
-              'FitMethod', 'Laplace', 'Verbose', 1, 'CheckHessian',true);
+              'FitMethod', 'Laplace', 'Verbose', 1);
 
-% "+strjoin(all_var_names, "+")+"
-% mdl = fitglm(tbl_to_fit,"choice~"+strjoin(all_var_names, "+"),"Distribution","binomial");
 
 % cd ../files/
 % save("credit_assignment_models_diag_RwCh_first", "mdl")
@@ -216,23 +214,22 @@ hold on;
 xticklabels(["Reward", "Choice"])
 ylim([-0.15, 0.3])
 xlabel('Variable')
-ylabel('Regression weights')
+ylabel('Regression Weight')
 pbaspect([1.25, 1, 1])
-set(gca, 'box', 'off')
 
 x = nan(6, 2);
 for i = 1:6
     x(i,:) = b(i).XEndPoints;
 end
 
-e = errorbar(x',bs,bse,'k','linestyle','none');
+e = errorbar(x',bs,bse,'k','linestyle','none','linewidth',0.01);
 
 legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}",repmat([""],[1 6])], 'Location','eastoutside');
 
 
-text(x(1,1)-0.1, bs(1)+bse(1)+0.01, '***', 'FontSize', 30, 'Color', cmap(1,:))
+text(x(1,1)-0.12, bs(1)+bse(1)+0.01, '****', 'FontSize', 30, 'Color', cmap(1,:))
 text(x(1,2)-0.07, bs(2)+bse(2)+0.01, '**', 'FontSize', 30, 'Color', cmap(2,:))
-text(x(2,2)-0.095, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
+text(x(2,2)-0.085, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
 text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
 
 

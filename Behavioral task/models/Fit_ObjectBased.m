@@ -1,27 +1,57 @@
-
 clc
 clear
 close all
 rng('shuffle')
 randstate = clock ;
+addpath("../PRLexp/inputs_all/")
+addpath("../PRLexp/SubjectData_all/")
+addpath("../utils")
+% addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 
-%%
+%% load subjects
 
-subjects = {...
-    'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', ...
-    'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', ...
-    'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', ...
-    'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', ...
-    'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BK', 'BL', ...
-    'BM', 'BN', 'BO', 'BP', 'BQ', 'BR', 'CC', 'DD', ...
-    'EE', 'FF', 'GG', 'HH', 'II', 'JJ', 'KK', 'LL', ...
-    'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT', ...
-    'UU', 'VV', 'WW', 'XX', 'YY', 'ZZ'} ;
+subjects1 = [...
+    "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
+    "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
+    "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
+    "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", ...
+    "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", ...
+    "BM", "BN", "BO", "BP", "BQ", "BR", "CC", "DD", ...
+    "EE", "FF", "GG", "HH", "II", "JJ", "KK", "LL", ...
+    "MM", "NN", "OO", "PP", "QQ", "RR", "SS", "TT", ...
+    "UU", "VV", "WW", "XX", "YY", "ZZ"];
+% subjects1 = ["AA", "AB"];
+subjects1 = lower(subjects1);
+subjects1_inputs = "inputs/input_"+subjects1;
+subjects1_prl = "SubjectData/PRL_"+subjects1;
 
-nrep        = 5 ;
-randstate   = clock ;
+subjects2 = [...
+    "AA", "AB", "AC", "AD", "AE", "AG", ...
+    "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
+    "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", ...
+    "AW", "AX", "AY"] ;
+% subjects2 = ["AA", "AB"] ;
+subjects2_inputs = "inputs2/input_"+subjects2;
+subjects2_prl = "SubjectData2/PRL_"+subjects2;
 
-op          = optimset('Display', 'off');
+subjects_inputs = [subjects1_inputs subjects2_inputs];
+subjects_prl = [subjects1_prl subjects2_prl];
+
+%% load model specs
+
+bound_eps = 0;
+temp_bound_eps = 0;
+bias_bound = 5;
+ch_temp_bound = 500;
+
+lbs = [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps];
+ubs = [bias_bound, cn_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps];
+plbs = lbs;
+pubs = ubs;
+
+nrep = 40;
+
+op = optimset('Display', 'off');
 
 %%
 poolobj = parpool('local', 16);
@@ -42,29 +72,18 @@ parfor cnt_sbj = 1:length(subjects)
 
     expr.colorMap = repmat([1 1 1 ;
         2 2 2 ;
-        3 3 3], 1,1,3)+3 ;
+        3 3 3], 1,1,3) ;
 
-    expr.patternMap(:,:,1) = ones(3,3)+6 ;
-    expr.patternMap(:,:,2) = 2*ones(3,3)+6 ;
-    expr.patternMap(:,:,3) = 3*ones(3,3)+6 ;
+    expr.patternMap(:,:,1) = ones(3,3) ;
+    expr.patternMap(:,:,2) = 2*ones(3,3) ;
+    expr.patternMap(:,:,3) = 3*ones(3,3) ;
 
     %%
 
-    sesdata = struct()
-    sesdata.sig     = 0.2 ;
-    sesdata.input   = input ;
-    sesdata.expr    = expr ;
-    sesdata.results = results ;
-    sesdata.NtrialsShort = expr.NtrialsShort ;
-    sesdata.flagUnr = 1 ;
-
-    fvalminRL2_couple           = length(sesdata.results.reward) ;
-    fvalminRL2_coupleupdatesim  = length(sesdata.results.reward) ;
-    fvalminRL2_uncouple         = length(sesdata.results.reward) ;
-    fvalminRL2_decay            = length(sesdata.results.reward) ;
+    minfval = 1000000;
 
     for cnt_rep = 1:nrep
-%         disp(['----------------------------------------------'])
+        disp('----------------------------------------------')
         disp(['Subject: ', num2str(cnt_sbj),', Repeat: ', num2str(cnt_rep)])
 
         %% RL2 coupled
@@ -108,30 +127,38 @@ parfor cnt_sbj = 1:length(subjects)
         %         end
 
         %% RL2 decay
+
+        sesdata = struct()
+        sesdata.input   = input ;
+        sesdata.expr    = expr ;
+        sesdata.results = results ;
+        sesdata.NtrialsShort = expr.NtrialsShort ;
+        sesdata.flagUnr = 1 ;
         sesdata.flag_couple = 0 ;
+    
         NparamBasic = 3 ;
         if sesdata.flagUnr==1
             sesdata.Nalpha = 2 ;
         else
             sesdata.Nalpha = 1 ;
         end
-        ipar= rand(1,NparamBasic+sesdata.Nalpha);
-        ll = @(x)fMLchoicefit_RL2objdecay(x, sesdata);
-        lbs = [-500,   0, 0, 0, 0];
-        ubs = [ 500, 500, 1, 1, 1];
-        [xpar, fval, exitflag, output] = fmincon(ll, ipar, [], [], [], [], lbs, ubs, [], op) ;
-        if fval <= fvalminRL2_decay
-            %             xpar([NparamBasic:NparamBasic+sesdata.Nalpha])=1./(1+exp(-(xpar([NparamBasic:NparamBasic+sesdata.Nalpha]))./sesdata.sig) ) ;
-            fvalminRL2_decay = fval ;
-            mlparRL2obj_decay{cnt_sbj}(1:NparamBasic+sesdata.Nalpha)= (xpar(1:NparamBasic+sesdata.Nalpha)) ;
-            mlparRL2obj_decay{cnt_sbj}(100) = fval ;
-            mlparRL2obj_decay{cnt_sbj}(101) = fval./length(sesdata.results.reward) ;
-            mlparRL2obj_decay{cnt_sbj}(102) = output.iterations;
-            mlparRL2obj_decay{cnt_sbj}(103) = exitflag ;
+
+        ipar = plbs+rand(1,NparamBasic+sesdata.Nalpha).*(pubs-plbs);
+        ipar(plbs>=0 & pubs>20) = exp(log(plbs(plbs>=0 & pubs>20)+1)+ ...
+                rand(size(plbs(plbs>=0 & pubs>20))).*(log(pubs(plbs>=0 & pubs>20))-log(plbs(plbs>=0 & pubs>20)+1)));
+        ll = @(x)sum(fMLchoiceLL_RL2objdecay(x, sesdata));
+        
+        [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op) ;
+        if fval <= minfval
+            minfval = fval ;
+            fit_results{cnt_sbj}.params = (xpar(1:NparamBasic+sesdata.Nalpha)) ;
+            fit_results{cnt_sbj}.fval = fval ;
+            fit_results{cnt_sbj}.iters = output.iterations;
+            fit_results{cnt_sbj}.exitflag = exitflag ;
         end
     end
 end
 
 cd ./files
-save RPL2Analysisv3_5_ObjectBased
+save RPL2Analysis_Baseline_ObjectBased
 cd ../

@@ -1,4 +1,4 @@
-function loglikehood = fMLchoiceLL_RL2conjdecay(xpar, sesdata)
+function [loglikehood, latents] = fMLchoiceLL_RL2conjdecay(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2)obj model using ML method
 %
@@ -12,19 +12,19 @@ loglikehood = 0 ;
 NparamBasic = 4 ;
 
 BiasL = xpar(1) ;
-magF  = xpar(2) ;
-magC  = xpar(3) ;
-
+mag  = xpar(2) ;
+omega  = xpar(3) ;
 decay = xpar(4) ;
-alpha_rewColor      = xpar([NparamBasic+1]) ;
-alpha_rewShape      = xpar([NparamBasic+1]) ;
-alpha_rewPattern    = xpar([NparamBasic+1]) ; 
-alpha_rew           = xpar([NparamBasic+2]) ;
+
+alpha_rewColor      = xpar(NparamBasic+1) ;
+alpha_rewShape      = xpar(NparamBasic+1) ;
+alpha_rewPattern    = xpar(NparamBasic+1) ; 
+alpha_rew           = xpar(NparamBasic+1) ;
 if sesdata.flagUnr==1
-    alpha_unrColor      = xpar([NparamBasic+3]) ;
-    alpha_unrShape      = xpar([NparamBasic+3]) ;
-    alpha_unrPattern    = xpar([NparamBasic+3]) ;
-    alpha_unr           = xpar([NparamBasic+4]) ;
+    alpha_unrColor      = xpar(NparamBasic+2) ;
+    alpha_unrShape      = xpar(NparamBasic+2) ;
+    alpha_unrPattern    = xpar(NparamBasic+2) ;
+    alpha_unr           = xpar(NparamBasic+2) ;
 else
     alpha_unrColor      = alpha_rewColor ;
     alpha_unrShape      = alpha_rewShape ;
@@ -35,9 +35,11 @@ end
 shapeMap        = sesdata.expr.shapeMap ;
 colorMap        = sesdata.expr.colorMap ;
 patternMap      = sesdata.expr.patternMap ;
+
 inputTarget     = sesdata.input.inputTarget ;
 correcttrials   = sesdata.results.reward ;
 choicetrials    = sesdata.results.choice ;
+
 flag_couple     = sesdata.flag_couple ;
 flag_updatesim  = sesdata.flag_updatesim ;
 ntrials         = length(choicetrials) ;
@@ -48,13 +50,15 @@ vf              = (0.5*ones(3,1)) ;
 vc              = (0.5*ones(9,1)) ; 
 
 for cnt_trial=1:ntrials
+    latents.V(1:3,cnt_trial) = vf ;
+    latents.V(4:12,cnt_trial) = vc ;
     
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ; 
-    correctunCh = inputRewards(3-choice, cnt_trial) ;
-    choiceunCh = 3-choice ;
-    
-    cnt_Chop = 1 ;
+    if ~isnan(choice) && ~isnan(correct)
+        correctunCh = inputRewards(3-choice, cnt_trial) ;
+        choiceunCh = 3-choice ;
+    end
     
     idx_shape(2)    = shapeMap(inputTarget(2, cnt_trial)) ;
     idx_color(2)    = colorMap(inputTarget(2, cnt_trial)) ;
@@ -66,33 +70,40 @@ for cnt_trial=1:ntrials
     if cntD==1
         inputConj(1, cnt_trial) = (idx_pattern(1)-1)*3 + idx_shape(1) ;
         inputConj(2, cnt_trial) = (idx_pattern(2)-1)*3 + idx_shape(2) ;
-        vp(1,:,:)       = magF*vf(1) + magC*vc ;
-        vp(2,:,:)       = magF*vf(2) + magC*vc ;
-        vp(3,:,:)       = magF*vf(3) + magC*vc ;
-        pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
+        vsum(1) = omega*vf(idx_color(1)) + (1-omega)*vc(inputConj(1, cnt_trial));
+        vsum(2) = omega*vf(idx_color(2)) + (1-omega)*vc(inputConj(2, cnt_trial));
     elseif cntD==2
         inputConj(1, cnt_trial) = (idx_pattern(1)-1)*3 + idx_color(1) ;
         inputConj(2, cnt_trial) = (idx_pattern(2)-1)*3 + idx_color(2) ;
-        vp(:,1,:)       = magF*vf(1) + magC*vc ;
-        vp(:,2,:)       = magF*vf(2) + magC*vc ;
-        vp(:,3,:)       = magF*vf(3) + magC*vc ;
-        pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
+        vsum(1) = omega*vf(idx_shape(1)) + (1-omega)*vc(inputConj(1, cnt_trial));
+        vsum(2) = omega*vf(idx_shape(2)) + (1-omega)*vc(inputConj(2, cnt_trial));
     elseif cntD==3
         inputConj(1, cnt_trial) = (idx_shape(1)-1)*3 + idx_color(1) ;
         inputConj(2, cnt_trial) = (idx_shape(2)-1)*3 + idx_color(2) ;
-        vp(:,:,1)       = magF*vf(1) + magC*vc ;
-        vp(:,:,2)       = magF*vf(2) + magC*vc ;
-        vp(:,:,3)       = magF*vf(3) + magC*vc ;
-        pChoiceR = 1./(1+exp(-( (vp(inputTarget(2, cnt_trial))-vp(inputTarget(1, cnt_trial))) + BiasL ) )) ;
+        vsum(1) = omega*vf(idx_pattern(1)) + (1-omega)*vc(inputConj(1, cnt_trial));
+        vsum(2) = omega*vf(idx_pattern(2)) + (1-omega)*vc(inputConj(2, cnt_trial));
     end
-    
-    pChoiceL = 1-pChoiceR ;
+
+    logit = mag*(vsum(2)-vsum(1))-BiasL ;
+
     if cnt_trial >= 1  
-        if choice == 2 
-            loglikehood(cnt_trial) = - log(pChoiceR) ;
-        else 
-            loglikehood(cnt_trial) = - log(pChoiceL) ; 
-        end                      
+        if isnan(choice) || isnan(correct)
+            pChoiceR = 1./(1+exp(-logit));
+        
+            choice = binornd(1, pChoiceR)+1;
+            choiceunCh = 3-choice;
+            
+            correct = inputRewards(choice, cnt_trial) ;
+            correctunCh = inputRewards(3-choice, cnt_trial) ;
+        end
+        latents.R(cnt_trial) = correct;
+        latents.C(cnt_trial) = choice;
+        latents.logits(cnt_trial) = logit;
+        if choice == 2
+            loglikehood(cnt_trial) =  - logsigmoid(logit) ;
+        else
+            loglikehood(cnt_trial) =  - logsigmoid(-logit) ;
+        end         
     end
     
     % conjunction
@@ -203,9 +214,6 @@ for cnt_trial=1:ntrials
             end
         end
     end
-    V(1:3,cnt_trial) = vf ;
-    V(4:12,cnt_trial) = vc ;
-    
 end
 end
 

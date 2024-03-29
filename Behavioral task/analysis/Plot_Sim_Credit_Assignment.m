@@ -5,7 +5,7 @@ rng('shuffle')
 randstate = clock ;
 addpath('../utils')
 
-set(0,'defaultAxesFontSize',25)
+set(0,'defaultAxesFontSize',22)
 %%
 
 subjects1 = [...
@@ -85,6 +85,9 @@ patternshapeMap = 3*(patternMap-1)+shapeMap;
 shapecolorMap = 3*(shapeMap-1)+colorMap;
 
 lags_to_fit = 1;
+nreps = 50;
+m_sim = 5;
+a_sim = 3;
 
 clear all_Xs_for_lr all_Ys_for_lr lr_weights_mean
 
@@ -95,7 +98,7 @@ all_var_names = all_var_names + ["_Rw", "_Ch"];
 all_var_names = all_var_names';
 all_var_names = all_var_names(:);
 
-%% 
+%%
 
 all_Xs_for_lr = [];
 all_Ys_for_lr = [];
@@ -108,81 +111,80 @@ for cnt_sbj = 1:length(subjects_inputs)
 
     inputTarget   = inputs_struct.input.inputTarget;
     Ntrials      = length(results_struct.results.reward);
-    rewards      = results_struct.results.reward;
-    choices      = results_struct.results.choice;
 
-    targets = inputs_struct.input.inputTarget;
-    % the object chosen and unchosen
-    targCh = inputs_struct.input.inputTarget(...
-        results_struct.results.choice'+2*(0:(results_struct.expr.Ntrials-1))) ;
-    targUnch = inputs_struct.input.inputTarget(...
-        (3-results_struct.results.choice)'+2*(0:(results_struct.expr.Ntrials-1))) ;
+    for cnt_rep = 1:nreps
+        rewards = squeeze(all_sim_rewards(m_sim, a_sim, cnt_sbj, cnt_rep, :));
+        choices = squeeze(all_sim_choices(m_sim, a_sim, cnt_sbj, cnt_rep, :));
 
-    % reward
-    idx_rew = rewards==1;
-    idx_unr = rewards==0;
-    
-    % for each subject, initialize array for recording previous rewards
-    % and later choices
-    Xs_for_lr = []; 
-    Ys_for_lr = [];
+        targets = inputs_struct.input.inputTarget;
+        % the object chosen and unchosen
+        targCh = inputs_struct.input.inputTarget(...
+            choices'+2*(0:(results_struct.expr.Ntrials-1))) ;
+        targUnch = inputs_struct.input.inputTarget(...
+            (3-choices)'+2*(0:(results_struct.expr.Ntrials-1))) ;
 
-    % for each time O_ch is an option
-    % look back to find the last time O_fb is an option
-    for l = 2:150
-        Xs_all_maps = [];
-        for i_dim=1:6
-            switch i_dim
-                case 1
-                    obj2dim_map = shapeMap;
-                case 2
-                    obj2dim_map = colorMap;
-                case 3
-                    obj2dim_map = patternMap;
-                case 4
-                    obj2dim_map = patterncolorMap;
-                case 5
-                    obj2dim_map = patternshapeMap;
-                case 6
-                    obj2dim_map = shapecolorMap;
-                case 7
-                    obj2dim_map = 1:27;
-                otherwise
-            end
-            Xs_curr_map = [];
-            for k = l-1:-1:l-lags_to_fit % start from the previous trial and go back
-                if obj2dim_map(targCh(k))==obj2dim_map(targets(1,l))
-                    Xs_curr_map = [Xs_curr_map ...
-                                    -(idx_rew(k)-idx_unr(k)) ...
-                                    -(idx_rew(k)+idx_unr(k))];
-                elseif obj2dim_map(targCh(k))==obj2dim_map(targets(2,l))
-                    Xs_curr_map = [Xs_curr_map ...
-                                    idx_rew(k)-idx_unr(k) ...
-                                    idx_rew(k)+idx_unr(k)];
-                else
-                    Xs_curr_map = [Xs_curr_map zeros(1,2)];
+        % reward
+        idx_rew = rewards==1;
+        idx_unr = rewards==0;
+
+        % for each subject, initialize array for recording previous rewards
+        % and later choices
+        Xs_for_lr = [];
+        Ys_for_lr = [];
+
+        % for each time O_ch is an option
+        % look back to find the last time O_fb is an option
+        for l = 2:150
+            Xs_all_maps = [];
+            for i_dim=1:6
+                switch i_dim
+                    case 1
+                        obj2dim_map = shapeMap;
+                    case 2
+                        obj2dim_map = colorMap;
+                    case 3
+                        obj2dim_map = patternMap;
+                    case 4
+                        obj2dim_map = patterncolorMap;
+                    case 5
+                        obj2dim_map = patternshapeMap;
+                    case 6
+                        obj2dim_map = shapecolorMap;
+                    otherwise
                 end
+                Xs_curr_map = [];
+                for k = l-1:-1:l-lags_to_fit % start from the previous trial and go back
+                    if obj2dim_map(targCh(k))==obj2dim_map(targets(1,l))
+                        Xs_curr_map = [Xs_curr_map ...
+                            -(idx_rew(k)-idx_unr(k)) ...
+                            -(idx_rew(k)+idx_unr(k))];
+                    elseif obj2dim_map(targCh(k))==obj2dim_map(targets(2,l))
+                        Xs_curr_map = [Xs_curr_map ...
+                            idx_rew(k)-idx_unr(k) ...
+                            idx_rew(k)+idx_unr(k)];
+                    else
+                        Xs_curr_map = [Xs_curr_map zeros(1,2)];
+                    end
+                end
+                Xs_all_maps = [Xs_all_maps Xs_curr_map];
             end
-            Xs_all_maps = [Xs_all_maps Xs_curr_map];
+            if true %sum(abs(Xs_all_maps))>0
+                Xs_for_lr = [Xs_for_lr; Xs_all_maps];
+                Ys_for_lr = [Ys_for_lr; choices(l)-1];
+            end
         end
-        if true %sum(abs(Xs_all_maps))>0
-            Xs_for_lr = [Xs_for_lr; Xs_all_maps];
-            Ys_for_lr = [Ys_for_lr; choices(l)-1];
-        end
+        all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
+        all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
     end
-    all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
-    all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
 end
 
 tbl_to_fit = array2table( ...
     [all_Ys_for_lr, all_Xs_for_lr], ...
     "VariableNames", ["choice", all_var_names', "subject"]);
-mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ... 
-              'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
-              'FitMethod', 'Laplace', 'Verbose', 1, 'CheckHessian',true);
+mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ...
+    'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
+    'FitMethod', 'Laplace', 'InitPLIterations', 10, 'Verbose', 1);
 
-% "+strjoin(all_var_names, "+")+"
-% mdl = fitglm(tbl_to_fit,"choice~"+strjoin(all_var_names, "+"),"Distribution","binomial");
 
 % cd ../files/
 % save("credit_assignment_models_diag_RwCh_first", "mdl")
@@ -216,23 +218,22 @@ hold on;
 xticklabels(["Reward", "Choice"])
 ylim([-0.15, 0.3])
 xlabel('Variable')
-ylabel('Regression weights')
+ylabel('Regression Weight')
 pbaspect([1.25, 1, 1])
-set(gca, 'box', 'off')
 
 x = nan(6, 2);
 for i = 1:6
     x(i,:) = b(i).XEndPoints;
 end
 
-e = errorbar(x',bs,bse,'k','linestyle','none');
+e = errorbar(x',bs,bse,'k','linestyle','none','linewidth',0.01);
 
 legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}",repmat([""],[1 6])], 'Location','eastoutside');
 
 
-text(x(1,1)-0.1, bs(1)+bse(1)+0.01, '***', 'FontSize', 30, 'Color', cmap(1,:))
+text(x(1,1)-0.12, bs(1)+bse(1)+0.01, '****', 'FontSize', 30, 'Color', cmap(1,:))
 text(x(1,2)-0.07, bs(2)+bse(2)+0.01, '**', 'FontSize', 30, 'Color', cmap(2,:))
-text(x(2,2)-0.095, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
+text(x(2,2)-0.085, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
 text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
 
 
@@ -244,11 +245,11 @@ text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
 %     (patterncolorMap(:)'==patterncolorMap(:))-eye(27),...
 %     (shapecolorMap(:)'==shapecolorMap(:))-eye(27),...
 %     eye(27)};
-% 
+%
 % all_maps_sim_flat = [];
 % for i=1:7
 %     all_maps_sim_flat(:,i) = all_maps_sim{i}(:);
 % end
-% 
+%
 % mdl = fitlm(all_maps_sim_flat, reshape(mean(bs, 3), [], 1), ...
 %     'VarNames', {'F_inf', 'F_noninf1', 'F_noninf2', 'C_inf', 'C_noninf1', 'C_noninf2', 'O', 'Weight'})

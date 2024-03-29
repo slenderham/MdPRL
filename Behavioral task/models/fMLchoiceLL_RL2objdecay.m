@@ -1,4 +1,4 @@
-function loglikehood = fMLchoiceLL_RL2objdecay(xpar, sesdata)
+function [loglikehood, latents] = fMLchoiceLL_RL2objdecay(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2)obj model using ML method
 %
@@ -14,9 +14,10 @@ NparamBasic = 3 ;
 BiasL   = xpar(1) ;
 mag     = xpar(2) ;
 decay   = xpar(3) ;
-alpha_rew = xpar([NparamBasic+1]) ;
+
+alpha_rew = xpar(NparamBasic+1) ;
 if sesdata.flagUnr==1
-    alpha_unr   = xpar([NparamBasic+2]) ;
+    alpha_unr   = xpar(NparamBasic+2) ;
 else
     alpha_unr   = alpha_rew ;
 end
@@ -24,36 +25,57 @@ end
 shapeMap        = sesdata.expr.shapeMap ;
 colorMap        = sesdata.expr.colorMap ;
 patternMap      = sesdata.expr.patternMap ;
+
 inputTarget     = sesdata.input.inputTarget ;
 correcttrials   = sesdata.results.reward ;
 choicetrials    = sesdata.results.choice ;
+
 flag_couple     = sesdata.flag_couple ;
 ntrials         = length(choicetrials) ;
 inputRewards    = sesdata.input.inputReward ;
 
 v = (0.5*ones(27,1)) ; 
+
 for cnt_trial=1:ntrials
+    latents.V(:,cnt_trial) = v ;
     
     correct = correcttrials(cnt_trial) ;
     choice = choicetrials(cnt_trial) ; 
-    correctunCh = inputRewards(3-choice, cnt_trial) ;
-    choiceunCh = 3-choice ;
+    if ~isnan(choice) && ~isnan(correct)
+        correctunCh = inputRewards(3-choice, cnt_trial) ;
+        choiceunCh = 3-choice ;
+    end
     
-    idx_shape(2) = shapeMap(inputTarget(2, cnt_trial)) ;
-    idx_color(2) = colorMap(inputTarget(2, cnt_trial)) ;
-    idx_pattern(2) = patternMap(inputTarget(2, cnt_trial)) ;
-    idx_shape(1) = shapeMap(inputTarget(1, cnt_trial)) ;
-    idx_color(1) = colorMap(inputTarget(1, cnt_trial)) ;
-    idx_pattern(1) = patternMap(inputTarget(1, cnt_trial)) ;
+    % idx_shape(2) = shapeMap(inputTarget(2, cnt_trial)) ;
+    % idx_color(2) = colorMap(inputTarget(2, cnt_trial)) ;
+    % idx_pattern(2) = patternMap(inputTarget(2, cnt_trial)) ;
+    % idx_shape(1) = shapeMap(inputTarget(1, cnt_trial)) ;
+    % idx_color(1) = colorMap(inputTarget(1, cnt_trial)) ;
+    % idx_pattern(1) = patternMap(inputTarget(1, cnt_trial)) ;
     
-    pChoiceR = 1./(1+exp(-(mag*(v(inputTarget(2, cnt_trial))-v(inputTarget(1, cnt_trial))) + BiasL))) ;
-    pChoiceL = 1-pChoiceR ;
+    vsum(1) = v(inputTarget(1, cnt_trial));
+    vsum(2) = v(inputTarget(2, cnt_trial));
+
+    logit = mag*(vsum(2)-vsum(1))-BiasL;
+
     if cnt_trial >= 1  
-        if choice == 2 
-            loglikehood(cnt_trial) = - log(pChoiceR) ;
-        else 
-            loglikehood(cnt_trial) = - log(pChoiceL) ; 
-        end                      
+        if isnan(choice) || isnan(correct)
+            pChoiceR = 1./(1+exp(-logit));
+        
+            choice = binornd(1, pChoiceR)+1;
+            choiceunCh = 3-choice;
+            
+            correct = inputRewards(choice, cnt_trial) ;
+            correctunCh = inputRewards(3-choice, cnt_trial) ;
+        end
+        latents.R(cnt_trial) = correct;
+        latents.C(cnt_trial) = choice;
+        latents.logits(cnt_trial) = logit;
+        if choice == 2
+            loglikehood(cnt_trial) =  - logsigmoid(logit) ;
+        else
+            loglikehood(cnt_trial) =  - logsigmoid(-logit) ;
+        end         
     end
     
     if correct
@@ -81,9 +103,7 @@ for cnt_trial=1:ntrials
             [idxW, idxC] = idxcouple(idxW, idxC, correctunCh, 0) ;
             v = update(v, idxC, idxW, alpha_unr) ;
         end
-    end
-    V(:,cnt_trial) = v ;
-    
+    end    
 end
 end
 
