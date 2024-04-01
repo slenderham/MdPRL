@@ -57,6 +57,7 @@ op = optimset('Display', 'off');
 %%
 poolobj = parpool('local', 16);
 parfor cnt_sbj = 1:length(subjects_inputs)
+    disp(['Subject: ', num2str(cnt_sbj)])
     inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
     resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
 
@@ -82,9 +83,6 @@ parfor cnt_sbj = 1:length(subjects_inputs)
     minfval = 1000000;
 
     for cnt_rep = 1:nrep
-        disp('----------------------------------------------')
-        disp(['Subject: ', num2str(cnt_sbj),', Repeat: ', num2str(cnt_rep)])
-
         %% RL2 coupled
         %         sesdata.flag_couple = 1 ;
         %         NparamBasic = 2 ;
@@ -157,6 +155,6 @@ parfor cnt_sbj = 1:length(subjects_inputs)
     end
 end
 
-cd ./files
+cd ../files
 save RPL2Analysis_Baseline_ObjectBased
-cd ../
+cd ../models
