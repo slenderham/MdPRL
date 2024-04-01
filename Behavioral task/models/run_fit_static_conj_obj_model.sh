@@ -12,16 +12,13 @@
 module purge
 module load matlab/r2022a
 
-
-matlab -nodisplay -nosplash -r ../utils/bads/install
-
-#matlab -nodisplay -nosplash -r fitting_scripts/Fit_FeatureBased
+#matlab -nodisplay -nosplash -r Fit_FeatureBased
 #echo "Feature Based done"
-matlab -nodisplay -nosplash -r fitting_scripts/Fit_ObjectBased
+matlab -nodisplay -nosplash -r Fit_ObjectBased
 echo "Object Based done"
-#matlab -nodisplay -nosplash -r fitting_scripts/Fit_FeatureObjectBased
+#matlab -nodisplay -nosplash -r Fit_FeatureObjectBased
 #echo "Feature Object Based done"
-matlab -nodisplay -nosplash -r fitting_scripts/Fit_ConjunctionBased
+matlab -nodisplay -nosplash -r Fit_ConjunctionBased
 echo "Conj Based done"
 #matlab -nodisplay -nosplash -r Fit_Attention
 #echo "Attn done"
