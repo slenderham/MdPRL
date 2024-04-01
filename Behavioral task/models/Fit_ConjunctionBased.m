@@ -54,7 +54,7 @@ nrep = 40;
 op = optimset('Display', 'off');
 
 %%
-poolobj = parpool('local', 8);
+poolobj = parpool('local', 16);
 parfor cnt_sbj = 1:length(subjects_inputs)
     inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
     resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;

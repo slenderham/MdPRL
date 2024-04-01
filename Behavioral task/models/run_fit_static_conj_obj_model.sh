@@ -12,6 +12,9 @@
 module purge
 module load matlab/r2022a
 
+
+matlab -nodisplay -nosplash -r ../utils/bads/install
+
 #matlab -nodisplay -nosplash -r fitting_scripts/Fit_FeatureBased
 #echo "Feature Based done"
 matlab -nodisplay -nosplash -r fitting_scripts/Fit_ObjectBased
