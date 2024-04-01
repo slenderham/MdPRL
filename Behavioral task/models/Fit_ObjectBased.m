@@ -45,7 +45,7 @@ bias_bound = 5;
 ch_temp_bound = 500;
 
 lbs = [-bias_bound, bound_eps, bound_eps, bound_eps, bound_eps];
-ubs = [bias_bound, cn_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps];
+ubs = [bias_bound, ch_temp_bound, 1-bound_eps, 1-bound_eps, 1-bound_eps];
 plbs = lbs;
 pubs = ubs;
 
@@ -54,10 +54,10 @@ nrep = 40;
 op = optimset('Display', 'off');
 
 %%
-poolobj = parpool('local', 16);
-parfor cnt_sbj = 1:length(subjects)
-    inputname   = ['./PRLexp/inputs/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
-    resultsname = ['./PRLexp/SubjectData/PRL_', lower(subjects{cnt_sbj}) , '.mat'] ;
+poolobj = parpool('local', 8);
+parfor cnt_sbj = 1:length(subjects_inputs)
+    inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
+    resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
 
     inputs_struct = load(inputname);
     results_struct = load(resultsname);
@@ -77,8 +77,6 @@ parfor cnt_sbj = 1:length(subjects)
     expr.patternMap(:,:,1) = ones(3,3) ;
     expr.patternMap(:,:,2) = 2*ones(3,3) ;
     expr.patternMap(:,:,3) = 3*ones(3,3) ;
-
-    %%
 
     minfval = 1000000;
 
@@ -127,7 +125,6 @@ parfor cnt_sbj = 1:length(subjects)
         %         end
 
         %% RL2 decay
-
         sesdata = struct()
         sesdata.input   = input ;
         sesdata.expr    = expr ;

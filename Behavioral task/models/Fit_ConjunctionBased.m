@@ -54,10 +54,10 @@ nrep = 40;
 op = optimset('Display', 'off');
 
 %%
-poolobj = parpool('local', 16);
-parfor cnt_sbj = 1:length(subjects)
-    inputname   = ['./PRLexp/inputs/input_', lower(subjects{cnt_sbj}) , '.mat'] ;
-    resultsname = ['./PRLexp/SubjectData/PRL_', lower(subjects{cnt_sbj}) , '.mat'] ;
+poolobj = parpool('local', 8);
+parfor cnt_sbj = 1:length(subjects_inputs)
+    inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
+    resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
     
     inputs_struct = load(inputname);
     results_struct = load(resultsname);
@@ -77,8 +77,6 @@ parfor cnt_sbj = 1:length(subjects)
     expr.patternMap(:,:,1) = ones(3,3) ;
     expr.patternMap(:,:,2) = 2*ones(3,3) ;
     expr.patternMap(:,:,3) = 3*ones(3,3) ;
-    
-    %%
     
     for cntD = 1:3
 
@@ -131,7 +129,6 @@ parfor cnt_sbj = 1:length(subjects)
             % end
 
             %% RL2 conjunction decay
-
             sesdata = struct();
             sesdata.input   = input ;
             sesdata.expr    = expr ;
