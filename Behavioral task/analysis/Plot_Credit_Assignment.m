@@ -236,6 +236,14 @@ text(x(2,2)-0.095, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
 text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
 
 
+% for the second 150 trials
+% text(x(1,1)-0.07, bs(1)+bse(1)+0.01, '**', 'FontSize', 30, 'Color', cmap(1,:))
+% text(x(1,2)-0.1, bs(2)+bse(2)+0.01, '***', 'FontSize', 30, 'Color', cmap(2,:))
+% text(x(2,2)-0.07, bs(4)+bse(4)+0.01, '**', 'FontSize', 30, 'Color', cmap(4,:))
+% text(x(3,2)-0.07, bs(6)+bse(6)+0.01, '**', 'FontSize', 30, 'Color', cmap(6,:))
+% text(x(4,1)-0.035, bs(7)+bse(7)+0.02, '+', 'FontSize', 16, 'Color', cmap(7,:))
+% text(x(5,1)-0.035, bs(9)+bse(9)+0.01, '*', 'FontSize', 30, 'Color', cmap(9,:))
+
 % all_maps_sim = { ...
 %     (colorMap(:)'==colorMap(:))-eye(27),...
 %     (shapeMap(:)'==shapeMap(:))-eye(27),...

@@ -50,7 +50,7 @@ attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat') ;
 ntrials = 432;
 
 clear all_sim_choices all_sim_rewards all_sim_corrects all_sim_lls all_sim_values all_sim_attns
-nreps = 50;
+nreps = 1;
 for m = 5
     disp("=======================================================");
     disp(strcat("Simulating model ", all_model_names(m)));

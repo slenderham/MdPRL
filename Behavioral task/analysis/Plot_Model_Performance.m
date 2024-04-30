@@ -83,6 +83,7 @@ end
 
 idxperf = perfMean>=perfTH;
 idxperf(29) = 0;
+% idxperf = ~idxperf;
 idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
@@ -90,10 +91,10 @@ idxperf = find(idxperf);
 figure
 plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, 'k');
 plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
-ylim([0.47, 0.7])
-quiver([86, 173, 259, 346, 432], ones(1,5)*0.47, zeros(1,5), ones(1,5)*0.01, "off", ...
+ylim([0.4, 0.65])
+quiver([86, 173, 259, 346, 432], ones(1,5)*0.4, zeros(1,5), ones(1,5)*0.01, "off", ...
     'Color','black', 'LineWidth', 2)
-scatter([86, 173, 259, 346, 432], ones(1,5)*0.48, 40, 'k', 'filled', ...
+scatter([86, 173, 259, 346, 432], ones(1,5)*0.41, 40, 'k', 'filled', ...
     'Marker', '^')
 xlabel('Trial')
 ylabel('Performance')
