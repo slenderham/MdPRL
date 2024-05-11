@@ -61,7 +61,7 @@ ntrials = 432;
 ntrialPerf       = 33:432;
 % perfTH           = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
 perfTH           = 0.53;
-num_reps = 1;
+num_reps = 50;
 
 cmap = lines(256);
 

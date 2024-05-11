@@ -87,7 +87,8 @@ idxperf(29) = 0;
 idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
-%%
+%% plot learning curve
+
 figure
 plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, 'k');
 plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);

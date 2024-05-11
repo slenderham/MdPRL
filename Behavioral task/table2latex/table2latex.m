@@ -66,7 +66,7 @@ function table2latex(T, filename)
                 value = T{row,col};
                 if isstruct(value), error('Table must not contain structs.'); end
                 while iscell(value), value = value{1,1}; end
-                if isinf(value), value = '$\infty$'; end
+                if ~isstring(value) && isinf(value), value = '$\infty$'; end
                 temp{1,col} = num2str(value);
             end
             if ~isempty(row_names)

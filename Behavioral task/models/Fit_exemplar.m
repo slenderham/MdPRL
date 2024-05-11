@@ -147,7 +147,7 @@ for m = 1:length(all_model_names)
             % load model likelihood func and optimize
             ll = str2func(all_model_names(m));
             ll = @(x)sum(ll(x, sesdata));
-            [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op) 
+            [xpar, fval, exitflag, output] = bads(ll, ipar, lbs, ubs, plbs, pubs, [], op);
 
             if fval <= minfval
                 minfval = fval ;
