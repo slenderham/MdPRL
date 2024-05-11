@@ -5,6 +5,7 @@ rng('shuffle')
 addpath("../PRLexp/inputs_all/")
 addpath("../PRLexp/SubjectData_all/")
 addpath("../utils")
+addpath("../utils/bads")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 
 %% load subjects
