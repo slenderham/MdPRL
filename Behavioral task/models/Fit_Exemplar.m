@@ -159,7 +159,6 @@ for m = 1:length(all_model_names)
             end
         end
     end
-    toc
     cd ../files
     save RPL2Analysis_Exemplar
     cd ../models
