@@ -87,7 +87,7 @@ poolobj = parpool('local', 32);
 for m = 1:length(all_model_names)
     disp("=======================================================");
     disp(strcat("Fitting model ", all_model_names(m)));
-    for cnt_sbj = 1:length(subjects_inputs)
+    parfor cnt_sbj = 1:length(subjects_inputs)
         disp(strcat("Fitting subject ", num2str(cnt_sbj)));
         inputname   = strcat("../PRLexp/inputs_all/", subjects_inputs(cnt_sbj) , ".mat") ;
         resultsname = strcat("../PRLexp/SubjectData_all/", subjects_prl(cnt_sbj) , ".mat") ;
