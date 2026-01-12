@@ -1,4 +1,4 @@
-function [loglikehood, latents] = fMLchoiceLL_exemplar_static(xpar, sesdata)
+function [loglikehood, latents] = fMLchoiceLL_exemplar(xpar, sesdata)
 %
 % DESCRIPTION: fits data to RL(2) model using ML method
 %
@@ -137,3 +137,4 @@ for cnt_trial=1:ntrials
 
 end
 end
+

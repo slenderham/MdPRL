@@ -2,7 +2,11 @@ clc
 close all
 clear
 
-set(0,'defaultAxesFontSize',25)
+set(0,'defaultAxesFontSize',28)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
+
 %%
 
 addpath("../files")
@@ -324,7 +328,9 @@ figure
 clrmats = colormap('turbo(6)');
 clrmats = clrmats(1:5, :);
 for i=1:5
-    plot(RsqS(i,:), 'Color', clrmats(i,:), 'LineWidth', 1, 'Marker', 'o');hold on;
+    plot(RsqS(i,:), 'Color', clrmats(i,:), 'LineWidth', 3, 'Marker', 'o', ...
+        'MarkerSize', 10, 'MarkerFaceColor', 'white');
+    hold on;
 end
 ylim([0.0, 0.4])
 legend(["F_{inf}", "F_{inf}+C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"], ...
@@ -337,7 +343,8 @@ set(gca, 'box','off')
 
 figure
 clrmats = colormap('lines(7)');
-eb = errorbar(betas(:,[1 2 5],1), betas(:,[1 2 5],2), '-o', 'LineWidth', 1);
+eb = errorbar(betas(:,[1 2 5],1), betas(:,[1 2 5],2), '-o', 'LineWidth', 3, ...
+    'MarkerSize', 10, 'MarkerFaceColor', 'white');
 eb(1).Color = clrmats(1,:);
 eb(2).Color = clrmats(4,:);
 eb(3).Color = clrmats(7,:);
@@ -353,7 +360,8 @@ set(gca, 'box','off')
 % plot_shared_errorbar(nanmean(prob_est_rmses, [2 3]), nanstd(prob_est_rmses, [], [2 3])/sqrt(size(XALL, 2)));
 
 figure;
-plot(eta2_fixed(:,[2 1 3 5 6 4 7]), '-o', 'LineWidth', 1); hold on;
+plot(eta2_fixed(:,[2 1 3 5 6 4 7]), '-o', 'LineWidth', 3, ...
+    'MarkerSize', 10, 'MarkerFaceColor', 'white'); hold on;
 xlim([0.75, 5.25])
 ylim([-0.01, 0.6])
 xticks(1:5)
@@ -365,15 +373,15 @@ set(gca, 'box','off')
 
 %%
 figure;
-plot(strats_err', 'LineWidth', 2);
+plot(strats_err', 'LineWidth', 3);
 yline(-mean(log(1/2),'all'), "--")
 legend(["F_{inf}+C_{inf}", "F_{noninf1}+C_{noninf1}", "F_{noninf2}+C_{noninf2}", "Chance"]);
 xticks([0, length(omega_feat)/2, length(omega_feat)]);
 xticklabels([])
 xlim([1, length(omega_feat)])
 % yticks(0.02:0.01:0.06)
-ylim([0.59, 0.7])
-xlabel('\leftarrow Feat.         Mixed           Conj. \rightarrow')
+ylim([0.59, 0.72])
+xlabel('\leftarrow Feat.          Mixed          Conj. \rightarrow')
 % ylabel('E$_O[\ KL(p_{r}(O)||\overline {p_{r}}(O))\ ]$', 'interpreter', 'latex')
 ylabel('Approximation error')
 box off
@@ -386,14 +394,15 @@ box off
     nominal(expr.patternMap(expr.playcombinations))},...
     "model",2, "varnames",["shape", "color", "pattern"],'display','off');
 clrmats = brighten(colormap('lines(7)'), 0);
-figure;
-b = bar([tbl{[3 2 4 6 5 7 8],2}]'/tbl{9,2});
+% figure;
+b = bar([tbl{[3 2 4 6 5 7 8],2}]'/tbl{9,2}, 'LineWidth', 3);
 b.FaceColor = 'flat';
 b.CData = clrmats;
 xticklabels(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}", "O"]);
+xtickangle(330);
 ylabel('Prop. variance explained')
 xlim([0.4, 7.6])
-set(gca, "fontsize", 22)
+% set(gca, "fontsize", 25)
 box off
 
 %% plot mean and exact reward probs by feature
@@ -403,7 +412,7 @@ for i=1:3
     dims = 1:3;
     ft_values(end+1,:) = squeeze(mean(expr.prob{1}, dims(dims~=i)));
 end
-b = bar(ft_values);
+b = bar(ft_values,'Linewidth',2);
 box off
 hold on;
 xticklabels({'F_{inf}', 'F_{noninf1}', 'F_{noninf2}'});
@@ -422,9 +431,9 @@ for i=1:3
     dims = 1:3;
     errorbar(bx(i,:),squeeze(mean(expr.prob{1}, ...
         dims(dims~=i))),squeeze(std(expr.prob{1}, [], dims(dims~=i))),...
-        'linestyle', 'none', 'Color',clrmats(i,:), 'LineWidth',1);
+        'linestyle', 'none', 'Color',clrmats(i,:), 'LineWidth',3);
     scatter(zeros(9,1)+bx(i,:), true_probs'+(2*rand(9,3)-1)*0.01, 50, clrmats(i,:), ...
-        'LineWidth', 1, 'MarkerEdgeAlpha',.5);
+        'LineWidth', 4, 'MarkerEdgeAlpha',0.6);
 end
 
 %% plot mean and exact reward probs by conjunction
@@ -501,7 +510,8 @@ table2latex(pe_mdl_comparison_tbl, '../tables/pe_mdl_comparison_tbl')
 pe_mdl_coeffs_tbl = table("$"+[pe_results.name{:}]'+"$", ...
                           pe_results.betas(:), ...
                           pe_results.ses(:), ...
+                          pe_results.ts(:), ...
                           pe_results.ps(:), ...
-                          'VariableNames', ["Coefficient", "Estimate", "SE", "p-value"]);
+                          'VariableNames', ["Coefficient", "Estimate", "SE", "t", "p-value"]);
 table2latex(pe_mdl_coeffs_tbl, '../tables/pe_mdl_coeffs_tbl')
 

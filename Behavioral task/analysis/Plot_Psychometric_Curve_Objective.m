@@ -10,7 +10,9 @@ addpath("../utils")
 % addpath("../utils/vbmc")
 
 set(0,'defaultAxesFontSize',25)
-
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
 %%
 
 
@@ -243,7 +245,7 @@ lls = [];
 for i=1:2
     ll = plot(log_odds_x, ...
         1./(1+exp(-mdls{i}.Coefficients.Estimate(2)*log_odds_x-mdls{i}.Coefficients.Estimate(1)))', ...
-        'LineWidth',1);hold on
+        'LineWidth',3);hold on
     ll.Color = cmap(i,:);
     lls(i) = ll;
 end
@@ -252,10 +254,10 @@ end
 hold on;
 C = unique(all_diff_vals(:,2));
 errorbar(C, mean(all_choice_probs{1}), std(all_choice_probs{1})/sqrt(length(idxperf)), ...
-    "o", 'Color', cmap(1,:), 'MarkerSize', 10, 'LineWidth', 1);
+    "o", 'Color', cmap(1,:), 'MarkerSize', 10, 'LineWidth', 3, 'MarkerFaceColor', 'white');
 C = unique(all_diff_vals(:,4));
 errorbar(C, mean(all_choice_probs{2}), std(all_choice_probs{2})/sqrt(length(idxperf)), ...
-    "o", 'Color', cmap(2,:), 'MarkerSize', 10, 'LineWidth', 1);
+    "o", 'Color', cmap(2,:), 'MarkerSize', 10, 'LineWidth', 3, 'MarkerFaceColor', 'white');
 
 legend(lls, {'F_{inf}', 'C_{inf}'}, 'Location', 'northwest')
 
@@ -266,20 +268,23 @@ ylim([0.15, 0.85])
 
 set(gca, 'box', 'off')
 
-axes('Position',[.70 .25 .20 .16])
+axes('Position',[.74 .26 .16 .12])
 % box off
-bb = bar(mdls{3}.Coefficients.Estimate(2:end)); hold on
+bb = bar(mdls{3}.Coefficients.Estimate(2:end), 'LineWidth', 2); hold on
 bb.FaceColor = 'flat';
 bb.CData = cmap(1:2,:);
-errorbar(mdls{3}.Coefficients.Estimate(2:end), mdls{3}.Coefficients.SE(2:end), 'k', "LineStyle","none");
+errorbar(mdls{3}.Coefficients.Estimate(2:end), mdls{3}.Coefficients.SE(2:end), 'k', ...
+    "LineStyle","none", 'LineWidth', 2);
 xlim([0.5, 2.5])
 ylim([0, 2.4])
 xticks(1:2)
 xticklabels({'F_{inf}', 'C_{inf}'})
-set(gca, 'FontSize', 20)
+set(gca, 'FontSize', 20, 'Box', 'off')
 ylabel("Slopes", 'FontSize',20)
-text(1-0.21,mdls{3}.Coefficients.Estimate(2)+mdls{3}.Coefficients.SE(2)+0.1,'***','Color', cmap(1,:),'FontSize',20)
-text(2-0.14,mdls{3}.Coefficients.Estimate(3)+mdls{3}.Coefficients.SE(3)+0.1,'**','Color', cmap(2,:),'FontSize',20)
+text(1-0.28,mdls{3}.Coefficients.Estimate(2)+mdls{3}.Coefficients.SE(2)+0.1,'***', ...
+    'Color', cmap(1,:),'FontSize',20,'FontWeight','bold')
+text(2-0.18,mdls{3}.Coefficients.Estimate(3)+mdls{3}.Coefficients.SE(3)+0.1,'**', ...
+    'Color', cmap(2,:),'FontSize',20,'FontWeight','bold')
 
 % for i=1:6
 %     rsqs(i) = mdls{i}.ModelCriterion.Deviance;

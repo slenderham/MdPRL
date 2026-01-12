@@ -10,6 +10,12 @@ addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 addpath("../models/")
 addpath("../../PRLexpv3_5v2/")
 
+
+set(0,'defaultAxesFontSize',25)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
+
 %%
 
 recovery_results_by_input = load('../files/RPL2Analysis_Attention_model_recovery_by_input_thresh_both.mat');
@@ -99,15 +105,18 @@ for m=1:5
     conf_mat_pxp(m,:) = pxp;
 end
 
+
+%%
 figure;
+set(0,'defaultAxesFontSize', 15)
 imagesc(conf_mat_alpha);
 caxis([0.0 1.0]);
 xticks(1:5)
 xticklabels(all_model_names_legend)
-xlabel('Fit model', 'FontSize', 20)
+xlabel('Fit model', 'FontSize', 24)
 yticks(1:5)
 yticklabels(all_model_names_legend)
-ylabel('Simulated model', 'FontSize', 20)
+ylabel('Simulated model', 'FontSize', 24)
 % colorbar()
 [txs, tys] = meshgrid(1:5, 1:5);
 colormap(flipud(bone))
@@ -121,6 +130,7 @@ for i=1:5
 end
 
 %%
+set(0,'defaultAxesFontSize',15)
 conf_mat_alpha = zeros(10);
 conf_mat_pxp = zeros(10);
 for a=1:10
@@ -129,14 +139,16 @@ for a=1:10
     conf_mat_alpha(a,:) = alpha/sum(alpha);
     conf_mat_pxp(a,:) = pxp;
 end
+
+%%
 figure;
 imagesc(conf_mat_alpha);
 xticks(1:10)
 xticklabels(xlabels)
-xlabel('Fit model', 'FontSize', 20)
+xlabel('Fit model', 'FontSize', 22)
 yticks(1:10)
 yticklabels(xlabels)
-ylabel('Simulated model', 'FontSize', 20)
+ylabel('Simulated model', 'FontSize', 22)
 caxis([0. 1])
 % colorbar()
 % title('Confusion Matrix')
@@ -154,7 +166,8 @@ end
 %% parameter recovery
 figure
 imagesc(corr(true_pars, fit_pars, 'type', 'spearman'))
-caxis([-0.9, 0.9])
+clim([-0.9, 0.9])
+
 % colorbar
 param_names = {'bias', '\beta', '\omega', 'd', '\alpha_+', '\alpha_-', '\gamma'};
 xticklabels(param_names);
@@ -173,31 +186,44 @@ for i=1:7
     end
 end
 
+ax = gca;
+ax.XAxis.FontSize = 24;
+ax.YAxis.FontSize = 24;
+
 figure
 for i=1:7
     subplot(3,3,i)
     if (i==2 || i==7)
-        scatter(log10(true_pars(fit_pars(:,i)>1e-4,i)), log10(fit_pars(fit_pars(:,i)>1e-4,i)),[],[0.4, 0.4, 0.4]); hold on
+        scatter(log10(true_pars(fit_pars(:,i)>1e-4,i)), ...
+            log10(fit_pars(fit_pars(:,i)>1e-4,i)), 50, ...
+            [0.4, 0.4, 0.4], 'filled', 'LineWidth', 2, ...
+            'MarkerFaceAlpha', 0.4); 
+        hold on
         xlim(max([xlim; ylim]))
         ylim(max([xlim; ylim]))
-        plot(xlim, ylim, 'Color', [0.5 0.5 0.5]', 'LineWidth', 1, 'LineStyle', '--')
+        plot(xlim, ylim, 'Color', [0.5 0.5 0.5]', 'LineWidth', 2, 'LineStyle', '--')
         ll = lsline;
         xticks(0:3)
         yticks(0:3)
         xticklabels("10^{"+xticks+"}");
         yticklabels("10^{"+yticks+"}");
+        set(gca, 'FontSize', 13)
         xlim('tight')
         ylim('tight')
     else
-        scatter(true_pars(:,i), fit_pars(:,i),[],[0.4, 0.4, 0.4]); hold on
+        scatter(true_pars(:,i), fit_pars(:,i), ...
+            50, [0.4, 0.4, 0.4], 'filled', 'LineWidth', 2, ...
+            'MarkerFaceAlpha', 0.4); 
+        hold on
         xlim(max([xlim; ylim]))
         ylim(max([xlim; ylim]))
-        plot(xlim, ylim, 'Color', [0.5 0.5 0.5]', 'LineWidth', 1, 'LineStyle', '--')
+        plot(xlim, ylim, 'Color', [0.5 0.5 0.5]', 'LineWidth', 2, 'LineStyle', '--')
         ll = lsline;
+        set(gca, 'FontSize', 13)
         xlim('tight')
         ylim('tight')
     end
     %     pbaspect([1 1 1])
-    set(ll, 'linewidth', 1, 'color', 'black');
-    title(param_names{i})
+    set(ll, 'linewidth', 2, 'color', 'black');
+    title(param_names{i}, 'FontSize', 20)
 end

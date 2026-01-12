@@ -1,8 +1,8 @@
 clc
 clear
 close all
-rng(181) % for reproducibility
-randstate = clock ;
+rng('shuffle') 
+% randstate = clock ;
 addpath("../PRLexp/inputs_all/")
 addpath("../PRLexp/SubjectData_all/")
 addpath("../files")

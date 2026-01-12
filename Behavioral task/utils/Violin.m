@@ -262,25 +262,25 @@ classdef Violin < handle
                     case 'right'
                         obj.ViolinPlot =  ... % plot color will be overwritten later
                             fill([pos+density*width halfViol*pos], ...
-                            [value value(end:-1:1)], [1 1 1]);
+                            [value value(end:-1:1)], [1 1 1], 'LineWidth', 2);
                     case 'left'
                         obj.ViolinPlot =  ... % plot color will be overwritten later
                             fill([halfViol*pos pos-density(end:-1:1)*width], ...
-                            [value value(end:-1:1)], [1 1 1]);
+                            [value value(end:-1:1)], [1 1 1], 'LineWidth', 2);
                     case 'full'
                         obj.ViolinPlot =  ... % plot color will be overwritten later
                             fill([pos+density*width pos-density(end:-1:1)*width], ...
-                            [value value(end:-1:1)], [1 1 1]);
+                            [value value(end:-1:1)], [1 1 1], 'LineWidth', 2);
                 end
             else
                 % plot right half of the violin
                 obj.ViolinPlot =  ...
                     fill([pos+density*width pos-density(1)*width], ...
-                    [value value(1)], [1 1 1]);
+                    [value value(1)], [1 1 1], 'LineWidth', 2);
                 % plot left half of the violin
                 obj.ViolinPlot2 =  ...
                     fill([pos-densityC(end)*widthC pos-densityC(end:-1:1)*widthC], ...
-                    [valueC(end) valueC(end:-1:1)], [1 1 1]);
+                    [valueC(end) valueC(end:-1:1)], [1 1 1], 'LineWidth', 2);
             end
                 
             %% Plot the quartiles within the violin
@@ -308,7 +308,7 @@ classdef Violin < handle
                     obj.BoxPlot = ... % plot color will be overwritten later
                         fill(pos+[-1,1,1,-1]*args.BoxWidth, ...
                         [quartiles(1) quartiles(1) quartiles(3) quartiles(3)], ...
-                        [1 1 1]);
+                        [1 1 1], 'LineWidth', 3);
                 case 'none'
             end
                 
@@ -343,7 +343,7 @@ classdef Violin < handle
             hiwhisker = quartiles(3) + 1.5*IQR;
             hiwhisker = min(hiwhisker, max(data(data < hiwhisker)));
             if ~isempty(lowhisker) && ~isempty(hiwhisker)
-                obj.WhiskerPlot = plot([pos pos], [lowhisker hiwhisker]);
+                obj.WhiskerPlot = plot([pos pos], [lowhisker hiwhisker], 'LineWidth', 3);
             end
                 
             % Median

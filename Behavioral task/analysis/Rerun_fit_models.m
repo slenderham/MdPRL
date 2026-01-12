@@ -56,11 +56,12 @@ ntrials = 432;
 
 %%
 
+% poolobj = parpool('local', 8);
 for m = 1:5
     disp("=======================================================");
     disp(strcat("Running model ", all_model_names(m)));
     basic_params = cell(length(subjects_inputs)); % store the attention-less model's parameters for each model type
-    for a = 2:3
+    for a = 3
         disp("-------------------------------------------------------");
         disp(strcat("Running attn type ", attn_modes(a, 1), " ", attn_modes(a, 2)));
         parfor cnt_sbj = 1:length(subjects_inputs)

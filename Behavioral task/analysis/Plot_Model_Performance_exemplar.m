@@ -10,9 +10,6 @@ addpath("../utils")
 % addpath("../utils/vbmc")
 
 set(0,'defaultAxesFontSize',25)
-set(0, 'DefaultAxesLineWidth', 2)
-set(0, 'DefaultAxesFontName', 'Arial');
-set(0, 'DefaultTextFontName', 'Arial');
 %% load subject files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -45,8 +42,7 @@ subjects_prl = [subjects1_prl subjects2_prl];
 
 
 % make names for plotting
-all_model_names_legend = ["F+C_{joint}", "F+C_{inf}", ...
-                            "F+C_{noninf1}", "F+C_{noninf2}"];
+all_model_names_legend = ["F+C_{joint}", "Exemplar_{static}", "Exemplar_{dynamic}"];
 
 
 ntrials = 432;
@@ -78,9 +74,7 @@ idxperf = find(idxperf);
 
 %% load model fits
 attns = load('../files/RPL2Analysis_Attention_merged_rep40_500_log.mat');
-static_conj = load('../files/RPL2Analysis_Baseline_ConjunctionBased.mat');
-static_obj = load('../files/RPL2Analysis_Baseline_ObjectBased.mat');
-
+exemplar = load('../files/RPL2Analysis_Exemplar.mat');
 
 for cnt_sbj = 1:length(idxperf)
     num_params = length(attns.fit_results{5, 3, idxperf(cnt_sbj)}.params);
@@ -89,33 +83,27 @@ for cnt_sbj = 1:length(idxperf)
     BICs(1, cnt_sbj) = 2*lls(1, cnt_sbj)+log(ntrials)*num_params;
     Rsqs(1, cnt_sbj) = 1-BICs(1, cnt_sbj)./(-2*logsigmoid(0)*ntrials+log(ntrials)*num_params);
 
-    for m = 1:3
-        num_params = length(static_conj.fit_results{m, idxperf(cnt_sbj)}.params);
-        lls(m+1, cnt_sbj) = static_conj.fit_results{m, idxperf(cnt_sbj)}.fval;
+    for m = 1:2
+        num_params = length(exemplar.fit_results{m, idxperf(cnt_sbj)}.params);
+        lls(m+1, cnt_sbj) = exemplar.fit_results{m, idxperf(cnt_sbj)}.fval;
         AICs(m+1, cnt_sbj) = 2*lls(m+1, cnt_sbj)+2*num_params+(2*num_params*(num_params-1))/(ntrials-num_params-1);
         BICs(m+1, cnt_sbj) = 2*lls(m+1, cnt_sbj)+log(ntrials)*num_params;
         Rsqs(m+1, cnt_sbj) = 1-BICs(m+1, cnt_sbj)./(-2*logsigmoid(0)*ntrials+log(ntrials)*num_params);
     end
-
-    num_params = length(static_obj.fit_results{1, idxperf(cnt_sbj)}.params);
-    lls(5, cnt_sbj) = static_obj.fit_results{1, idxperf(cnt_sbj)}.fval;
-    AICs(5, cnt_sbj) = 2*lls(5, cnt_sbj)+2*num_params+(2*num_params*(num_params-1))/(ntrials-num_params-1);
-    BICs(5, cnt_sbj) = 2*lls(5, cnt_sbj)+log(ntrials)*num_params;
-    Rsqs(5, cnt_sbj) = 1-BICs(5, cnt_sbj)./(-2*logsigmoid(0)*ntrials+log(ntrials)*num_params);
 end
 
 %% BMS
 
-[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(-BICs(1:4,:)'/2, ...
-    mat2cell((1:4)', repmat([1], 1, 4)));
+[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(-BICs(1:3,:)'/2, ...
+    mat2cell((1:3)', repmat([1], 1, 3)));
 disp(bor_BIC);
 
 
 %% plot baseline
 
 imagesc(alpha_BIC'/sum(alpha_BIC));
-txts = text((1:4)-0.2, ones(1, 4), string(num2str(pxp_BIC(:), '%.2f')), 'FontSize',20);
-for i=1:4
+txts = text((1:3)-0.2, ones(1, 3), string(num2str(pxp_BIC(:), '%.2f')), 'FontSize',20);
+for i=1:3
     if (alpha_BIC(i)/sum(alpha_BIC)>0.3)
         txts(i).Color = [1 1 1];
     end
@@ -123,7 +111,6 @@ end
 
 xticks(1:10)
 xticklabels(all_model_names_legend)
-set(gca,'fontsize',20) 
 yticks([])
 
 axis image;
@@ -140,35 +127,51 @@ cb = colorbar('southoutside');
 cb.Label.String = 'Posterior model probability';
 cb.Label.FontSize = 20;
 
-%% compare with obj
 
-[alpha_obj,exp_r_obj,xp_obj,pxp_obj,bor_obj,g_obj] = bms(-BICs([1,5],:)'/2, ...
-    mat2cell((1:2)', repmat([1], 1, 2)));
-disp(bor_obj);
+%%
 
-imagesc(alpha_obj'/sum(alpha_obj));
-txts = text((1:2)-0.1, ones(1, 2), string(num2str(pxp_obj(:), '%.2f')), 'FontSize',20);
-for i=1:2
-    if (alpha_obj(i)/sum(alpha_obj)>0.3)
-        txts(i).Color = [1 1 1];
-    end
+attn_results = [exemplar.fit_results{1, :}];
+% attn_results_no_attn = [attns.fit_results{5, 1, :}];
+curr_params = reshape([attn_results.params], 8, [])';
+% curr_params_no_attn = reshape([attn_results_no_attn.params], 6, [])';
+param_names = ["bias", "\beta", "d", "\alpha_+", "\alpha_-", "w_1", "w_2", "w_3"];
+% figure
+% curr_params(:,[2 7]) = log(curr_params(:,[2 7])+1e-4);
+% curr_params(:,[3 4 5 6]) = log(curr_params(:,[3 4 5 6])+1e-4) ...
+%                          - log(1-curr_params(:,[3 4 5 6])+1e-4);
+[S,AX,BigAx,H,HAx] = plotmatrix(curr_params(idxperf,:));
+for i=1:8
+    H(i).NumBins=10;
+end
+hold on;
+for i=1:8
+    xlabel(AX(8,i), param_names{i}, 'FontSize', 14);
+    ylabel(AX(i,1), param_names{i}, 'FontSize', 14);
 end
 
-xticks(1:2)
-xticklabels({'F+C_{joint}', 'O'})
-yticks([])
+%%
 
-axis image;
+histogram(Rsqs(2,:), 'BinEdges', -0.05:0.05:0.7, 'Normalization', 'probability');hold on
+histogram(Rsqs(3,:), 'BinEdges', -0.05:0.05:0.7, 'Normalization', 'probability');
+xline(0, '--', 'LineWidth', 1);
+legend('Static', 'Dynamic', 'Chance', 'Location', 'northeast');
+xlabel("Pseudo-R^2");
+ylabel('Prop. Subject');
+box off
 
-h=gca;
-h.XAxis.TickLength = [0 0];
-h.YAxis.TickLength = [0 0];
+%%
+normed_static_ws = curr_params(:,6:end)./sum(curr_params(:,6:end),2);
 
-caxis([0 1])
-colormap(flipud(bone))
-cb = colorbar('southoutside');
+b = bar(mean(normed_static_ws(:,[2,1,3]),1)); hold on
+errorbar(1:3, mean(normed_static_ws(:,[2,1,3]),1),...
+    std(normed_static_ws(:,[2,1,3]),1,1)/sqrt(size(normed_static_ws,1)),...
+    "ko", "LineWidth",1);
 
+xticklabels(["Inf", "Noninf1", "Noninf2"])
+xlabel('Feature dimension');
+ylabel('Normalized attn. weights')
+xlim([0.4, 3.6]);
 
-cb.Label.String = 'Posterior model probability';
-cb.Label.FontSize = 20;
+b.FaceColor = 'flat';
+b.CData = colormap('lines(3)');
 

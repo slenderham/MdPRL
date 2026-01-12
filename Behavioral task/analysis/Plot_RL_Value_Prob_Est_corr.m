@@ -2,9 +2,15 @@ clc
 close all
 clear
 
-set(0,'defaultAxesFontSize',30)
+
 
 %%
+
+set(0,'defaultAxesFontSize',28)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
+
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
     "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
@@ -155,7 +161,8 @@ figure
 cmap = colormap('turbo(6)');
 cmap(6,:) = 0.5;
 for i=1:6
-    plot(rsqs(:,i), 'Color', cmap(i,:), 'LineWidth', 1, "Marker", "o");hold on
+    plot(rsqs(:,i), 'Color', cmap(i,:), 'LineWidth', 3, 'Marker', 'o', ...
+        'MarkerSize', 10, 'MarkerFaceColor', 'white');hold on
 end
 legend(["F_{inf}", "F_{inf}+C_{inf}", "C_{noninf1}", "C_{noninf2}", "O", "RL"], ...
     "Location", "eastoutside", 'Orientation', 'vertical');

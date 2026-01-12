@@ -256,6 +256,8 @@ tSumPrimary = tSumPrimary(tSumIdx);
 % We'll need this for creating shuffled trials for independent samples:
 if ~dependent_samples
     all_trials = cat(ndims(trial_group_1), trial_group_1, trial_group_2);
+else
+    all_trials = 0;
 end
 permutation_distribution = zeros(num_permutations,1);
 parfor p = 1:num_permutations

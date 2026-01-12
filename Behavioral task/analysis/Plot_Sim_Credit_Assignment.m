@@ -5,8 +5,13 @@ rng('shuffle')
 randstate = clock ;
 addpath('../utils')
 
-set(0,'defaultAxesFontSize',22)
+
 %%
+
+set(0,'defaultAxesFontSize',25)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
 
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
@@ -54,6 +59,7 @@ idxperf(29) = false;
 % idxperf(36) = false;
 subjects_inputs = subjects_inputs(idxperf);
 subjects_prl = subjects_prl(idxperf);
+idxperf = find(idxperf);
 
 %% logistic regression
 % C_t ~ beta [C_{t-i}Xrew_{t-1}-C_{t-1}Xunr_{t-1}]
@@ -86,6 +92,8 @@ shapecolorMap = 3*(shapeMap-1)+colorMap;
 
 lags_to_fit = 1;
 nreps = 50;
+nreps_to_fit = 10;
+reps_to_fit = randi(nreps, [1,nreps_to_fit]);
 m_sim = 5;
 a_sim = 3;
 
@@ -102,6 +110,9 @@ all_var_names = all_var_names(:);
 
 all_Xs_for_lr = [];
 all_Ys_for_lr = [];
+
+sess_id = 1;
+
 for cnt_sbj = 1:length(subjects_inputs)
     inputname   = ['../PRLexp/inputs_all/', subjects_inputs{cnt_sbj} , '.mat'] ;
     resultsname = ['../PRLexp/SubjectData_all/', subjects_prl{cnt_sbj} , '.mat'] ;
@@ -112,9 +123,9 @@ for cnt_sbj = 1:length(subjects_inputs)
     inputTarget   = inputs_struct.input.inputTarget;
     Ntrials      = length(results_struct.results.reward);
 
-    for cnt_rep = 1:nreps
-        rewards = squeeze(all_sim_rewards(m_sim, a_sim, cnt_sbj, cnt_rep, :));
-        choices = squeeze(all_sim_choices(m_sim, a_sim, cnt_sbj, cnt_rep, :));
+    for cnt_rep = reps_to_fit
+        rewards = squeeze(all_sim_rewards(m_sim, a_sim, idxperf(cnt_sbj), cnt_rep, :));
+        choices = squeeze(all_sim_choices(m_sim, a_sim, idxperf(cnt_sbj), cnt_rep, :));
 
         targets = inputs_struct.input.inputTarget;
         % the object chosen and unchosen
@@ -134,7 +145,8 @@ for cnt_sbj = 1:length(subjects_inputs)
 
         % for each time O_ch is an option
         % look back to find the last time O_fb is an option
-        for l = 2:150
+        for l = 432-148:432
+        % for l=2:150
             Xs_all_maps = [];
             for i_dim=1:6
                 switch i_dim
@@ -173,7 +185,9 @@ for cnt_sbj = 1:length(subjects_inputs)
                 Ys_for_lr = [Ys_for_lr; choices(l)-1];
             end
         end
-        all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ones(size(Xs_for_lr, 1),1)*cnt_sbj];
+        all_Xs_for_lr = [all_Xs_for_lr; Xs_for_lr ...
+            ones(size(Xs_for_lr, 1),1)*(sess_id)];
+        sess_id = sess_id+1;
         all_Ys_for_lr = [all_Ys_for_lr; Ys_for_lr];
     end
 end
@@ -181,9 +195,10 @@ end
 tbl_to_fit = array2table( ...
     [all_Ys_for_lr, all_Xs_for_lr], ...
     "VariableNames", ["choice", all_var_names', "subject"]);
-mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ...
-    'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
-    'FitMethod', 'Laplace', 'InitPLIterations', 10, 'Verbose', 1);
+
+%%
+mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+(1|subject)", ...
+    'Distribution','Binomial', 'CovariancePattern', 'Diagonal', 'Verbose', 1)
 
 
 % cd ../files/
@@ -192,49 +207,69 @@ mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all
 
 %%
 
-all_var_names = ["F_{0}", "F_{1}", "F_{2}", "C_{0}", "C_{1}", "C_{2}"]';
-all_var_names = all_var_names';
-all_var_names = all_var_names(:);
-all_var_names = all_var_names + ["Rw", "Ch"];
-all_var_names = all_var_names';
-all_var_names = all_var_names(:);
+% plot_var_names = ["F_{0}", "F_{1}", "F_{2}", "C_{0}", "C_{1}", "C_{2}"]';
+% plot_var_names = plot_var_names';
+% plot_var_names = plot_var_names(:);
+% plot_var_names = plot_var_names + ["Rw", "Ch"];
+% plot_var_names = plot_var_names';
+% plot_var_names = plot_var_names(:);
 
 
 bs = mdl.Coefficients.Estimate(2:end);
 bse = mdl.Coefficients.SE(2:end);
+pvals = mdl.Coefficients.pValue(2:end);
 
 
 bs = bs([3 4 1 2 5 6 9 10 7 8 11 12]);
 bs = reshape(bs', 2, 6);
 bse = bse([3 4 1 2 5 6 9 10 7 8 11 12]);
 bse = reshape(bse', 2, 6);
+pvals = pvals([3 4 1 2 5 6 9 10 7 8 11 12]);
+pvals = reshape(pvals', 2, 6);
 % bs = bs([2 1 3 5 4 6]);
 % bse = bse([2 1 3 5 4 6]);
 figure
 cmap = colormap('lines(6)');
-cmap = repelem(cmap,2,1);
-b = bar(bs);
+% cmap = repelem(cmap,2,1);
+b = bar(bs, 'LineWidth', 2);
 hold on;
 xticklabels(["Reward", "Choice"])
-ylim([-0.15, 0.3])
+ylim([-0.12, 0.47])
 xlabel('Variable')
 ylabel('Regression Weight')
 pbaspect([1.25, 1, 1])
+set(gca, 'box', 'off')
 
 x = nan(6, 2);
 for i = 1:6
     x(i,:) = b(i).XEndPoints;
 end
 
-e = errorbar(x',bs,bse,'k','linestyle','none','linewidth',0.01);
+e = errorbar(x',bs,bse,'k','linestyle','none','linewidth',2);
 
 legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}",repmat([""],[1 6])], 'Location','eastoutside');
 
 
-text(x(1,1)-0.12, bs(1)+bse(1)+0.01, '****', 'FontSize', 30, 'Color', cmap(1,:))
-text(x(1,2)-0.07, bs(2)+bse(2)+0.01, '**', 'FontSize', 30, 'Color', cmap(2,:))
-text(x(2,2)-0.085, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
-text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
+for i = 1:6
+    p_asterisks = sig2ast(pvals(2*i-1));
+    text(x(i,1)+0.00*numel(p_asterisks), ...
+        bs(2*i-1)+sign(bs(2*i-1))*(bse(2*i-1)+0.02), ...
+        p_asterisks, ...
+        'FontSize', 20, 'Color', cmap(i,:), 'FontWeight', 'bold', ...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+    
+    p_asterisks = sig2ast(pvals(2*i));
+    text(x(i,2)+0.00*numel(p_asterisks), ...
+        bs(2*i)+sign(bs(2*i))*(bse(2*i)+0.02), ...
+        p_asterisks, ...
+        'FontSize', 20, 'Color', cmap(i,:), 'FontWeight', 'bold', ...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+end
+
+% text(x(1,1)-0.12, bs(1)+bse(1)+0.01, '***', 'FontSize', 30, 'Color', cmap(1,:))
+% text(x(1,2)-0.07, bs(2)+bse(2)+0.01, '**', 'FontSize', 30, 'Color', cmap(2,:))
+% text(x(2,2)-0.085, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
+% text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
 
 
 % all_maps_sim = { ...

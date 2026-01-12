@@ -5,7 +5,10 @@ rng('shuffle')
 randstate = clock ;
 addpath('../utils')
 
-set(0,'defaultAxesFontSize',25)
+set(0,'defaultAxesFontSize',22)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
 %%
 
 subjects1 = [...
@@ -129,7 +132,8 @@ for cnt_sbj = 1:length(subjects_inputs)
 
     % for each time O_ch is an option
     % look back to find the last time O_fb is an option
-    for l = 2:150
+    for l = 432-148:432
+    % for l = 2:150
         Xs_all_maps = [];
         for i_dim=1:6
             switch i_dim
@@ -177,12 +181,16 @@ end
 tbl_to_fit = array2table( ...
     [all_Ys_for_lr, all_Xs_for_lr], ...
     "VariableNames", ["choice", all_var_names', "subject"]);
-mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ... 
+% mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+("+strjoin(all_var_names, "+")+"|subject)", ... 
+%               'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
+%               'FitMethod', 'Laplace', 'Verbose', 1, 'CheckHessian',true);
+
+mdl = fitglme(tbl_to_fit, "choice~"+strjoin(all_var_names, "+")+"+(1|subject)", ... 
               'Distribution','Binomial', 'CovariancePattern', 'Diagonal', ...
               'FitMethod', 'Laplace', 'Verbose', 1, 'CheckHessian',true);
 
 % "+strjoin(all_var_names, "+")+"
-% mdl = fitglm(tbl_to_fit,"choice~"+strjoin(all_var_names, "+"),"Distribution","binomial");
+% % mdl = fitglm(tbl_to_fit,"choice~"+strjoin(all_var_names, "+"),"Distribution","binomial");
 
 % cd ../files/
 % save("credit_assignment_models_diag_RwCh_first", "mdl")
@@ -211,10 +219,10 @@ bse = reshape(bse', 2, 6);
 figure
 cmap = colormap('lines(6)');
 cmap = repelem(cmap,2,1);
-b = bar(bs);
+b = bar(bs, 'LineWidth', 2);
 hold on;
 xticklabels(["Reward", "Choice"])
-ylim([-0.15, 0.3])
+ylim([-0.17, 0.46])
 xlabel('Variable')
 ylabel('Regression weights')
 pbaspect([1.25, 1, 1])
@@ -225,24 +233,24 @@ for i = 1:6
     x(i,:) = b(i).XEndPoints;
 end
 
-e = errorbar(x',bs,bse,'k','linestyle','none');
+e = errorbar(x',bs,bse,'k','linestyle','none', 'LineWidth', 2);
 
 legend(["F_{inf}", "F_{noninf1}", "F_{noninf2}", "C_{inf}", "C_{noninf1}", "C_{noninf2}",repmat([""],[1 6])], 'Location','eastoutside');
 
 
-text(x(1,1)-0.1, bs(1)+bse(1)+0.01, '***', 'FontSize', 30, 'Color', cmap(1,:))
-text(x(1,2)-0.07, bs(2)+bse(2)+0.01, '**', 'FontSize', 30, 'Color', cmap(2,:))
-text(x(2,2)-0.095, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:))
-text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:))
+% text(x(1,1)-0.1, bs(1)+bse(1)+0.01, '***', 'FontSize', 30, 'Color', cmap(1,:), 'FontWeight','bold');
+% text(x(1,2)-0.07, bs(2)+bse(2)+0.01, '**', 'FontSize', 30, 'Color', cmap(2,:), 'FontWeight','bold');
+% text(x(2,2)-0.095, bs(4)+bse(4)+0.01, '***', 'FontSize', 30, 'Color', cmap(4,:), 'FontWeight','bold');
+% text(x(4,1)-0.035, bs(7)+bse(7)+0.01, '*', 'FontSize', 30, 'Color', cmap(7,:), 'FontWeight','bold');
 
 
 % for the second 150 trials
-% text(x(1,1)-0.07, bs(1)+bse(1)+0.01, '**', 'FontSize', 30, 'Color', cmap(1,:))
-% text(x(1,2)-0.1, bs(2)+bse(2)+0.01, '***', 'FontSize', 30, 'Color', cmap(2,:))
-% text(x(2,2)-0.07, bs(4)+bse(4)+0.01, '**', 'FontSize', 30, 'Color', cmap(4,:))
-% text(x(3,2)-0.07, bs(6)+bse(6)+0.01, '**', 'FontSize', 30, 'Color', cmap(6,:))
-% text(x(4,1)-0.035, bs(7)+bse(7)+0.02, '+', 'FontSize', 16, 'Color', cmap(7,:))
-% text(x(5,1)-0.035, bs(9)+bse(9)+0.01, '*', 'FontSize', 30, 'Color', cmap(9,:))
+text(x(1,1)-0.07, bs(1)+bse(1)+0.01, '**', 'FontSize', 30, 'Color', cmap(1,:), 'FontWeight','bold')
+text(x(1,2)-0.1, bs(2)+bse(2)+0.01, '***', 'FontSize', 30, 'Color', cmap(2,:), 'FontWeight','bold')
+text(x(2,2)-0.06, bs(4)+bse(4)+0.01, '**', 'FontSize', 30, 'Color', cmap(4,:), 'FontWeight','bold')
+text(x(3,2)-0.03, bs(6)+bse(6)+0.01, '*', 'FontSize', 30, 'Color', cmap(6,:), 'FontWeight','bold')
+text(x(4,1)-0.03, bs(7)+bse(7)+0.02, '+', 'FontSize', 16, 'Color', cmap(7,:), 'FontWeight','bold')
+text(x(5,1)-0.03, bs(9)+bse(9)+0.01, '*', 'FontSize', 30, 'Color', cmap(9,:), 'FontWeight','bold')
 
 % all_maps_sim = { ...
 %     (colorMap(:)'==colorMap(:))-eye(27),...

@@ -16,6 +16,9 @@ addpath("../utils")
 % conj  = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
 
 set(0,'defaultAxesFontSize',25)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
 
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
@@ -120,32 +123,34 @@ trial_lls=trial_lls(:,:,idxperf,:);
 
 %% Plot Model Evidence
 
-wSize = 100;
-clrmat = colormap('lines(5)');
+wSize = 50;
+clrmat = colormap('turbo(6)');
+clrmat = clrmat([2, 5], :);
 
 smth_AIC = movmean(trial_AICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 smth_BIC = movmean(trial_BICs, [0 wSize-1], 4, 'Endpoints', 'discard');
 % smth_BIC = smoothdata(trial_BICs, 4, "gaussian", wSize);
 smth_ll = movmean(trial_lls, [0 wSize-1], 4, 'Endpoints', 'discard');
 
-figure
+% figure
 ylabel('Trial-wise \Delta BIC', 'FontSize', 27)
 l_input = [];
-for i=1:4
+for i=1:2
 %     [~, min_attn_type] = max(alpha_BIC((i-1)*length(attn_modes)+1:i*length(attn_modes)));
 %     if i==2
     min_attn_type = 3;
 %     end
     l_input(i) = plot_shaded_errorbar(squeeze(mean(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [1 2 3])), ...
         squeeze(std(smth_BIC(5,3,:,:)-smth_BIC(i,min_attn_type,:,:), [], [1 2 3]))/sqrt(length(idxperf)), ...
-        wSize, clrmat(i,:));hold on
+        wSize, clrmat(i,:));
+    hold on
 end
 yticks(-0.06:0.02:0.06)
 axis tight
-ylim([-0.04, 0.04]);
+ylim([-0.055, 0.035]);
 % xlim([0, ntrials-wSize+1]);
 yline(0., ":")
-legend(l_input, ["F", "F+O", "F+C_{separate}", "F+C_{feat attn}"], "Location", "northeast")
+legend(l_input, ["F", "F+O"])
 xlabel('Trial')
 
 
@@ -201,7 +206,7 @@ mdl = fitlm(all_data, 'diff_bics~trial')
 %% sharpness of attention (entropy)?
 
 m_to_plot = 5;
-a_to_plot = 2;
+a_to_plot = 3;
 
 pre_smth_wsize = 1;
 
@@ -318,7 +323,7 @@ for m = m_to_plot
             avg_weights(cnt_sbj,:) = ...
                 (attns.fit_results{m, a, idxperf(cnt_sbj)}.params(2)).*...
                 (attns.fit_results{m, a, idxperf(cnt_sbj)}.params(5)+attns.fit_results{m, a, idxperf(cnt_sbj)}.params(6));
-%             avg_weights(cnt_sbj,:) = 1;
+            % avg_weights(cnt_sbj,:) = 1;
             for d = 1:3
                 if m~=3
                     all_model_attn_ws(m, a, cnt_sbj, :, d) = squeeze(all_attns{m, a, idxperf(cnt_sbj)}(attn_where,d,:));
@@ -362,7 +367,7 @@ xlabel('Trial')
 ylabel('Effective attention weights')
 
 [clusters, p_values, t_sums, permutation_distribution ] = permutest(squeeze(smth_attn_ws(:,:,2))',...
-squeeze(smth_attn_ws(:,:,3))',false,0.05,10^3,true,inf);
+squeeze(smth_attn_ws(:,:,3))',false,0.05,10^4,false,inf);
 
 disp(clusters)
 disp(p_values)
@@ -376,7 +381,7 @@ for num_cluster = 1:length(clusters)
 end
 
 [clusters, p_values, t_sums, permutation_distribution ] = permutest(squeeze(smth_attn_ws(:,:,1))',...
-squeeze(smth_attn_ws(:,:,3))',false,0.05,10^3,true,inf);
+squeeze(smth_attn_ws(:,:,3))',false,0.05,10^4,false,inf);
 
 disp(clusters)
 disp(p_values)
@@ -399,17 +404,20 @@ clrmat = clrmat([2, 1, 3], :);
 
 attn_ws = squeeze(all_model_attn_ws(m_to_plot,a_to_plot,:,:,:));
 
-subj_to_plot = randi(67);
+subj_to_plot = 47;
 for d=[2 1 3]
     plot(squeeze(all_model_attn_ws(5, 3, subj_to_plot, :, d)), ...
-        'Color', clrmat(d,:), 'linewidth', 1);
+        'Color', clrmat(d,:), 'linewidth', 2);
     hold on
 end
 xlim([0, 432])
-ylim([-0.05, 1.05])
+ylim([-0.05, 1.19])
 
 xlabel('Trial')
 ylabel('Attention weights')
+
+legend(["Inf", "Noninf1", "Noninf2"],'Orientation','horizontal');
+
 
 box off
 
@@ -417,10 +425,10 @@ box off
 
 %% plot average by time
 figure
-plot3([0 0 1 0],[0 1 0 0],[1 0 0 1],'k', 'LineWidth', 1); hold on;
-plot3([1/3 0], [1/3 0.5], [1/3 0.5], '--k');
-plot3([1/3 0.5], [1/3 0], [1/3 0.5], '--k');
-plot3([1/3 0.5], [1/3 0.5], [1/3 0], '--k');
+plot3([0 0 1 0],[0 1 0 0],[1 0 0 1],'k', 'LineWidth', 3); hold on;
+plot3([1/3 0], [1/3 0.5], [1/3 0.5], '--k', 'LineWidth', 3);
+plot3([1/3 0.5], [1/3 0], [1/3 0.5], '--k', 'LineWidth', 3);
+plot3([1/3 0.5], [1/3 0.5], [1/3 0], '--k', 'LineWidth', 3);
 xticks([])
 yticks([])
 zticks([])
@@ -429,10 +437,11 @@ colormap viridis
 % axis([0 1 0 1 0 1])
 view(120,30)
 %plot A
-scatter3(squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,1),4)), ...
+s = scatter3(squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,1),4)), ...
     squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,3),4)), ...
     squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,2),4)), ...
-    40, squeeze(mean(all_model_jsds(m_to_plot,a_to_plot,:,:),4)), 'filled')
+    40, squeeze(mean(all_model_jsds(m_to_plot,a_to_plot,:,:),4)), 'filled');
+s.SizeData = 100;
 cb = colorbar;
 cb.Title.String = 'JSD';
 text(1.1, 0.0, -0.1, 'Noninf1', 'FontSize',25)
@@ -446,8 +455,10 @@ for d=[2 1 3]
 %     plt(d) = scatter(reshape(squeeze(movmean(all_model_attn_ws(5,3,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
 %                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'filled', ...
 %                     'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
-    plt(d) = scatter(squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,d), 4)), perfMean(idxperf)', 'filled', ...
-                    'Color', clrmat(d,:), 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 1);hold on;
+    plt(d) = scatter(squeeze(mean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,d), 4)), perfMean(idxperf)', ...
+                    80, clrmat(d,:), 'filled', 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 0.7, ...
+                    'LineWidth', 10);
+    hold on;
     [r, p] = corr(reshape(squeeze(movmean(all_model_attn_ws(m_to_plot,a_to_plot,:,:,d),wSize,4,'endpoint','discard')), [], 1), ...
                   reshape(movmean(choiceRew(idxperf,:),wSize,2,'endpoint','discard'), [], 1), 'type', 'spearman');
     disp([r, p])
@@ -459,13 +470,13 @@ lsls(3).Color = clrmat(2,:);
 
 legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"], 'Orientation','horizontal')
 for i=1:3
-    lsls(i).LineWidth = 2;
+    lsls(i).LineWidth = 4;
 end
 ylim([0.51, 0.77])
 xlim([-0.05, 1.1])
 
-text(1.02, 0.68, "*", "fontsize", 30, "Color", clrmat(2,:))
-text(1.02, 0.51, "*", "fontsize", 30, "Color", clrmat(1,:))
+text(1.02, 0.66, "**", "fontsize", 30, "Color", clrmat(2,:), 'FontWeight', 'bold')
+text(1.02, 0.54, "*", "fontsize", 30, "Color", clrmat(1,:), 'FontWeight', 'bold')
 ylabel("Performance")
 xlabel("Average attention weights")
 

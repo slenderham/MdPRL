@@ -9,6 +9,11 @@ addpath("../files")
 addpath("../models")
 addpath("../utils")
 
+set(0,'defaultAxesFontSize',25)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
+
 %%
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
@@ -133,21 +138,52 @@ wSize=100;
 clrmat = colormap('lines(5)');
 
 smth_trial_BICs = movmean(trial_BICs, wSize, 3, 'Endpoint', 'discard');
+smth_trial_BICs = smth_trial_BICs - mean(smth_trial_BICs, 1);
 
 for d=[1 2 3]
 %     plot_shaded_errorbar(squeeze(mean(smth_attn_ws(:,:,d), 1))', ...
 %         squeeze(std(smth_attn_ws(:,:,d), [], 1))'/sqrt(length(idxperf)), ...
 %         wSize, clrmat(d,:));hold on;
 
-    pse(d) = plot_shaded_errorbar(squeeze(mean(smth_trial_BICs(d,:,:)-mean(smth_trial_BICs, 1))), ...
-        squeeze(std(smth_trial_BICs(d,:,:)-mean(smth_trial_BICs, 1)))/sqrt(length(idxperf)), ...
+    pse(d) = plot_shaded_errorbar(squeeze(mean(smth_trial_BICs(d,:,:))), ...
+        squeeze(std(smth_trial_BICs(d,:,:)))/sqrt(length(idxperf)), ...
         wSize, clrmat(d,:));hold on;
 end
 
 axis tight
 % xlim([wSize, ntrials-wSize+1]);
-ylim([-0.02, 0.03]);
+
+[clusters, p_values, t_sums, permutation_distribution ] = permutest(-squeeze(smth_trial_BICs(1,:,:))',...
+-squeeze(smth_trial_BICs(3,:,:))',true,0.05,10^4,false,inf);
+
+disp(clusters)
+disp(p_values)
+
+for num_cluster = 1:length(clusters)
+    if p_values(num_cluster)>0.05
+        continue
+    end
+    plot(clusters{num_cluster}+wSize-1, -0.0225*ones(size(clusters{num_cluster})), ...
+        'MarkerSize', 10, 'MarkerEdgeColor',clrmat(1,:), 'LineStyle', 'none', 'marker','.')
+end
+
+[clusters, p_values, t_sums, permutation_distribution ] = permutest(-squeeze(smth_trial_BICs(2,:,:))',...
+-squeeze(smth_trial_BICs(3,:,:))',true,0.05,10^4,false,inf);
+
+disp(clusters)
+disp(p_values)
+for num_cluster = 1:length(clusters)
+    if p_values(num_cluster)>0.05
+        continue
+    end
+    plot(clusters{num_cluster}+wSize-1, -0.021*ones(size(clusters{num_cluster})), ...
+        'MarkerSize', 10, 'MarkerEdgeColor',clrmat(2,:), 'LineStyle', 'none', 'Marker','.')
+end
+
+ylim([-0.024, 0.03]);
 legend(pse, ["F+C_{inf}", "F+C_{noninf1}", "F+C_{noninf2}"], "Location", "north", "Orientation","horizontal")
+
+
 
 xlabel('Trial')
 ylabel('Trialwise BIC')

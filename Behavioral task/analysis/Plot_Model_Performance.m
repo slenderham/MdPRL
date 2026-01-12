@@ -6,10 +6,14 @@ addpath("../PRLexp/SubjectData_all/")
 addpath("../files")
 addpath("../models")
 addpath("../utils")
+addpath("../table2latex/")
 % addpath("../utils/DERIVESTsuite/DERIVESTsuite/")
 % addpath("../utils/vbmc")
 
-set(0,'defaultAxesFontSize',30)
+set(0,'defaultAxesFontSize',25)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
 %% load result files
 % feat = load('../files/RPL2Analysisv3_5_FeatureBased') ;
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
@@ -63,7 +67,7 @@ all_legends = strcat(all_model_names_legend(:), "X", attn_modes_legend(:));
 
 ntrials = 432;
 ntrialPerf       = 33:432;
-% perfTH           = 0.5 + 2*sqrt(.5*.5/length(ntrialPerf)) ;
+% perfTH           = 0.5 + norminv(0.95)*sqrt(.5*.5/length(ntrialPerf)) ;
 perfTH           = 0.53;
 
 cmap = lines(256);
@@ -90,17 +94,22 @@ idxperf = find(idxperf);
 %% plot learning curve
 
 figure
-plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, 'k');
-plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), 1, [0.5 0.5 0.5]);
+plot_shaded_errorbar(mean(movmean(rew(idxperf,:), 20, 2))', ...
+    std(movmean(rew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), ...
+    1, 'k');
+plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', ...
+    std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), ...
+    1, [0.5 0.5 0.5]);
 ylim([0.4, 0.65])
-quiver([86, 173, 259, 346, 432], ones(1,5)*0.4, zeros(1,5), ones(1,5)*0.01, "off", ...
-    'Color','black', 'LineWidth', 2)
-scatter([86, 173, 259, 346, 432], ones(1,5)*0.41, 40, 'k', 'filled', ...
+quiver([86, 173, 259, 346, 432], ones(1,5)*0.48, zeros(1,5), ones(1,5)*0.01, "off", ...
+    'Color','black', 'LineWidth', 3)
+scatter([86, 173, 259, 346, 432], ones(1,5)*0.49, 40, 'k', 'filled', ...
     'Marker', '^')
 xlabel('Trial')
 ylabel('Performance')
 legend({'', 'Reward', '', 'Proportion better'})
 xlim([0, 432])
+ylim([0.48, 0.7])
 
 
 %% load results with attn and ML params
@@ -136,6 +145,11 @@ end
 % 
 % [ps, tbl] = anovan(flat_BICs, {learning_strat, attn_where}, "Varnames",["learning_strat","attn_where"], 'model',2);
 
+%%
+bic_tbl = array2table( ...
+    string(round(mean(BICs, 3), 2))'+" ("+string(round(std(BICs, 1, 3)/sqrt(size(BICs, 3)), 2))'+")",...
+    "VariableNames", all_model_names_legend(1,:), 'RowNames', attn_modes_legend(:,1));
+table2latex(bic_tbl, '../tables/bic_tbl')
 
 %% plot differences in BICs
 cmap = colormap('turbo(11)');
@@ -241,11 +255,11 @@ t.TileSpacing = 'tight';
 t.Padding = 'tight';
 
 %% Plot All Parameters
-set(0,'defaultAxesFontSize',14)
+% set(0,'defaultAxesFontSize',14)
 attn_results = [attns.fit_results{5, 2, :}];
-% attn_results_no_attn = [attns.fit_results{5, 1, :}];
+attn_results_no_attn = [attns.fit_results{5, 1, :}];
 curr_params = reshape([attn_results.params], 7, [])';
-% curr_params_no_attn = reshape([attn_results_no_attn.params], 6, [])';
+curr_params_no_attn = reshape([attn_results_no_attn.params], 6, [])';
 param_names = ["bias", "\beta", "\omega", "d", "\alpha_+", "\alpha_-", "\gamma"];
 % figure
 % curr_params(:,[2 7]) = log(curr_params(:,[2 7])+1e-4);
@@ -281,26 +295,30 @@ figure;
 % subplot(121)
 temp_bound = 500;
 % psuedolog = @(x) asinh(x/2)/log(exp(1));
-hf = histogram(curr_params(idxperf, 7), 'BinEdges', 0:50:500, 'Normalization','probability'); hold on;
+hf = histogram(curr_params(idxperf, 7), 'BinEdges', 0:50:500, ...
+    'Normalization','probability', 'LineWidth', 3); 
+hold on;
 hf(1).FaceColor=rgb('grey');
 % [f,xi] = ksdensity((min(max(curr_params(idxperf, 7), 1e-4), temp_bound-1e-4)), 'Support', [0, temp_bound], 'BoundaryCorrection', 'Reflection');
 % plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
-xlabel('\gamma', 'FontSize', 30)
+xlabel('\gamma', 'FontSize', 32)
 xlim([0, temp_bound]);xticks(0:temp_bound/5:temp_bound);
 ylabel('Prop. of participants')
-ylim([0, 0.23])
+% ylim([0, 0.23])
 yticks(0:0.1:1)
 box off
 
 % subplot(122)
 figure
 % inv_logit = @(x) log(x+1e-3)-log(1-x+1e-3);
-hf = histogram(curr_params(idxperf, 3), 'BinEdges', 0:0.1:1, 'Normalization','probability'); hold on;
+hf = histogram(curr_params(idxperf, 3), 'BinEdges', 0:0.1:1, ...
+    'Normalization','probability', 'LineWidth', 3); 
+hold on;
 hf(1).FaceColor=rgb('grey');
 % [f,xi] = ksdensity((max(min(curr_params(idxperf, 3), 1-eps), eps)), 'Support', [0, 1], 'BoundaryCorrection', 'Reflection');
 % plot(xi(2:end-1), f(2:end-1), 'k', 'linewidth', 2)
 xlim([0, 1]);xticks(0:0.2:1);
-xlabel('\leftarrow Conj.           \omega             Feat. \rightarrow', 'FontSize', 30)
+xlabel('\leftarrow Conj.         \omega           Feat. \rightarrow', 'FontSize', 32)
 ylabel('Prop. of participants')
 ylim([0, 0.23])
 yticks(0:0.1:1)
@@ -309,7 +327,9 @@ box off
 %% learning rate bias
 figure
 clrmats = [[0.4660 0.6740 0.1880]; [0.6350 0.0780 0.1840]; rgb('grey')];
-violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.2, 'ViolinColor', clrmats, 'Bandwidth', 0.1);
+violins = violinplot(curr_params(idxperf, [5 6 4]), [], 'Width', 0.2, ...
+    'ViolinColor', clrmats, 'Bandwidth', 0.1, 'MarkerSize', 50, ...
+    'EdgeColor', ones(1,3)*0., 'BoxColor', ones(1,3)*0.25, 'LineWidth', 3);
 ylim([0, 1.05]);
 xlim([0.5, 3.5]);
 xticklabels(["\alpha_+", "\alpha_-", "d"]);
@@ -319,15 +339,20 @@ set(gca,'XTickLabel',a,'fontsize',30);
 box off
 % title('DiffXL', 'fontsize', 20)
 
-% figure
-% clrmats = [[0.4660 0.6740 0.1880]; [0.6350 0.0780 0.1840]; rgb('grey')];
-% violinplot(curr_params_no_attn(idxperf, [5 6 4]), [], 'Width', 0.25, 'ViolinColor', clrmats);
-% ylim([0, 1.05]);
-% xlim([0.5, 3.5]);
-% xticklabels(["\alpha_+", "\alpha_-", "d"]);
-% a = get(gca,'XTickLabel');
-% set(gca,'XTickLabel',a,'fontsize',25);
-% % title('No Attn', 'fontsize', 20)
+figure
+clrmats = [[0.4660 0.6740 0.1880]; [0.6350 0.0780 0.1840]; rgb('grey')];
+violinplot(curr_params_no_attn(idxperf, [5 6 4]), [], 'Width', 0.2, ...
+    'ViolinColor', clrmats, 'Bandwidth', 0.1, 'MarkerSize', 50, ...
+    'EdgeColor', ones(1,3)*0., 'BoxColor', ones(1,3)*0.25, 'LineWidth', 3);
+ylim([0, 1.05]);
+xlim([0.5, 3.5]);
+xticklabels(["\alpha_+", "\alpha_-", "d"]);
+xlabel("Parameter")
+a = get(gca,'XTickLabel');
+set(gca,'XTickLabel',a,'fontsize',30);
+box off
+
+% title('No Attn', 'fontsize', 20)
 
 %%
 figure

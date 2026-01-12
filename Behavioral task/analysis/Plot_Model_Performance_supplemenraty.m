@@ -143,6 +143,13 @@ end
 % 
 % [ps, tbl] = anovan(flat_BICs, {learning_strat, attn_where}, "Varnames",["learning_strat","attn_where"], 'model',2);
 
+%%
+bic_tbl = array2table( ...
+    string(round(mean(BICs, 3), 2))'+" ("+string(round(std(BICs, 1, 3)/sqrt(size(BICs, 3)), 2))'+")",...
+    "VariableNames", all_model_names_legend(1,:), 'RowNames', attn_modes_legend(:,1));
+table2latex(bic_tbl, '../tables/suppl_bic_tbl')
+
+
 
 %% plot differences in BICs
 cmap = colormap('turbo(11)');

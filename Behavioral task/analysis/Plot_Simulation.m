@@ -13,6 +13,9 @@ addpath("../utils")
 % obj = load('../files/RPL2Analysisv3_5_FeatureObjectBased') ;
 % conj  = load('../files/RPL2Analysisv3_5_ConjunctionBased') ;
 set(0,'defaultAxesFontSize',25)
+set(0, 'DefaultAxesLineWidth', 2)
+set(0, 'DefaultAxesFontName', 'Arial');
+set(0, 'DefaultTextFontName', 'Arial');
 subjects1 = [...
     "AA", "AB", "AC", "AD", "AE", "AF", "AG", ...
     "AH", "AI", "AJ", "AK", "AL", "AM", "AN", ...
@@ -84,27 +87,10 @@ idxperf(29) = 0;
 idxperf = find(idxperf);
 % idxperf = 1:length(subjects);
 
-%% load model fit
-attns = load('../files/RPL2Analysis_Attention_merged_rep40_250.mat') ;
-
-for m = 1:length(all_model_names)
-    for a = 1:length(attn_modes)
-        for cnt_sbj = 1:length(idxperf)
-            lls(m, a, cnt_sbj) = attns.fit_results{m, a, idxperf(cnt_sbj)}.fval;
-            AICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+2*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
-            BICs(m, a, cnt_sbj) = 2*lls(m, a, cnt_sbj)+log(ntrials)*length(attns.fit_results{m, a, idxperf(cnt_sbj)}.params);
-        end
-    end
-end
-
-[alpha_BIC,exp_r_BIC,xp_BIC,pxp_BIC,bor_BIC,g_BIC] = bms(reshape(-permute(BICs/2, [2 1 3]), [50, length(idxperf)])', ...
-    mat2cell((1:50)', repmat([1], 1, 50)));
-[~, best_model_inds] = max(g_BIC);
+sim_m = 5;
+sim_a = 2;
 
 %% correlation between simulated performance and true performance
-
-sim_m = 5;
-sim_a = 3;
 
 % clrmat = rgb('grey');
 % fig = figure;
@@ -112,28 +98,31 @@ sim_a = 3;
 % for i=1:length(sim_m)
 %     for j=1:length(sim_a)
 %         ax = nexttile;
-scatter(perfMean(idxperf), squeeze(mean(all_sim_corrects(sim_m,sim_a,idxperf,:,:), [4,5])), 150, rgb('darkgreen')); hold on;
-axis tight
-ll=lsline;
+
+
+scatter(perfMean(idxperf), squeeze(mean(all_sim_corrects(sim_m,sim_a,idxperf,:,:), [4,5])), ...
+    150, rgb('darkgreen'), 'LineWidth', 3, 'MarkerFaceColor', 'white'); hold on;
 errorbar(perfMean(idxperf), squeeze(mean(all_sim_corrects(sim_m,sim_a,idxperf,:,:), [4,5])), ...
     squeeze(std(mean(all_sim_corrects(sim_m,sim_a,idxperf,:,:), [5]),[], 4))/sqrt(num_reps), ...
-    'LineStyle','none', 'Color', rgb('darkgreen'), 'LineWidth',1, 'CapSize', 0);
+    'LineStyle','none', 'Color', rgb('darkgreen'), 'LineWidth',3, 'CapSize', 0);
+axis tight
+ll=lsline;
 disp([corr(squeeze(mean(all_sim_corrects(sim_m,sim_a,idxperf,:,:), [4,5])), perfMean(idxperf)', 'type', 'pearson'), ...
       corr(squeeze(mean(all_sim_corrects(sim_m,sim_a,idxperf,:,:), [4,5])), perfMean(idxperf)', 'type', 'spearman')])
 xticks(0.5:0.05:0.7);
 yticks(0.5:0.05:0.7);
-ylim([0.5, 0.68]);
+ylim([0.49, 0.68]);
 xlim([0.51, 0.73]);
-ll.LineWidth=1;
+ll.LineWidth=4;
 ll.Color=ones(1,3)*0.;
-text(0.7, 0.55, '***', 'FontSize', 30)
+text(0.7, 0.55, '***', 'FontSize', 30, 'FontWeight', 'bold')
 % refline
 % plot([0.48, 0.74], [0.48, 0.74], '--', 'Color', [0.6, 0.6, 0.6]);
 % title(all_legends((sim_m-1)*10+sim_a));
 %     end
 % end
 
-xlabel('True performance', 'FontSize', 30);
+xlabel("Participants' performance", 'FontSize', 30);
 ylabel('Simulated performance', 'FontSize', 30);
 
 
@@ -147,20 +136,21 @@ ylabel('Simulated performance', 'FontSize', 30);
 % for i=1:length(sim_m)
 %     for j=1:length(sim_a)
 %         ax = nexttile;
-hline = plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(sim_m,sim_a,idxperf,1:nreps,:), 20, 5), [3 4])), ...
-                     squeeze(std(movmean(all_sim_corrects(sim_m,sim_a,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), ...
-                     1, rgb('darkgreen'));hold on
-hline.LineWidth = 2;
 plot_shaded_errorbar(mean(movmean(choiceRew(idxperf,:), 20, 2))', ...
                      std(movmean(choiceRew(idxperf,:), 20, 2))'/sqrt(length(idxperf)), ...
                      1, [0.5 0.5 0.5]);
+hline = plot_shaded_errorbar(squeeze(mean(movmean(all_sim_corrects(sim_m,sim_a,idxperf,1:nreps,:), 20, 5), [3 4])), ...
+                     squeeze(std(movmean(all_sim_corrects(sim_m,sim_a,idxperf,1:nreps,:), 20, 5), [], [3 4]))/sqrt(length(idxperf)), ...
+                     1, rgb('darkgreen'));hold on
+hline.LineWidth = 3;
+
 xlim([0 ntrials+10])        
-ylim([0.49, 0.67]);
+ylim([0.49, 0.68]);
 % title(all_legends((sim_m-1)*10+sim_a));
 %     end
 % end
 
-legend({'', 'Simulated', '', 'True'}, 'Location', 'southeast')
+legend({'', 'Simulated', '', 'Participants'}, 'Location', 'southeast')
 xlabel('Trial', 'Fontsize', 30)
 ylabel('Percent correct', 'Fontsize', 30)
 % t.TileSpacing = 'compact';
@@ -267,27 +257,34 @@ sim_attns = reshape(sim_attns, 3, []);
 sim_attns = sim_attns(:, sim_idxperf);
 
 for d = [2 1 3]
-    plt(d) = scatter(reshape(squeeze(sim_attns(d,:)), [], 1), reshape(perfs, [], 1), 'filled', ...
-            'Color', clrmat(d,:), 'MarkerFaceAlpha', 0.3); hold on;
+    plt(d) = scatter(reshape(squeeze(sim_attns(d,:)), [], 1), reshape(perfs, [], 1), ...
+            80, clrmat(d,:), 'filled', 'MarkerEdgeAlpha', 1, 'MarkerFaceAlpha', 0.2, ...
+            'LineWidth', 10);
+    hold on;
     [r, p] = corr(reshape(perfs, [], 1), reshape(squeeze(sim_attns(d,:)), [], 1),'type','pearson');
     disp([r, p])
 end
+legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"], 'Orientation','horizontal')
+
 lsls = lsline();
 lsls(1).Color = clrmat(3,:);
 lsls(2).Color = clrmat(1,:);
 lsls(3).Color = clrmat(2,:);
 for d = 1:3
-    lsls(d).LineWidth = 2;
+    lsls(d).LineWidth = 4;
 end
+
+
+
 ylim([0.51, 0.76])
 xlim([-0.01, 1.12])
 %     end
 % end
 legend(plt([2 1 3]), ["Inf", "Noninf1", "Noninf2"], 'location', 'best', 'Orientation','horizontal')
 
-text(1.02, 0.64, "***", "fontsize", 30, "Color", clrmat(2,:))
-text(1.02, 0.55, "***", "fontsize", 30, "Color", clrmat(1,:))
-text(1.02, 0.565, "***", "fontsize", 30, "Color", clrmat(3,:))
+text(1.02, 0.64, "***", "fontsize", 30, "Color", clrmat(2,:), 'FontWeight', 'bold')
+text(1.02, 0.55, "***", "fontsize", 30, "Color", clrmat(1,:), 'FontWeight', 'bold')
+text(1.02, 0.565, "***", "fontsize", 30, "Color", clrmat(3,:), 'FontWeight', 'bold')
 
 % legend(["", all_legends((sim_m(1)-1)*10+sim_a(2)), "", all_legends((sim_m(2)-1)*10+sim_a(2))], 'location', 'southeast', 'FontSize', 20)
 xlabel('Average attention weights', 'FontSize', 30);
@@ -300,9 +297,9 @@ for cnt_sbj = 1:length(idxperf)
     avg_weights(cnt_sbj,:) = (attns.fit_results{m, a, idxperf(cnt_sbj)}.params(2)).*( ...
                                     attns.fit_results{m, a, idxperf(cnt_sbj)}.params(5)+ ...
                                     attns.fit_results{m, a, idxperf(cnt_sbj)}.params(6));
-%     avg_weights(cnt_sbj,:) = 1;
+    % avg_weights(cnt_sbj,:) = 1;
     for cnt_rep = 1:nreps
-        attn_where = 2;
+        attn_where = 1;
          all_sim_model_ents(cnt_sbj, cnt_rep, :) = squeeze(entropy(all_sim_attns{sim_m, sim_a, idxperf(cnt_sbj)}(attn_where,:,:)));
          all_sim_model_jsds(cnt_sbj, cnt_rep, :) = squeeze(js_div( ...
             movmean(all_sim_attns{sim_m, sim_a, idxperf(cnt_sbj)}(attn_where,:,2:end), 1, 3), ...
@@ -409,10 +406,10 @@ ylabel('Effective attention weights')
 
 %%
 figure
-plot3([0 0 1 0],[0 1 0 0],[1 0 0 1],'k', 'LineWidth', 1); hold on;
-plot3([1/3 0], [1/3 0.5], [1/3 0.5], '--k');
-plot3([1/3 0.5], [1/3 0], [1/3 0.5], '--k');
-plot3([1/3 0.5], [1/3 0.5], [1/3 0], '--k');
+plot3([0 0 1 0],[0 1 0 0],[1 0 0 1],'k', 'LineWidth', 3); hold on;
+plot3([1/3 0], [1/3 0.5], [1/3 0.5], '--k', 'LineWidth', 3);
+plot3([1/3 0.5], [1/3 0], [1/3 0.5], '--k', 'LineWidth', 3);
+plot3([1/3 0.5], [1/3 0.5], [1/3 0], '--k', 'LineWidth', 3);
 xticks([])
 yticks([])
 zticks([])
@@ -421,13 +418,15 @@ colormap viridis
 view(120, 30)
 % axis off
 %plot A
-scatter3(reshape(squeeze(mean(all_sim_model_attn_ws(:,:,:,1),3)), [], 1), ...
+s = scatter3(reshape(squeeze(mean(all_sim_model_attn_ws(:,:,:,1),3)), [], 1), ...
     reshape(squeeze(mean(all_sim_model_attn_ws(:,:,:,3),3)), [], 1), ...
     reshape(squeeze(mean(all_sim_model_attn_ws(:,:,:,2),3)), [], 1), ...
-    40, reshape(squeeze(mean(all_sim_model_jsds,3)), [], 1), 'filled', 'MarkerFaceAlpha', 0.25)
+    40, reshape(squeeze(mean(all_sim_model_jsds,3)), [], 1), 'filled', ...
+    'MarkerFaceAlpha', 0.4);
+s.SizeData = 50;
 cb = colorbar;
 cb.Title.String = 'JSD';
-cb.FontSize = 25;
+cb.FontSize = 24;
 text(1.2, 0.0, -0.1, 'Noninf1', 'FontSize',30)
 text(-0.1, 0.1, 1., 'Inf', 'FontSize',30)
 text(0.2, 0.9, -0.1, 'Noninf2', 'FontSize',30)
