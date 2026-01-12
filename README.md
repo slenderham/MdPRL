@@ -1,3 +1,1 @@
-Data, and code for:
-
-Wang, M. C., & Soltani, A. (2025). Contributions of attention to learning in multidimensional reward environments. Journal of Neuroscience, 45(7). [link](https://doi.org/10.1523/JNEUROSCI.2300-23.2024)
+Data, and code for Wang, M. C., & Soltani, A. (2025). Contributions of attention to learning in multidimensional reward environments. Journal of Neuroscience, 45(7). [link](https://doi.org/10.1523/JNEUROSCI.2300-23.2024)
